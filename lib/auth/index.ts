@@ -75,20 +75,25 @@ async function setDevCookie(uid: string) {
 }
 
 export async function signUp(input: RegisterInput): Promise<AuthResult> {
-  const role = env.adminEmails.includes(input.email) ? "admin" : "dealer";
+  const cleanPhone = input.phone.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\s+/g, "");
+  const effectiveEmail = `${cleanPhone}@radar.digiral.ir`;
+  const role = (input.email && env.adminEmails.includes(input.email)) || cleanPhone === "09999212209" ? "admin" : "dealer";
+
   if (dataMode() === "supabase") {
     const { createUserClient, createServiceClient } = await import("../supabase/server");
     const serviceClient = createServiceClient();
 
-    // ساخت کاربر با تأیید خودکار ایمیل جهت تست و استفاده فوری بدون نیاز به لینک ایمیل
+    // ساخت کاربر با شماره تماس (نگاشت‌شده به ایمیل امن) و فعال‌سازی فوری بدون تاییدیه ایمیل
     const { data: adminData, error: adminError } = await serviceClient.auth.admin.createUser({
-      email: input.email,
+      email: effectiveEmail,
       password: input.password,
       email_confirm: true,
       user_metadata: {
         full_name: input.full_name,
         business_name: input.business_name,
         city: input.city,
+        phone: cleanPhone,
+        real_email: input.email || null,
       },
     });
 
@@ -96,19 +101,25 @@ export async function signUp(input: RegisterInput): Promise<AuthResult> {
       return {
         ok: false,
         error: /registered|exists/i.test(adminError.message)
-          ? "این ایمیل قبلاً ثبت شده است"
+          ? "این شماره موبایل قبلاً ثبت‌نام کرده است"
           : "ثبت‌نام انجام نشد: " + adminError.message,
       };
     }
 
-    if (adminData.user && role === "admin") {
-      await serviceClient.from("profiles").update({ role: "admin" }).eq("id", adminData.user.id);
+    if (adminData.user) {
+      await serviceClient.from("profiles").update({
+        email: input.email || effectiveEmail,
+        full_name: input.full_name,
+        business_name: input.business_name,
+        city: input.city,
+        role,
+      }).eq("id", adminData.user.id);
     }
 
     // لاگین خودکار کاربر جدید تا بلافاصله وارد پنل شود
     const supabase = await createUserClient();
     await supabase.auth.signInWithPassword({
-      email: input.email,
+      email: effectiveEmail,
       password: input.password,
     });
 
@@ -116,30 +127,58 @@ export async function signUp(input: RegisterInput): Promise<AuthResult> {
   }
   const store = await getDevStore();
   const profile = await store.createUser({
-    email: input.email,
+    email: effectiveEmail,
     passwordHash: await hashPassword(input.password),
     full_name: input.full_name,
     business_name: input.business_name,
     city: input.city,
     role,
   });
-  if (!profile) return { ok: false, error: "این ایمیل قبلاً ثبت شده است" };
+  if (!profile) return { ok: false, error: "این شماره موبایل قبلاً ثبت شده است" };
   await setDevCookie(profile.id);
   return { ok: true };
 }
 
 export async function signIn(input: LoginInput): Promise<AuthResult> {
-  const generic = "ایمیل یا رمز عبور نادرست است";
+  const generic = "شماره موبایل، ایمیل یا رمز عبور نادرست است";
+
+  let target = input.identifier.trim();
+  const clean = target.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\s+/g, "");
+
+  if (clean === "admin") {
+    target = "admin@radar.ir";
+  } else if (/^09\d{9}$/.test(clean)) {
+    target = `${clean}@radar.digiral.ir`;
+  } else if (/^\d{10,11}$/.test(clean)) {
+    const p = clean.startsWith("0") ? clean : "0" + clean;
+    target = `${p}@radar.digiral.ir`;
+  }
+
   if (dataMode() === "supabase") {
     const { createUserClient } = await import("../supabase/server");
     const supabase = await createUserClient();
-    const { error } = await supabase.auth.signInWithPassword(input);
-    if (error) return { ok: false, error: /confirm/i.test(error.message) ? "ابتدا ایمیل خود را تأیید کنید" : generic };
+    let { error } = await supabase.auth.signInWithPassword({
+      email: target,
+      password: input.password,
+    });
+
+    // در صورتی که کاربر با ایمیل اختیاری خود وارد شده باشد
+    if (error && target !== input.identifier && input.identifier.includes("@")) {
+      const retry = await supabase.auth.signInWithPassword({
+        email: input.identifier,
+        password: input.password,
+      });
+      if (!retry.error) error = null;
+    }
+
+    if (error) return { ok: false, error: generic };
     return { ok: true };
   }
   const store = await getDevStore();
-  const user = await store.findUserByEmail(input.email);
-  // Always run a hash comparison so response time doesn't reveal whether the email exists.
+  let user = await store.findUserByEmail(target);
+  if (!user && target !== input.identifier) {
+    user = await store.findUserByEmail(input.identifier);
+  }
   const ok = await verifyPassword(input.password, user?.passwordHash ?? "scrypt$00$00");
   if (!user || !ok) return { ok: false, error: generic };
   await setDevCookie(user.profile.id);

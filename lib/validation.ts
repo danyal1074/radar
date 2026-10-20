@@ -41,24 +41,34 @@ const optionalText = z.preprocess(
 // ---------- auth ----------
 
 export const registerSchema = z.object({
-  full_name: z.string().trim().min(3, "نام و نام خانوادگی را کامل وارد کنید").max(80),
+  full_name: z.string().trim().min(2, "نام و نام خانوادگی را وارد کنید").max(80),
   business_name: z.string().trim().min(2, "نام نمایشگاه را وارد کنید").max(80),
   city: z.string().trim().min(2, "شهر را وارد کنید").max(60),
-  email: z.string().trim().toLowerCase().email("ایمیل معتبر نیست"),
-  password: z
+  phone: z
     .string()
-    .min(8, "رمز عبور حداقل ۸ کاراکتر باشد")
-    .max(128)
-    .refine((p) => /[A-Za-z]/.test(p) && /\d/.test(p), "رمز عبور باید شامل حرف و عدد باشد"),
-});
-
-export const loginSchema = z.object({
+    .trim()
+    .transform((v) => v.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\s+/g, ""))
+    .refine((v) => /^09\d{9}$/.test(v), "شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود"),
   email: z
     .string()
     .trim()
     .toLowerCase()
-    .transform((v) => (v === "admin" ? "admin@radar.ir" : v))
-    .refine((v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "ایمیل یا نام کاربری معتبر نیست"),
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v && v.length > 0 ? v : null))
+    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "فرمت ایمیل نامعتبر است"),
+  password: z
+    .string()
+    .min(6, "رمز عبور حداقل ۶ کاراکتر باشد")
+    .max(128),
+});
+
+export const loginSchema = z.object({
+  identifier: z
+    .string()
+    .trim()
+    .min(1, "شماره موبایل یا ایمیل را وارد کنید")
+    .transform((v) => v.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).trim()),
   password: z.string().min(1, "رمز عبور را وارد کنید"),
 });
 

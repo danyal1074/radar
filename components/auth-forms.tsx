@@ -16,8 +16,8 @@ export function LoginForm() {
   return (
     <form action={action} className="space-y-4" noValidate>
       <Feedback state={state} />
-      <Field label="نام کاربری یا ایمیل" error={state?.errors?.email}>
-        <Input name="email" type="text" placeholder="admin یا email@..." autoComplete="username" dir="ltr" required />
+      <Field label="شماره موبایل یا ایمیل" error={state?.errors?.identifier ?? state?.errors?.email}>
+        <Input name="identifier" type="text" placeholder="۰۹... یا admin" autoComplete="username" dir="ltr" required />
       </Field>
       <Field label="رمز عبور" error={state?.errors?.password}>
         <Input name="password" type="password" autoComplete="current-password" dir="ltr" required />
@@ -42,19 +42,22 @@ export function RegisterForm() {
       <Feedback state={state} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="نام و نام خانوادگی" error={e.full_name}>
-          <Input name="full_name" autoComplete="name" required />
+          <Input name="full_name" placeholder="مثال: علی رضایی" autoComplete="name" required />
         </Field>
         <Field label="نام نمایشگاه" error={e.business_name}>
-          <Input name="business_name" autoComplete="organization" required />
+          <Input name="business_name" placeholder="مثال: نمایشگاه اتومبیل رضایی" autoComplete="organization" required />
         </Field>
       </div>
       <Field label="شهر" error={e.city}>
         <Input name="city" defaultValue="تربت حیدریه" required />
       </Field>
-      <Field label="ایمیل" error={e.email}>
-        <Input name="email" type="email" autoComplete="email" dir="ltr" required />
+      <Field label="شماره موبایل" error={e.phone} hint="جهت ورود به سامانه و دریافت هشدارهای شکار">
+        <Input name="phone" type="tel" placeholder="۰۹۱۲۳۴۵۶۷۸۹" autoComplete="tel" dir="ltr" required />
       </Field>
-      <Field label="رمز عبور" error={e.password} hint="حداقل ۸ کاراکتر، شامل حرف و عدد">
+      <Field label="ایمیل (اختیاری)" error={e.email}>
+        <Input name="email" type="email" placeholder="دلخواه..." autoComplete="email" dir="ltr" />
+      </Field>
+      <Field label="رمز عبور" error={e.password} hint="حداقل ۶ کاراکتر">
         <Input name="password" type="password" autoComplete="new-password" dir="ltr" required />
       </Field>
       <Button type="submit" disabled={pending} className="w-full">

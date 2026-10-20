@@ -6,6 +6,9 @@ Connects to the VPS, pulls latest git changes, builds Next.js, and restarts PM2.
 import sys
 import paramiko
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 VPS_HOST = "89.46.217.44"
 VPS_PORT = 22
 VPS_USER = "root"

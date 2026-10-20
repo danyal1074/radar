@@ -16,7 +16,8 @@ function fieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
 }
 
 export async function loginAction(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const parsed = loginSchema.safeParse({ email: fd.get("email"), password: fd.get("password") });
+  const identifier = String(fd.get("identifier") ?? fd.get("email") ?? "").trim();
+  const parsed = loginSchema.safeParse({ identifier, password: fd.get("password") });
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error.issues) };
   const res = await signIn(parsed.data);
   if (!res.ok) return { ok: false, message: res.error };

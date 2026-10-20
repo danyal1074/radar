@@ -166,9 +166,12 @@ export async function signIn(input: LoginInput): Promise<AuthResult> {
 
   let target = input.identifier.trim();
   const clean = target.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\s+/g, "");
+  const lower = clean.toLowerCase();
 
-  if (clean === "admin") {
+  if (lower === "admin") {
     target = "admin@radar.ir";
+  } else if (lower === "danyal1074" || lower === "danyal" || lower === "danyal.haghdady" || clean === "09999212209") {
+    target = "danyal.haghdady@gmail.com";
   } else if (/^09\d{9}$/.test(clean)) {
     target = `${clean}@radar.digiral.ir`;
   } else if (/^\d{10,11}$/.test(clean)) {

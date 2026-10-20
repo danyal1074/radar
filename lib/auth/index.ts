@@ -78,21 +78,41 @@ export async function signUp(input: RegisterInput): Promise<AuthResult> {
   const role = env.adminEmails.includes(input.email) ? "admin" : "dealer";
   if (dataMode() === "supabase") {
     const { createUserClient, createServiceClient } = await import("../supabase/server");
-    const supabase = await createUserClient();
-    const { data, error } = await supabase.auth.signUp({
+    const serviceClient = createServiceClient();
+
+    // ساخت کاربر با تأیید خودکار ایمیل جهت تست و استفاده فوری بدون نیاز به لینک ایمیل
+    const { data: adminData, error: adminError } = await serviceClient.auth.admin.createUser({
       email: input.email,
       password: input.password,
-      options: {
-        data: { full_name: input.full_name, business_name: input.business_name, city: input.city },
+      email_confirm: true,
+      user_metadata: {
+        full_name: input.full_name,
+        business_name: input.business_name,
+        city: input.city,
       },
     });
-    if (error) {
-      return { ok: false, error: /registered|exists/i.test(error.message) ? "این ایمیل قبلاً ثبت شده است" : "ثبت‌نام انجام نشد. لطفاً دوباره تلاش کنید" };
+
+    if (adminError) {
+      return {
+        ok: false,
+        error: /registered|exists/i.test(adminError.message)
+          ? "این ایمیل قبلاً ثبت شده است"
+          : "ثبت‌نام انجام نشد: " + adminError.message,
+      };
     }
-    if (data.user && role === "admin") {
-      await createServiceClient().from("profiles").update({ role: "admin" }).eq("id", data.user.id);
+
+    if (adminData.user && role === "admin") {
+      await serviceClient.from("profiles").update({ role: "admin" }).eq("id", adminData.user.id);
     }
-    return { ok: true, needsEmailConfirmation: !data.session };
+
+    // لاگین خودکار کاربر جدید تا بلافاصله وارد پنل شود
+    const supabase = await createUserClient();
+    await supabase.auth.signInWithPassword({
+      email: input.email,
+      password: input.password,
+    });
+
+    return { ok: true };
   }
   const store = await getDevStore();
   const profile = await store.createUser({

@@ -26,9 +26,29 @@ function readForm(fd: FormData) {
   }
   const pct = String(raw.min_discount_percent ?? "").trim();
   raw.min_discount_percent = pct === "" ? null : parseLooseNumber(pct) ?? NaN;
+  
+  // اگر کاربر تاگل «فقط زیر قیمت» را زده باشد اما درصدی تایپ نکرده باشد
+  if (fd.get("discount_only") === "on" && (raw.min_discount_percent === null || isNaN(raw.min_discount_percent as number))) {
+    raw.min_discount_percent = 5;
+  }
+
   raw.urgent_only = fd.get("urgent_only") === "on";
   raw.paint_free_only = fd.get("paint_free_only") === "on";
-  raw.is_active = fd.get("is_active") === "on";
+  raw.is_active = fd.get("is_active") !== "off";
+
+  // نام خودکار در صورت خالی بودن
+  if (!raw.name || String(raw.name).trim() === "") {
+    const parts: string[] = [];
+    if (raw.make || raw.model) parts.push(`${raw.make ?? ""} ${raw.model ?? ""}`.trim());
+    if (raw.price_max_toman && Number(raw.price_max_toman) > 0) {
+      parts.push(`تا ${Math.round(Number(raw.price_max_toman) / 1_000_000)} م`);
+    }
+    if (raw.year_min) parts.push(`مدل ${raw.year_min}+`);
+    if (raw.urgent_only) parts.push("فوری");
+    if (raw.paint_free_only) parts.push("بی‌رنگ");
+    raw.name = parts.length > 0 ? parts.join(" | ") : "هشدار خودرو جدید";
+  }
+
   return raw;
 }
 

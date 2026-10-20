@@ -1,22 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { saveRuleAction } from "@/app/(app)/settings/alerts/actions";
 import type { ActionState } from "@/app/actions";
 import { SOURCE_LABEL } from "@/lib/labels";
 import type { WatchRule } from "@/lib/types";
 import { Alert, Button, Field, Input, Select } from "./ui";
+import { ChevronDown, Sparkles, Zap, ShieldCheck } from "lucide-react";
 
-const POPULAR_MAKES = [
-  "پژو", "پراید", "سمند", "ساینا", "کوییک", "تیبا", "دنا", "تارا", "شاهین", "رانا",
-  "هایما", "جک", "ام‌وی‌ام", "چری", "فونیکس", "لاماری", "فیدلیتی", "دیگنیتی", "کی‌ام‌سی",
-  "رنو", "کیا", "هیوندای", "نیسان", "مزدا", "تویوتا", "پیکان", "برلیانس", "بسترن", "لیفان",
-  "دانگ‌فنگ", "زامیاد", "سوزوکی", "بنز", "بی‌ام‌و"
+const QUICK_CAR_PILLS = [
+  "همه خودروها",
+  "پژو پارس",
+  "پراید",
+  "پژو ۲۰۶",
+  "کوییک",
+  "ساینا",
+  "دنا",
+  "سمند",
+  "تیبا",
+  "تارا",
+  "شاهین",
+  "هایما",
 ];
 
 export function RuleForm({ rule }: { rule?: WatchRule }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveRuleAction, null);
+  const [selectedMake, setSelectedMake] = useState(rule?.make ?? (rule?.model ? `${rule.make ?? ""} ${rule.model}`.trim() : ""));
+
   const e = state?.errors ?? {};
   const v = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(n));
   const vMillion = (n: number | null | undefined) => {
@@ -24,120 +35,187 @@ export function RuleForm({ rule }: { rule?: WatchRule }) {
     return n >= 1_000_000 ? String(Math.round(n / 1_000_000)) : String(n);
   };
 
+  const handlePillClick = (carName: string) => {
+    if (carName === "همه خودروها") {
+      setSelectedMake("");
+    } else {
+      setSelectedMake(carName);
+    }
+  };
+
   return (
-    <form action={action} className="space-y-5 rounded-xl border border-line bg-surface p-5" noValidate>
+    <form action={action} className="space-y-5 rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-6" noValidate>
       {rule && <input type="hidden" name="id" value={rule.id} />}
       {state?.message && <Alert tone={state.ok ? "good" : "bad"}>{state.message}</Alert>}
 
-      <datalist id="makes-list">
-        {POPULAR_MAKES.map((m) => (
-          <option key={m} value={m} />
-        ))}
-      </datalist>
+      {/* ۱. انتخاب خودرو */}
+      <div>
+        <label className="block text-sm font-bold text-ink mb-1.5">
+          🚗 خودروی مدنظر شما
+        </label>
+        <Input
+          name="make"
+          value={selectedMake}
+          onChange={(ev) => setSelectedMake(ev.target.value)}
+          placeholder="مثلاً: پژو پارس، ۲۰۶، پراید یا نام خودرو..."
+          className="text-base"
+        />
+        {e.make && <p className="mt-1 text-xs text-bad">{e.make}</p>}
 
-      <Field label="نام قانون" error={e.name}>
-        <Input name="name" defaultValue={rule?.name} placeholder="مثلاً: شکار پژو پارس و ۲۰۶ زیر قیمت" required />
-      </Field>
+        {/* دکمه‌های لمسی سریع برای گوشی */}
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {QUICK_CAR_PILLS.map((pill) => {
+            const isSelected = (pill === "همه خودروها" && !selectedMake) || (selectedMake && pill.includes(selectedMake));
+            return (
+              <button
+                key={pill}
+                type="button"
+                onClick={() => handlePillClick(pill)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                  isSelected
+                    ? "bg-brand-600 text-white shadow-sm ring-2 ring-brand-300"
+                    : "bg-paper text-ink hover:bg-line border border-line/60"
+                }`}
+              >
+                {pill}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-semibold">مشخصات خودرو</legend>
-        <Field label="خودرو (برند)" error={e.make} hint="انتخاب از لیست یا تایپ هر خودروی دلخواه">
-          <Input name="make" list="makes-list" defaultValue={rule?.make ?? ""} placeholder="پژو، پراید، هایما، لاماری و..." />
+      {/* ۲. سقف بودجه و سال ساخت (۲ فیلد اصلی و روان) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field
+          label="💰 حداکثر قیمت (میلیون تومان)"
+          error={e.price_max_toman}
+          hint="مثلاً ۵۰۰ بزنید معادل ۵۰۰ میلیون (خالی = بدون سقف قیمت)"
+        >
+          <Input
+            name="price_max_toman"
+            inputMode="numeric"
+            defaultValue={vMillion(rule?.price_max_toman)}
+            placeholder="مثلاً: ۴۵۰"
+            className="text-base font-medium"
+          />
         </Field>
-        <Field label="مدل / تیپ" error={e.model} hint="خالی = همه مدل‌ها">
-          <Input name="model" defaultValue={rule?.model ?? ""} placeholder="پارس، ۲۰۶، S، تیپ ۲ و..." />
-        </Field>
-        <Field label="سال از" error={e.year_min}>
-          <Input name="year_min" inputMode="numeric" defaultValue={v(rule?.year_min)} placeholder="۱۳۹۵" />
-        </Field>
-        <Field label="سال تا" error={e.year_max}>
-          <Input name="year_max" inputMode="numeric" defaultValue={v(rule?.year_max)} placeholder="۱۴۰۳" />
-        </Field>
-        <Field label="کارکرد از (کیلومتر)" error={e.mileage_min_km}>
-          <Input name="mileage_min_km" inputMode="numeric" defaultValue={v(rule?.mileage_min_km)} placeholder="۰" />
-        </Field>
-        <Field label="کارکرد تا (کیلومتر)" error={e.mileage_max_km}>
-          <Input name="mileage_max_km" inputMode="numeric" defaultValue={v(rule?.mileage_max_km)} placeholder="۱۵۰,۰۰۰" />
-        </Field>
-        <Field label="شهر" error={e.city} hint="خالی = همه شهرها">
-          <Input name="city" defaultValue={rule?.city ?? ""} placeholder="تربت حیدریه، مشهد و..." />
-        </Field>
-        <Field label="منبع آگهی" error={e.source}>
-          <Select name="source" defaultValue={rule?.source ?? "any"}>
-            <option value="any">همه منابع (دیوار و شیپور)</option>
-            {(["divar", "sheypoor", "manual", "sample"] as const).map((s) => (
-              <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
-            ))}
-          </Select>
-        </Field>
-      </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-semibold">بودجه و قیمت (به میلیون تومان — بدون نیاز به شمردن صفرها)</legend>
-        <Field label="حداقل قیمت (میلیون تومان)" error={e.price_min_toman} hint="مثلاً ۳۰۰ = ۳۰۰ میلیون">
-          <Input name="price_min_toman" inputMode="numeric" defaultValue={vMillion(rule?.price_min_toman)} placeholder="مثلاً ۳۰۰" />
+        <Field
+          label="📅 حداقل سال ساخت (مدل)"
+          error={e.year_min}
+          hint="مثلاً ۱۳۹۵ (خالی = تمام سال‌ها)"
+        >
+          <Input
+            name="year_min"
+            inputMode="numeric"
+            defaultValue={v(rule?.year_min)}
+            placeholder="مثلاً: ۱۳۹۶"
+            className="text-base font-medium"
+          />
         </Field>
-        <Field label="حداکثر قیمت (میلیون تومان)" error={e.price_max_toman} hint="مثلاً ۷۰۰ = ۷۰۰ میلیون">
-          <Input name="price_max_toman" inputMode="numeric" defaultValue={vMillion(rule?.price_max_toman)} placeholder="مثلاً ۷۰۰" />
-        </Field>
-      </fieldset>
+      </div>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-semibold">شرط شکار و تخفیف نسبت به بازار</legend>
-        <Field label="حداقل درصد ارزان‌تر بودن از بازار" error={e.min_discount_percent} hint="خالی = تمام آگهی‌های منطبق بر مشخصات">
-          <Input name="min_discount_percent" inputMode="decimal" defaultValue={v(rule?.min_discount_percent)} placeholder="اختیاری؛ مثلاً ۱۰" />
-        </Field>
-        <Field label="حداقل اختلاف قیمت زیر بازار (میلیون تومان)" error={e.min_discount_toman} hint="اختیاری؛ مثلاً ۵۰ معادل ۵۰ میلیون تومان سود">
-          <Input name="min_discount_toman" inputMode="numeric" defaultValue={vMillion(rule?.min_discount_toman)} placeholder="مثلاً ۵۰" />
-        </Field>
-      </fieldset>
+      {/* ۳. گزینه‌های هوشمند شکار (تاگل‌های تک‌کلیکه) */}
+      <div className="rounded-xl border border-line bg-paper/50 p-3.5 sm:p-4 space-y-2.5">
+        <span className="block text-xs font-bold text-ink mb-1">
+          🎯 شروط هوشمند هشدار (انتخابی):
+        </span>
 
-      <fieldset className="rounded-xl border border-brand-200 bg-brand-50/40 p-4 space-y-3">
-        <legend className="px-2 text-xs font-bold text-brand-900">
-          🎯 فیلترهای ویژه نمایشگاه‌داران و خریداران حرفه‌ای
-        </legend>
-        
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label className="flex items-center gap-2.5 p-2 rounded-lg bg-surface border border-line/50 cursor-pointer hover:border-brand-300 transition-colors">
+          <input
+            type="checkbox"
+            name="discount_only"
+            defaultChecked={rule ? (rule.min_discount_percent !== null && rule.min_discount_percent > 0) : true}
+            className="size-4.5 rounded text-brand-600 accent-brand-600 cursor-pointer"
+          />
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <Sparkles className="size-4 text-amber-500 fill-amber-100" />
+            <span>فقط آگهی‌های زیر قیمت بازار (شکار و سودآور)</span>
+          </div>
+        </label>
+
+        <label className="flex items-center gap-2.5 p-2 rounded-lg bg-surface border border-line/50 cursor-pointer hover:border-brand-300 transition-colors">
           <input
             type="checkbox"
             name="urgent_only"
             defaultChecked={rule?.urgent_only ?? false}
-            className="size-4.5 mt-0.5 rounded border-line text-brand-600 focus:ring-brand-500 accent-brand-600 cursor-pointer"
+            className="size-4.5 rounded text-brand-600 accent-brand-600 cursor-pointer"
           />
-          <div>
-            <span className="text-sm font-bold text-ink">🚨 فقط فروش فوری و پول لازم</span>
-            <p className="text-xs text-muted mt-0.5">
-              فقط آگهی‌هایی که در عنوان یا متن اعلام کرده‌اند: «فروش فوری»، «پول لازم»، «زیر قیمت بازار»، «مهاجرت» و...
-            </p>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <Zap className="size-4 text-red-500 fill-red-100" />
+            <span>فقط فروش فوری و پول لازم</span>
           </div>
         </label>
 
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label className="flex items-center gap-2.5 p-2 rounded-lg bg-surface border border-line/50 cursor-pointer hover:border-brand-300 transition-colors">
           <input
             type="checkbox"
             name="paint_free_only"
             defaultChecked={rule?.paint_free_only ?? false}
-            className="size-4.5 mt-0.5 rounded border-line text-brand-600 focus:ring-brand-500 accent-brand-600 cursor-pointer"
+            className="size-4.5 rounded text-brand-600 accent-brand-600 cursor-pointer"
           />
-          <div>
-            <span className="text-sm font-bold text-ink">🛡️ فقط شاسی پلمپ و کاملاً بی‌رنگ</span>
-            <p className="text-xs text-muted mt-0.5">
-              فقط خودروهای بکر، بی‌رنگ و با شاسی کاملاً سالم و پلمپ (حذف خودکار موارد دور رنگ، تصادفی، ضربه‌دار و تعویض اتاق)
-            </p>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <ShieldCheck className="size-4 text-emerald-600 fill-emerald-100" />
+            <span>فقط شاسی پلمپ و کاملاً بی‌رنگ</span>
           </div>
         </label>
-      </fieldset>
+      </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="is_active" defaultChecked={rule?.is_active ?? true} className="size-4 accent-brand-600" />
-        قانون فعال باشد
-      </label>
+      {/* ۴. تنظیمات پیشرفته (اختیاری و بازشونده برای خلوت ماندن صفحه) */}
+      <details className="group rounded-xl border border-line bg-surface">
+        <summary className="flex items-center justify-between p-3.5 text-xs font-bold text-muted cursor-pointer hover:text-ink select-none">
+          <span>⚙️ تنظیمات بیشتر (اختیاری)</span>
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="p-4 pt-1 border-t border-line space-y-4">
+          <Field label="نام اختصاصی هشدار" error={e.name} hint="خالی بگذارید تا خودکار نام‌گذاری شود">
+            <Input name="name" defaultValue={rule?.name ?? ""} placeholder="مثلاً: شکار پژو پارس سفید" />
+          </Field>
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={pending}>
-          {pending ? "در حال ذخیره…" : rule ? "ذخیره تغییرات" : "ساخت قانون"}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="تیپ / مدل دقیق" error={e.model}>
+              <Input name="model" defaultValue={rule?.model ?? ""} placeholder="مثلاً: TU5، تیپ ۵، اتومات..." />
+            </Field>
+
+            <Field label="حداکثر کارکرد (کیلومتر)" error={e.mileage_max_km}>
+              <Input name="mileage_max_km" inputMode="numeric" defaultValue={v(rule?.mileage_max_km)} placeholder="مثلاً: ۱۰۰,۰۰۰" />
+            </Field>
+
+            <Field label="حداقل قیمت (میلیون تومان)" error={e.price_min_toman}>
+              <Input name="price_min_toman" inputMode="numeric" defaultValue={vMillion(rule?.price_min_toman)} placeholder="مثلاً: ۲۰۰" />
+            </Field>
+
+            <Field label="تا سال ساخت" error={e.year_max}>
+              <Input name="year_max" inputMode="numeric" defaultValue={v(rule?.year_max)} placeholder="مثلاً: ۱۴۰۳" />
+            </Field>
+
+            <Field label="شهر" error={e.city}>
+              <Input name="city" defaultValue={rule?.city ?? "تربت حیدریه"} placeholder="تربت حیدریه" />
+            </Field>
+
+            <Field label="منبع آگهی" error={e.source}>
+              <Select name="source" defaultValue={rule?.source ?? "any"}>
+                <option value="any">همه منابع (دیوار و شیپور)</option>
+                {(["divar", "sheypoor"] as const).map((s) => (
+                  <option key={s} value={s}>{SOURCE_LABEL[s]}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </div>
+      </details>
+
+      <input type="hidden" name="is_active" value="on" />
+
+      {/* دکمه‌های ذخیره */}
+      <div className="flex items-center gap-3 pt-2">
+        <Button type="submit" disabled={pending} className="flex-1 py-3 text-base font-bold shadow-md">
+          {pending ? "در حال ذخیره…" : rule ? "ذخیره تغییرات" : "🚀 فعال‌سازی هشدار"}
         </Button>
-        <Link href="/settings/alerts" className="inline-flex min-h-10 items-center rounded-lg px-4 text-sm text-muted hover:bg-paper">
+        <Link
+          href="/settings/alerts"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-5 text-sm font-medium text-muted hover:bg-paper"
+        >
           انصراف
         </Link>
       </div>

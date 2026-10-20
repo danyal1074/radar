@@ -76,7 +76,7 @@ export const loginSchema = z.object({
 
 export const watchRuleSchema = z
   .object({
-    name: z.string().trim().min(2, "نام قانون را وارد کنید").max(80),
+    name: z.string().trim().max(80).default("هشدار خودرو جدید"),
     make: optionalText,
     model: optionalText,
     year_min: optionalInt(1300, 1500),

@@ -59,13 +59,21 @@ export async function saveRuleAction(_p: ActionState, fd: FormData): Promise<Act
     return { ok: false, message: `سقف قوانین فعال پلن «${plan.name}» پر شده است. یک قانون را غیرفعال کنید یا پلن را ارتقا دهید.` };
   }
 
-  if (id) {
-    const updated = await ctx.store.updateRule(ctx.user.id, id, parsed.data);
-    if (!updated) return { ok: false, message: "قانون پیدا نشد" };
-  } else {
-    await ctx.store.createRule(ctx.user.id, parsed.data);
+  try {
+    if (id) {
+      const updated = await ctx.store.updateRule(ctx.user.id, id, parsed.data);
+      if (!updated) return { ok: false, message: "قانون پیدا نشد" };
+    } else {
+      await ctx.store.createRule(ctx.user.id, parsed.data);
+    }
+    await reevaluate(ctx.user.id).catch((err) => {
+      console.warn("[alerts] reevaluate warning:", err);
+    });
+  } catch (err: any) {
+    console.error("[alerts] saveRuleAction error:", err);
+    return { ok: false, message: err?.message || "خطا در ثبت قانون. لطفاً مقادیر وارد شده را بررسی کنید." };
   }
-  await reevaluate(ctx.user.id);
+
   revalidatePath("/", "layout");
   redirect("/settings/alerts?saved=1");
 }

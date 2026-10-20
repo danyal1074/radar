@@ -86,11 +86,11 @@ export default async function AlertsPage({ searchParams }: PageProps<"/settings/
                 <p className="mt-0.5 text-xs text-muted">
                   هشدار وقتی:{" "}
                   {[
-                    r.min_discount_percent !== null ? `حداقل ${formatNumber(r.min_discount_percent)}٪ زیر تخمین` : null,
-                    r.min_discount_toman !== null ? `حداقل ${formatTomanCompact(r.min_discount_toman)} اختلاف` : null,
+                    r.min_discount_percent !== null && r.min_discount_percent > 0 ? `حداقل ${formatNumber(r.min_discount_percent)}٪ زیر تخمین` : null,
+                    r.min_discount_toman !== null && r.min_discount_toman > 0 ? `حداقل ${formatTomanCompact(r.min_discount_toman)} اختلاف` : null,
                   ]
                     .filter(Boolean)
-                    .join(" و ")}
+                    .join(" و ") || "همه آگهی‌های منطبق بر شرایط"}
                 </p>
               </div>
               <div className="flex items-center gap-1.5">

@@ -327,6 +327,11 @@ export class SupabaseStore implements Store {
     if (paint_free_only && !finalName.includes("[بی‌رنگ]")) finalName = `${finalName} [بی‌رنگ]`;
     cleanInput.name = finalName;
 
+    // رفع محدودیت پایگاه داده: حداقل درصد تخفیف یا مبلغ تخفیف نباید هر دو null باشند
+    if (cleanInput.min_discount_percent === null && cleanInput.min_discount_toman === null) {
+      cleanInput.min_discount_percent = 0;
+    }
+
     const { data, error } = await this.db.from("watch_rules").insert({ ...cleanInput, user_id: userId }).select().single();
     if (error) fail("createRule", error);
     const r = data as any;
@@ -343,6 +348,10 @@ export class SupabaseStore implements Store {
     if (urgent_only && !finalName.includes("[فوری]")) finalName = `${finalName} [فوری]`;
     if (paint_free_only && !finalName.includes("[بی‌رنگ]")) finalName = `${finalName} [بی‌رنگ]`;
     cleanInput.name = finalName;
+
+    if (cleanInput.min_discount_percent === null && cleanInput.min_discount_toman === null) {
+      cleanInput.min_discount_percent = 0;
+    }
 
     const { data, error } = await this.db.from("watch_rules").update(cleanInput).eq("id", id).eq("user_id", userId).select().maybeSingle();
     if (error) fail("updateRule", error);

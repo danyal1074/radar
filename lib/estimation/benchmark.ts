@@ -304,7 +304,7 @@ export class BenchmarkPriceEstimationProvider implements PriceEstimationProvider
     // 1) First check live daily market prices (updated daily from car.ir & admin overrides)
     try {
       const dailyPrices = await getDailyCarPrices();
-      basePrice = lookupDailyPrice(dailyPrices, input.make, input.model, input.year);
+      basePrice = lookupDailyPrice(dailyPrices, input.make, input.model, input.year ?? undefined);
     } catch (e) {
       console.warn("[benchmark] daily prices lookup failed, using static matrix:", e);
     }

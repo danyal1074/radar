@@ -1,0 +1,162 @@
+{
+  "peugeot_pars_1397": {
+    "price_toman": 570000000,
+    "timestamp": 1792477123.6219132,
+    "model_key": "peugeot_pars"
+  },
+  "daewoo_matiz_1380": {
+    "price_toman": 170000000,
+    "timestamp": 1792477124.337342,
+    "model_key": "daewoo_matiz"
+  },
+  "saina_1403": {
+    "price_toman": 585000000,
+    "timestamp": 1792477124.7224095,
+    "model_key": "saina"
+  },
+  "tiba_1399": {
+    "price_toman": 415000000,
+    "timestamp": 1792477125.0835178,
+    "model_key": "tiba"
+  },
+  "paykan_pickup_1391": {
+    "price_toman": 230000000,
+    "timestamp": 1792477125.4097238,
+    "model_key": "paykan_pickup"
+  },
+  "tiba_1400": {
+    "price_toman": 445000000,
+    "timestamp": 1792477125.8068154,
+    "model_key": "tiba"
+  },
+  "saina_1400": {
+    "price_toman": 460000000,
+    "timestamp": 1792477126.9190075,
+    "model_key": "saina"
+  },
+  "pride_1383": {
+    "price_toman": 160000000,
+    "timestamp": 1792477127.4948373,
+    "model_key": "pride"
+  },
+  "pride_1382": {
+    "price_toman": 150400000,
+    "timestamp": 1792477128.0708973,
+    "model_key": "pride"
+  },
+  "quick_1399": {
+    "price_toman": 420000000,
+    "timestamp": 1792477128.638095,
+    "model_key": "quick"
+  },
+  "peugeot_pars_1388": {
+    "price_toman": 272600000,
+    "timestamp": 1792477129.1766186,
+    "model_key": "peugeot_pars"
+  },
+  "peugeot_pars_1399": {
+    "price_toman": 680000000,
+    "timestamp": 1792477129.8353925,
+    "model_key": "peugeot_pars"
+  },
+  "samand_1403": {
+    "price_toman": 777600000,
+    "timestamp": 1792477131.7988544,
+    "model_key": "samand"
+  },
+  "pride_1390": {
+    "price_toman": 220000000,
+    "timestamp": 1792477132.4275346,
+    "model_key": "pride"
+  },
+  "samand_1390": {
+    "price_toman": 254200000,
+    "timestamp": 1792477133.0048394,
+    "model_key": "samand"
+  },
+  "peugeot_206_1393": {
+    "price_toman": 342500000,
+    "timestamp": 1792477145.2921736,
+    "model_key": "peugeot_206"
+  },
+  "samand_1405": {
+    "price_toman": 892800000,
+    "timestamp": 1792477145.634994,
+    "model_key": "samand"
+  },
+  "peugeot_pars_1394": {
+    "price_toman": 441800000,
+    "timestamp": 1792477146.3249364,
+    "model_key": "peugeot_pars"
+  },
+  "pride_1379": {
+    "price_toman": 121600000,
+    "timestamp": 1792477146.667562,
+    "model_key": "pride"
+  },
+  "peugeot_pars_1401": {
+    "price_toman": 810000000,
+    "timestamp": 1792477147.007513,
+    "model_key": "peugeot_pars"
+  },
+  "peugeot_pars_1405": {
+    "price_toman": 1103600000,
+    "timestamp": 1792477147.898588,
+    "model_key": "peugeot_pars"
+  },
+  "pride_1387": {
+    "price_toman": 193333333,
+    "timestamp": 1792477148.4645133,
+    "model_key": "pride"
+  },
+  "peugeot_pars_1402": {
+    "price_toman": 890000000,
+    "timestamp": 1792477149.0428164,
+    "model_key": "peugeot_pars"
+  },
+  "peugeot_206_1383": {
+    "price_toman": 168200000,
+    "timestamp": 1792477151.278632,
+    "model_key": "peugeot_206"
+  },
+  "peugeot_pars_1392": {
+    "price_toman": 385400000,
+    "timestamp": 1792477152.4491427,
+    "model_key": "peugeot_pars"
+  },
+  "tiba_1395": {
+    "price_toman": 310000000,
+    "timestamp": 1792477153.1183665,
+    "model_key": "tiba"
+  },
+  "peugeot_pars_1398": {
+    "price_toman": 620000000,
+    "timestamp": 1792477168.8156245,
+    "model_key": "peugeot_pars"
+  },
+  "quick_1402": {
+    "price_toman": 530000000,
+    "timestamp": 1792483257.4157,
+    "model_key": "quick"
+  },
+  "quick_1401": {
+    "price_toman": 485000000,
+    "timestamp": 1792483258.7431428,
+    "model_key": "quick"
+  },
+  "pride_1380": {
+    "price_toman": 131200000,
+    "timestamp": 1792483260.5362687,
+    "model_key": "pride"
+  },
+  "pride_1395": {
+    "price_toman": 280000000,
+    "timestamp": 1792483261.211033,
+    "model_key": "pride"
+  },
+  "samand_1399": {
+    "price_toman": 525000000,
+    "timestamp": 1792483261.8537588,
+    "model_key": "samand"
+  }
+}

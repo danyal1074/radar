@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.github
+*.log
+npm-debug.log*
+.env*.local
+.data/dev-store.json
+python_car_hunter/__pycache__
+python_car_hunter/.env

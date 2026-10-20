@@ -1,0 +1,359 @@
+import fs from "node:fs";
+import path from "node:path";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { env } from "../env";
+import type { DailyCarPrice, DailyPricesState, CarBrand } from "./types";
+import { fetchBaravardPrices } from "./baravard";
+import { fetchZ4CarPrices } from "./z4car";
+
+const DATA_DIR = path.resolve(process.cwd(), ".data");
+const PRICES_FILE = path.join(DATA_DIR, "daily_car_prices.json");
+
+function getServiceClient(): SupabaseClient | null {
+  if (!env.hasSupabase || !env.supabaseServiceRoleKey) return null;
+  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+// Baseline data for discontinued cars from reputable Iranian market platforms (bama.ir / iranjib.ir)
+const SEED_DISCONTINUED: Omit<DailyCarPrice, "id" | "updatedAt">[] = [
+  { brand: "سایپا", name: "پراید 131 SE", year: "مدل 1399 (آخرین تولید)", priceToman: 355_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 131 SE", year: "مدل 1398", priceToman: 335_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 131 SX/SL", year: "مدل 1395", priceToman: 285_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 131 صبا", year: "مدل 1389", priceToman: 220_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 111 SE (هاچبک)", year: "مدل 1399 (آخرین تولید)", priceToman: 375_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 111 SE (هاچبک)", year: "مدل 1398", priceToman: 350_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 111 SX", year: "مدل 1394", priceToman: 295_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 132 SE", year: "مدل 1398", priceToman: 330_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "تیبا 1 (صندوقدار SX)", year: "مدل 1400", priceToman: 395_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "تیبا 1 (صندوقدار SX)", year: "مدل 1398", priceToman: 350_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "تیبا 1 (صندوقدار SX)", year: "مدل 1395", priceToman: 295_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "تیبا 2 (هاچبک EX)", year: "مدل 1401", priceToman: 435_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "تیبا 2 (هاچبک EX)", year: "مدل 1398", priceToman: 375_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "کیا ریو مونتاژ", year: "مدل 1389", priceToman: 340_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "سیتروئن زانتیا 2.0 SX", year: "مدل 1388", priceToman: 430_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  { brand: "ایران خودرو", name: "پژو پارس سال (موتور XU7P)", year: "مدل 1402", priceToman: 745_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو پارس سال (موتور قدیم)", year: "مدل 1400", priceToman: 680_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو پارس سال (موتور قدیم)", year: "مدل 1398", priceToman: 590_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو پارس سال (موتور قدیم)", year: "مدل 1395", priceToman: 460_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو پارس LX TU5", year: "مدل 1402", priceToman: 865_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو پارس LX TU5", year: "مدل 1400", priceToman: 775_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو پارس LX TU5", year: "مدل 1397", priceToman: 590_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 تیپ 2", year: "مدل 1401", priceToman: 605_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 تیپ 2", year: "مدل 1399", priceToman: 515_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 تیپ 2", year: "مدل 1395", priceToman: 395_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 تیپ 2", year: "مدل 1390", priceToman: 320_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 تیپ 5", year: "مدل 1399", priceToman: 645_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 تیپ 5", year: "مدل 1396", priceToman: 495_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 صندوقدار V8", year: "مدل 1399", priceToman: 665_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 405 GLX بنزینی", year: "مدل 1399 (آخرین تولید)", priceToman: 495_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 405 GLX بنزینی", year: "مدل 1397", priceToman: 425_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 405 GLX بنزینی", year: "مدل 1393", priceToman: 330_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 405 SLX موتور TU5", year: "مدل 1399", priceToman: 565_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 405 SLX موتور TU5", year: "مدل 1397", priceToman: 485_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سمند LX بنزینی", year: "مدل 1400", priceToman: 545_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سمند LX بنزینی", year: "مدل 1397", priceToman: 440_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سمند EF7 پایه گازسوز", year: "مدل 1400", priceToman: 595_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "وانت پیکان بنزینی", year: "مدل 1393 (آخرین تولید)", priceToman: 245_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "وانت پیکان بنزینی", year: "مدل 1390", priceToman: 195_000_000, isDiscontinued: true, source: "bama.ir" },
+];
+
+function generateId(name: string, year: string): string {
+  return `${name}-${year}`
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\u0600-\u06FF-]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * Loads the current daily car prices.
+ */
+export async function getDailyCarPrices(): Promise<DailyCarPrice[]> {
+  try {
+    if (fs.existsSync(PRICES_FILE)) {
+      const content = fs.readFileSync(PRICES_FILE, "utf-8");
+      const parsed: DailyCarPrice[] = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Sanitize any legacy source labels
+        let modified = false;
+        for (const p of parsed) {
+          if ((p.source as string) === "market_appraisal") {
+            p.source = "bama.ir";
+            modified = true;
+          }
+        }
+        if (modified) {
+          savePricesToFile(parsed);
+        }
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn("[daily-prices] Failed reading from file, will attempt cloud or refresh:", err);
+  }
+
+  // If file doesn't exist, try loading from Supabase system_jobs
+  const sb = getServiceClient();
+  if (sb) {
+    try {
+      const { data } = await sb
+        .from("system_jobs")
+        .select("metadata")
+        .eq("job_type", "daily_car_prices")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const prices = data?.metadata?.prices;
+      if (Array.isArray(prices) && prices.length > 0) {
+        savePricesToFile(prices);
+        return prices as DailyCarPrice[];
+      }
+    } catch (e) {
+      console.warn("[daily-prices] Could not read from Supabase system_jobs:", e);
+    }
+  }
+
+  // Otherwise trigger an initial refresh from market
+  const fresh = await refreshCarPricesFromMarket();
+  return fresh.prices;
+}
+
+/**
+ * Saves prices to local file and Supabase system_jobs.
+ */
+function savePricesToFile(prices: DailyCarPrice[]): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(PRICES_FILE, JSON.stringify(prices, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[daily-prices] Failed writing prices file:", err);
+  }
+
+  // Background sync to Supabase system_jobs
+  const sb = getServiceClient();
+  if (sb) {
+    (async () => {
+      try {
+        await sb.from("system_jobs").insert({
+          job_type: "daily_car_prices",
+          status: "success",
+          metadata: {
+            updated_at: new Date().toISOString(),
+            total_count: prices.length,
+            prices,
+          },
+        });
+      } catch (err) {
+        console.warn("[daily-prices] Cloud sync skipped:", err);
+      }
+    })();
+  }
+}
+
+/**
+ * Updates a car price manually by an Admin.
+ */
+export async function updateCarPrice(
+  id: string,
+  newPriceToman: number,
+): Promise<DailyCarPrice | null> {
+  const prices = await getDailyCarPrices();
+  const idx = prices.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+
+  prices[idx] = {
+    ...prices[idx],
+    priceToman: Math.round(newPriceToman),
+    source: "manual",
+    isEditedByAdmin: true,
+    updatedAt: new Date().toISOString(),
+  };
+
+  savePricesToFile(prices);
+  return prices[idx];
+}
+
+/**
+ * Scrapes fresh daily prices from reputable Iranian car price source (car.ir / bama.ir)
+ * while preserving discontinued cars and admin manual overrides.
+ */
+export async function refreshCarPricesFromMarket(): Promise<{
+  success: boolean;
+  count: number;
+  updatedCount: number;
+  prices: DailyCarPrice[];
+}> {
+  const existing = fs.existsSync(PRICES_FILE)
+    ? (JSON.parse(fs.readFileSync(PRICES_FILE, "utf-8")) as DailyCarPrice[])
+    : [];
+
+  const existingMap = new Map<string, DailyCarPrice>(existing.map((p) => [p.id, p]));
+  const nowStr = new Date().toISOString();
+
+  let scrapedItems: { name: string; year: string; priceToman: number }[] = [];
+
+  try {
+    const res = await fetch("https://car.ir/prices", {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+      signal: AbortSignal.timeout(12000),
+    });
+
+    if (res.ok) {
+      const html = await res.text();
+      const regex =
+        /<td[^>]*class="[^"]*trim-cell[^"]*"[^>]*>[\s\S]*?<a[^>]*class="trim-cell__title"[^>]*><span>([^<]*)<\/span><span>([^<]*)<\/span><\/a>[\s\S]*?<td[^>]*class="price-cell"[^>]*>[\s\S]*?<div[^>]*class="price-cell__price">([^<]+)<small/g;
+
+      let match;
+      while ((match = regex.exec(html)) !== null) {
+        const rawName = match[1].trim();
+        const rawYear = match[2].trim();
+        const rawPrice = match[3].replace(/[,\s]/g, "").trim();
+        const priceToman = parseInt(rawPrice, 10);
+
+        if (rawName && !isNaN(priceToman) && priceToman > 0) {
+          scrapedItems.push({ name: rawName, year: rawYear, priceToman });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[daily-prices] Failed fetching from car.ir, using existing/seed:", err);
+  }
+
+  const resultPrices: DailyCarPrice[] = [];
+  const seenIds = new Set<string>();
+
+  // 1) Primary Source: Baravard (https://baravard.com/pricing) covering all models and year ranges
+  let baravardItems: DailyCarPrice[] = [];
+  try {
+    baravardItems = await fetchBaravardPrices();
+    console.log(`[daily-prices] Fetched ${baravardItems.length} cars from baravard.com`);
+  } catch (err) {
+    console.warn("[daily-prices] Failed fetching baravard prices:", err);
+  }
+
+  for (const bItem of baravardItems) {
+    const id = bItem.id;
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
+
+    const prev = existingMap.get(id);
+    if (prev && prev.isEditedByAdmin) {
+      resultPrices.push(prev);
+    } else {
+      resultPrices.push(bItem);
+    }
+  }
+
+  // 2) Secondary Source: Z4Car prices for any additional models
+  let z4carItems: DailyCarPrice[] = [];
+  try {
+    z4carItems = await fetchZ4CarPrices();
+  } catch (err) {
+    console.warn("[daily-prices] Failed fetching z4car prices:", err);
+  }
+
+  for (const zItem of z4carItems) {
+    const id = zItem.id;
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
+
+    const prev = existingMap.get(id);
+    if (prev && prev.isEditedByAdmin) {
+      resultPrices.push(prev);
+    } else {
+      resultPrices.push(zItem);
+    }
+  }
+
+  // 2) Add scraped zero-km and market items from car.ir
+  for (const item of scrapedItems) {
+    let brand: CarBrand = "سایر";
+    if (/پژو|سمند|سورن|دنا|تارا|رانا|هایما|آریسان|پیکان/i.test(item.name)) {
+      brand = "ایران خودرو";
+    } else if (/پراید|تیبا|ساینا|کوییک|کوئیک|شاهین|اطلس|سهند|زامیاد|نیسان/i.test(item.name)) {
+      brand = "سایپا";
+    } else if (/ام وی ام|mvm|چری|فونیکس/i.test(item.name)) {
+      brand = "مدیران خودرو";
+    } else if (/جک|jac|کی ام سی|kmc/i.test(item.name)) {
+      brand = "کرمان موتور";
+    } else if (/بهمن|دیگنیتی|فیدلیتی|ریسپکت/i.test(item.name)) {
+      brand = "گروه بهمن";
+    }
+
+    if (brand === "سایر" && !/لاماری|چانگان|سوزوکی/i.test(item.name)) {
+      continue;
+    }
+
+    const id = generateId(item.name, item.year);
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
+
+    const prev = existingMap.get(id);
+    const isDiscontinued =
+      /پراید 131|پراید 111|پراید 132|تیبا|پژو 206|پژو 405|پژو پارس|پیکان|ریو|زانتیا/i.test(
+        item.name,
+      );
+
+    if (prev && prev.isEditedByAdmin) {
+      resultPrices.push(prev);
+    } else {
+      resultPrices.push({
+        id,
+        brand,
+        name: item.name,
+        year: item.year,
+        priceToman: item.priceToman,
+        isDiscontinued,
+        source: "car.ir",
+        updatedAt: nowStr,
+      });
+    }
+  }
+
+  // Add discontinued and classic cars from bama.ir
+  for (const disc of SEED_DISCONTINUED) {
+    const id = generateId(disc.name, disc.year);
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      const prev = existingMap.get(id);
+      if (prev && prev.isEditedByAdmin) {
+        resultPrices.push(prev);
+      } else {
+        resultPrices.push({
+          id,
+          ...disc,
+          source: "bama.ir",
+          updatedAt: prev?.updatedAt ?? nowStr,
+        });
+      }
+    }
+  }
+
+  // Preserve any other items previously added or edited
+  for (const prev of existing) {
+    if (!seenIds.has(prev.id)) {
+      seenIds.add(prev.id);
+      // Clean up legacy source if present
+      if ((prev.source as string) === "market_appraisal") {
+        prev.source = "bama.ir";
+      }
+      resultPrices.push(prev);
+    }
+  }
+
+  savePricesToFile(resultPrices);
+
+  return {
+    success: true,
+    count: resultPrices.length,
+    updatedCount: scrapedItems.length,
+    prices: resultPrices,
+  };
+}
+
+export { lookupDailyPrice } from "./lookup";

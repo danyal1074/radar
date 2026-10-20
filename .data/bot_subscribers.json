@@ -1,0 +1,31 @@
+{
+  "codes": {
+    "100100": "admin",
+    "391452": "97375339-be50-403e-be7b-0aee1b7c2d99",
+    "784521": "d5272512-cced-4a71-84db-c3f0100e8a15",
+    "RADAR-1001": "admin",
+    "RADAR-6817": "d5272512-cced-4a71-84db-c3f0100e8a15",
+    "RADAR-5618": "97375339-be50-403e-be7b-0aee1b7c2d99"
+  },
+  "subscribers": {
+    "admin": {
+      "userId": "admin",
+      "baleChatId": "772511114",
+      "userName": "دانیال حقدادی",
+      "linkedAt": "2026-10-20T09:19:07.552Z"
+    },
+    "d5272512-cced-4a71-84db-c3f0100e8a15": {
+      "userId": "d5272512-cced-4a71-84db-c3f0100e8a15",
+      "userName": "Danial Haghdadi",
+      "linkedAt": "2026-10-20T09:30:25.264Z",
+      "baleChatId": "772511114"
+    },
+    "97375339-be50-403e-be7b-0aee1b7c2d99": {
+      "userId": "97375339-be50-403e-be7b-0aee1b7c2d99",
+      "userName": "شرکت دیجیرال",
+      "linkedAt": "2026-10-20T10:09:10.560Z",
+      "baleChatId": "772511114",
+      "telegramChatId": "7284211847"
+    }
+  }
+}

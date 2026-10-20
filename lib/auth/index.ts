@@ -14,6 +14,7 @@ import type { z } from "zod";
 import type { loginSchema, registerSchema } from "../validation";
 import { hashPassword, verifyPassword } from "./password";
 import { signSession, verifySession } from "./session-token";
+import { sendAdminNewUserAlert } from "../notify";
 
 export const DEV_COOKIE = "cr_session";
 const SESSION_DAYS = 14;
@@ -116,6 +117,16 @@ export async function signUp(input: RegisterInput): Promise<AuthResult> {
       }).eq("id", adminData.user.id);
     }
 
+    // ارسال پیام هشدار ثبت‌نام به بله مدیریت
+    sendAdminNewUserAlert({
+      fullName: input.full_name,
+      businessName: input.business_name,
+      phone: cleanPhone,
+      city: input.city,
+      email: input.email,
+      planName: "تست رایگان ۱۴ روزه",
+    }).catch(() => {});
+
     // لاگین خودکار کاربر جدید تا بلافاصله وارد پنل شود
     const supabase = await createUserClient();
     await supabase.auth.signInWithPassword({
@@ -135,6 +146,17 @@ export async function signUp(input: RegisterInput): Promise<AuthResult> {
     role,
   });
   if (!profile) return { ok: false, error: "این شماره موبایل قبلاً ثبت شده است" };
+  
+  // ارسال پیام هشدار ثبت‌نام به بله مدیریت
+  sendAdminNewUserAlert({
+    fullName: input.full_name,
+    businessName: input.business_name,
+    phone: cleanPhone,
+    city: input.city,
+    email: input.email,
+    planName: "تست رایگان ۱۴ روزه",
+  }).catch(() => {});
+
   await setDevCookie(profile.id);
   return { ok: true };
 }

@@ -157,3 +157,58 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     }
   }
 }
+
+export interface NewUserRegistrationPayload {
+  fullName: string;
+  businessName: string;
+  phone: string;
+  city: string;
+  email?: string | null;
+  planName?: string;
+}
+
+/**
+ * ارسال اعلان آنی ثبت‌نام کاربر جدید به بله مدیریت
+ */
+export async function sendAdminNewUserAlert(user: NewUserRegistrationPayload): Promise<void> {
+  const plan = user.planName || "تست رایگان ۱۴ روزه";
+  const now = new Intl.DateTimeFormat("fa-IR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Asia/Tehran",
+  }).format(new Date());
+
+  const lines = [
+    `🎉 <b>ثبت‌نام کاربر جدید در رادار خودرو!</b>`,
+    ``,
+    `👤 <b>نام کاربر:</b> ${user.fullName}`,
+    `🏢 <b>نام نمایشگاه:</b> ${user.businessName}`,
+    `📍 <b>شهر:</b> ${user.city}`,
+    `📱 <b>شماره تماس:</b> <code>${user.phone}</code>`,
+  ];
+
+  if (user.email) {
+    lines.push(`📧 <b>ایمیل:</b> ${user.email}`);
+  }
+
+  lines.push(`📦 <b>نوع پلن:</b> ${plan}`);
+  lines.push(`⏰ <b>زمان ثبت:</b> ${now}`);
+
+  const text = lines.join("\n");
+  const adminBaleChat = "772511114";
+
+  try {
+    await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: adminBaleChat,
+        text,
+        parse_mode: "HTML",
+      }),
+      signal: AbortSignal.timeout(6000),
+    });
+  } catch (e) {
+    console.error("[notify] failed to send new user alert to Bale:", e);
+  }
+}

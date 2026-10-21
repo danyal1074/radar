@@ -13,11 +13,21 @@ function getServiceClient() {
   });
 }
 
+const DANIAL_ADMIN_UUID = "97375339-be50-403e-be7b-0aee1b7c2d99";
+
 /** یافتن یا ساخت خودکار حساب کاربری برای کاربر پیام‌رسان بله/تلگرام با ۱۴ روز اشتراک رایگان */
 async function resolveOrCreateUserId(chatId: string, messenger: "bale" | "telegram", userName?: string): Promise<string> {
+  // مدیر کل سامانه (دانیال)
+  if (String(chatId) === "772511114") {
+    await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
+    return DANIAL_ADMIN_UUID;
+  }
+
   // ۱. بررسی اشتراک‌های قبلی
   const existingUserId = await getUserIdByChatId(chatId, messenger);
-  if (existingUserId) return existingUserId;
+  if (existingUserId && existingUserId !== "admin") {
+    return existingUserId;
+  }
 
   const sb = getServiceClient();
   if (sb) {

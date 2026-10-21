@@ -160,7 +160,7 @@ export async function getTargetChatsForUser(userId: string): Promise<{
   const telegramChats: string[] = [];
 
   // فقط اگر کاربر مدیر (دانیال) باشد، چت‌های پیش‌فرض مدیر اضافه می‌شوند
-  if (userId === "admin" || userId.includes("danyal")) {
+  if (userId === "admin" || userId === "97375339-be50-403e-be7b-0aee1b7c2d99" || userId.includes("danyal")) {
     if (!baleChats.includes(DEFAULT_ADMIN_BALE_CHAT)) {
       baleChats.push(DEFAULT_ADMIN_BALE_CHAT);
     }

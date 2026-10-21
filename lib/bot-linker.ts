@@ -149,7 +149,7 @@ export async function getUserLinkStatus(userId: string): Promise<{
   };
 }
 
-/** دریافت تمام شناسه‌های چت برای ارسال هشدار */
+/** دریافت تمام شناسه‌های چت برای ارسال هشدار اختصاصی */
 export async function getTargetChatsForUser(userId: string): Promise<{
   baleChats: string[];
   telegramChats: string[];
@@ -159,10 +159,17 @@ export async function getTargetChatsForUser(userId: string): Promise<{
   const baleChats: string[] = [];
   const telegramChats: string[] = [];
 
-  // Always include Danial (admin) in notifications
-  baleChats.push(DEFAULT_ADMIN_BALE_CHAT);
-  telegramChats.push(DEFAULT_ADMIN_TELEGRAM_CHAT);
+  // فقط اگر کاربر مدیر (دانیال) باشد، چت‌های پیش‌فرض مدیر اضافه می‌شوند
+  if (userId === "admin" || userId.includes("danyal")) {
+    if (!baleChats.includes(DEFAULT_ADMIN_BALE_CHAT)) {
+      baleChats.push(DEFAULT_ADMIN_BALE_CHAT);
+    }
+    if (!telegramChats.includes(DEFAULT_ADMIN_TELEGRAM_CHAT)) {
+      telegramChats.push(DEFAULT_ADMIN_TELEGRAM_CHAT);
+    }
+  }
 
+  // برای هر کاربر اختصاصی، پیام فقط به چت متصل به خودش ارسال می‌شود
   if (sub?.baleChatId && !baleChats.includes(sub.baleChatId)) {
     baleChats.push(sub.baleChatId);
   }
@@ -171,4 +178,41 @@ export async function getTargetChatsForUser(userId: string): Promise<{
   }
 
   return { baleChats, telegramChats };
+}
+
+/** یافتن یا اتصال کاربر بر اساس Chat ID پیام‌رسان */
+export async function getUserIdByChatId(
+  chatId: string,
+  messenger: "bale" | "telegram",
+): Promise<string | null> {
+  const store = await readStorage();
+  const cid = String(chatId);
+  for (const [uid, sub] of Object.entries(store.subscribers)) {
+    if (messenger === "bale" && sub.baleChatId === cid) return uid;
+    if (messenger === "telegram" && sub.telegramChatId === cid) return uid;
+  }
+  return null;
+}
+
+/** ثبت مستقیم اتصال با Chat ID */
+export async function registerDirectChat(
+  userId: string,
+  chatId: string,
+  messenger: "bale" | "telegram",
+  userName?: string,
+): Promise<BotSubscriber> {
+  const store = await readStorage();
+  const existing = store.subscribers[userId] || {
+    userId,
+    userName: userName || "کاربر رادار",
+    linkedAt: new Date().toISOString(),
+  };
+
+  if (messenger === "bale") existing.baleChatId = String(chatId);
+  else existing.telegramChatId = String(chatId);
+  if (userName) existing.userName = userName;
+
+  store.subscribers[userId] = existing;
+  await writeStorage(store);
+  return existing;
 }

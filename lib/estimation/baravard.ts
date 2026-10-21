@@ -28,6 +28,7 @@ export class BaravardPriceEstimationProvider implements PriceEstimationProvider 
         input.make,
         `${input.model} ${input.trim ?? ""}`.trim(),
         input.year ?? undefined,
+        input.title ?? undefined,
       );
     } catch (err) {
       console.warn("[baravard-estimator] Failed querying daily prices:", err);

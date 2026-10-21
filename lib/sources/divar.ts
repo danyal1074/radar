@@ -74,6 +74,41 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
 
           const brandObj = car.brand;
           let make = String(typeof brandObj === "object" ? brandObj?.name || "" : brandObj || "").trim();
+          const cleanMakeLower = make.toLowerCase();
+          const brandMap: Record<string, string> = {
+            pride: "پراید",
+            peugeot: "پژو",
+            samand: "سمند",
+            soren: "سورن",
+            dena: "دنا",
+            tara: "تارا",
+            quick: "کوییک",
+            quik: "کوییک",
+            saina: "ساینا",
+            shahin: "شاهین",
+            tiba: "تیبا",
+            rana: "رانا",
+            paykan: "پیکان",
+            zamyad: "زامیاد",
+            nissan: "نیسان",
+            arisan: "آریسان",
+            haima: "هایما",
+            jac: "جک",
+            kmc: "کی ام سی",
+            mvm: "ام وی ام",
+            chery: "چری",
+            fownix: "فونیکس",
+            brilliance: "برلیانس",
+            lifan: "لیفان",
+            renault: "رنو",
+            kia: "کیا",
+            hyundai: "هیوندای",
+            toyota: "تویوتا",
+          };
+          if (brandMap[cleanMakeLower]) {
+            make = brandMap[cleanMakeLower];
+          }
+
           if (!make || make === "light" || make === "سایر") {
             const makes = [
               "پژو", "پراید", "تیبا", "ساینا", "کوییک", "کوئیک", "شاهین", "تارا", "دنا", "رانا", "سمند", "سورن",
@@ -87,7 +122,13 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
               }
             }
           }
-          const model = String(car.model || "").trim() || title;
+
+          // مدل دقیق خودرو: ترجیحاً از نام آگهی و مشخصات اگر شامل تیپ باشد
+          let model = String(car.model || "").trim() || title;
+          if (title && (title.includes("پلاس") || title.includes("دوگانه") || title.includes("TU5") || title.includes("تیپ") || title.includes("اتوماتیک"))) {
+            model = title;
+          }
+
           const color = car.color ? String(car.color) : null;
           const city = car.web_info?.city_persian || defaultCity;
           const imageUrl = car.image ? String(car.image) : null;

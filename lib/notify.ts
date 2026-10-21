@@ -19,6 +19,14 @@ export interface NotificationPayload {
   city: string;
   url?: string | null;
   ruleName?: string | null;
+  year?: number | null;
+  mileageKm?: number | null;
+  color?: string | null;
+  insurance?: string | null;
+  bodyHealth?: string | null;
+  chassisHealth?: string | null;
+  engineHealth?: string | null;
+  gearboxHealth?: string | null;
 }
 
 const BALE_BOT_TOKEN = "1290870269:jrmvQqvF3-ocsh914COgiuUvXUsAxP1ut6U";
@@ -30,50 +38,80 @@ function formatTomanPersian(amount: number): string {
 
 function buildCleanMessageText(p: NotificationPayload): string {
   const isDivar = p.source === "divar";
-  const sourceTitle = isDivar ? "🔴 دیوار تربت‌حیدریه" : "🔵 شیپور تربت‌حیدریه";
+  const sourceTitle = isDivar ? "دیوار تربت‌حیدریه" : "شیپور تربت‌حیدریه";
 
   const lines: string[] = [];
 
-  if (p.ruleName) {
-    lines.push(`🔔 <b>هشدار اختصاصی:</b> «${p.ruleName}»`);
-  }
-  lines.push(`📍 <b>${sourceTitle}</b>\n`);
-  lines.push(`🚗 <b>${p.title}</b>`);
-  lines.push(`💰 قیمت: <b>${formatTomanPersian(p.priceToman)}</b>`);
+  // ۱. فیلتر فعال اختصاصی کاربر (با تأکید بالا برای تشخیص سریع بین چند قانون)
+  const ruleTag = p.ruleName ? `«${p.ruleName}»` : "«هشدار اختصاصی»";
+  lines.push(`🔔 <b>فیلتر فعال شما:</b> 🎯 <code>${ruleTag}</code>`);
+  lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
 
-  if (p.priceDropToman && p.priceDropToman > 0) {
-    lines.push(`📉 <b>کاهش قیمت:</b> فروشنده <b>${formatTomanPersian(p.priceDropToman)}</b> ارزان‌تر کرد!`);
-  }
+  // ۲. عنوان و مدل خودرو (بسیار خوانا و درشت)
+  lines.push(`🚗 <b>خودرو:</b> <code>${p.title}</code>`);
+  lines.push(`💰 <b>قیمت فروشنده:</b> <code>${formatTomanPersian(p.priceToman)}</code>`);
 
+  // ۳. ارزیابی سود و تخفیف بازار
   if (p.estimatedToman && p.estimatedToman > 0) {
-    lines.push(`📊 کارشناسی روز: ${formatTomanPersian(p.estimatedToman)}`);
+    lines.push(`📊 <b>ارزش کارشناسی بازار:</b> <code>${formatTomanPersian(p.estimatedToman)}</code>`);
   }
 
   if (p.discountPercent && p.discountPercent > 0 && p.profitToman && p.profitToman > 0) {
-    lines.push(`🔥 <b>${p.discountPercent}٪ زیر قیمت</b> (سود: ${formatTomanPersian(p.profitToman)})`);
+    lines.push(
+      `🎁 <b>سود تخمینی شکار:</b> <code>🔥 ${formatTomanPersian(p.profitToman)} (${p.discountPercent}٪ زیر قیمت)</code>`,
+    );
+  } else if (p.priceDropToman && p.priceDropToman > 0) {
+    lines.push(`📉 <b>کاهش قیمت:</b> <code>${formatTomanPersian(p.priceDropToman)} ارزان‌تر شد!</code>`);
+  }
+
+  // ۴. مشخصات دقیق استخراج شده (سال، کارکرد، رنگ، وضعیت فنی و بدنه)
+  const specs: string[] = [];
+  if (p.year) specs.push(`مدل <code>${p.year}</code>`);
+  if (p.mileageKm !== undefined && p.mileageKm !== null) {
+    const kmStr = p.mileageKm === 0 ? "صفر کیلومتر" : `${new Intl.NumberFormat("fa-IR").format(p.mileageKm)} km`;
+    specs.push(`کارکرد <code>${kmStr}</code>`);
+  }
+  if (p.color) specs.push(`رنگ <code>${p.color}</code>`);
+  if (p.insurance) specs.push(`بیمه <code>${p.insurance}</code>`);
+
+  if (specs.length > 0) {
+    lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+    lines.push(`📋 <b>مشخصات:</b> ${specs.join("  |  ")}`);
+  }
+
+  // وضعیت ارزیابی سلامت خودرو
+  const healthParts: string[] = [];
+  if (p.bodyHealth) healthParts.push(`بدنه: <code>${p.bodyHealth}</code>`);
+  if (p.chassisHealth) healthParts.push(`شاسی: <code>${p.chassisHealth}</code>`);
+  if (p.engineHealth) healthParts.push(`موتور: <code>${p.engineHealth}</code>`);
+  if (p.gearboxHealth) healthParts.push(`گیربکس: <code>${p.gearboxHealth}</code>`);
+
+  if (healthParts.length > 0) {
+    lines.push(`🩺 <b>وضعیت سلامت:</b> ${healthParts.join("  |  ")}`);
   }
 
   if (p.tags && p.tags.length > 0) {
-    lines.push(`\n✨ <b>مشخصات ویژه:</b> ${p.tags.join(" | ")}`);
+    lines.push(`✨ <b>نکات آگهی:</b> ${p.tags.join(" • ")}`);
   }
+
+  lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+  lines.push(`📍 <b>منبع:</b> ${sourceTitle}  |  ⚡ <b>شناسایی آنی با رادار</b>`);
 
   return lines.join("\n");
 }
 
 function buildReplyMarkup(url?: string | null, source?: string) {
-  if (!url) return undefined;
   const isDivar = source === "divar";
   const buttonText = isDivar ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
 
+  const rows = [];
+  if (url) {
+    rows.push([{ text: buttonText, url: url }]);
+  }
+  rows.push([{ text: "⚙️ مدیریت فیلترهای من در بله", callback_data: "menu_rules" }]);
+
   return {
-    inline_keyboard: [
-      [
-        {
-          text: buttonText,
-          url: url,
-        },
-      ],
-    ],
+    inline_keyboard: rows,
   };
 }
 
@@ -99,6 +137,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
             caption: text,
             parse_mode: "HTML",
             reply_markup: replyMarkup,
+            disable_notification: false,
           }),
           signal: AbortSignal.timeout(6000),
         });
@@ -114,6 +153,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
           text,
           parse_mode: "HTML",
           reply_markup: replyMarkup,
+          disable_notification: false,
         }),
         signal: AbortSignal.timeout(6000),
       });

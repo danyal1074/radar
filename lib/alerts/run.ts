@@ -73,6 +73,7 @@ export async function evaluateAndNotify(
         summary.notificationsCreated++;
         const analysis = analyzeListingContent(listing.title, listing.description || "");
         // Dispatch instant alert to Bale and Telegram
+        const raw = ((listing as unknown as Record<string, unknown>).raw_payload as Record<string, unknown>) || {};
         sendLiveAlert({
           userId: hit.userId,
           title: listing.title,
@@ -86,6 +87,14 @@ export async function evaluateAndNotify(
           imageUrl: listing.image_url,
           tags: analysis.tags,
           ruleName: rule?.name ?? "هشدار سفارشی شما",
+          year: listing.year,
+          mileageKm: listing.mileage_km,
+          color: listing.color,
+          insurance: typeof raw.insurance === "string" ? raw.insurance : null,
+          bodyHealth: typeof raw.bodyHealth === "string" ? raw.bodyHealth : null,
+          chassisHealth: typeof raw.chassisHealth === "string" ? raw.chassisHealth : null,
+          engineHealth: typeof raw.engineHealth === "string" ? raw.engineHealth : null,
+          gearboxHealth: typeof raw.gearboxHealth === "string" ? raw.gearboxHealth : null,
         }).catch(() => {});
       } else {
         summary.duplicatesSkipped++;

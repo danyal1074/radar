@@ -9,6 +9,8 @@ export interface EstimateInput {
   mileage_km: number | null;
   city: string | null;
   color: string | null;
+  title?: string | null;
+  description?: string | null;
 }
 
 export type EstimateResult =
@@ -39,6 +41,8 @@ export function toEstimateInput(l: Listing): EstimateInput {
     mileage_km: l.mileage_km,
     city: l.city,
     color: l.color,
+    title: l.title,
+    description: l.description,
   };
 }
 

@@ -33,6 +33,8 @@ const BALE_BOT_TOKEN = "1290870269:jrmvQqvF3-ocsh914COgiuUvXUsAxP1ut6U";
 const TELEGRAM_BOT_TOKEN = "8961215144:AAEj2tkW0B9Sxee9uusvle6_NwCI-_aD2r0";
 const RUBIKA_BOT_TOKEN = "CHEGEH0TZCBGQPEUYBYTMXRUTGTADRUVGKPXXNUBFHXIUOYELMOJCOHLHOZOMZJJ";
 const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
+const EITAA_BOT_TOKEN = "bot327777:f2d967b9-4d8c-480a-8fcd-16c1dbb59611";
+const EITAA_BROADCAST_CHANNEL = "radarcarr";
 
 function formatTomanPersian(amount: number): string {
   return new Intl.NumberFormat("fa-IR").format(amount) + " تومان";
@@ -215,6 +217,27 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
         body: JSON.stringify({
           chat_id: chatId,
           text: rubikaMsg,
+        }),
+        signal: AbortSignal.timeout(6000),
+      });
+    } catch {
+      // ادامه بدون توقف
+    }
+  }
+
+  // ۴. ارسال به کانال رسمی ایتا (رادار شکار خودرو)
+  if ((payload.profitToman && payload.profitToman > 0) || (payload.discountPercent && payload.discountPercent >= 5)) {
+    try {
+      const eitaaMsg = payload.url
+        ? `${cleanRubikaText}\n\n🔗 مشاهده آگهی: ${payload.url}\n📢 کانال رسمی رادار: @${EITAA_BROADCAST_CHANNEL}`
+        : `${cleanRubikaText}\n📢 کانال رسمی رادار: @${EITAA_BROADCAST_CHANNEL}`;
+
+      await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          chat_id: EITAA_BROADCAST_CHANNEL,
+          text: eitaaMsg,
         }),
         signal: AbortSignal.timeout(6000),
       });

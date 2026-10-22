@@ -113,6 +113,15 @@ export function BotLinkCard({
               <Send className="size-3.5" />
               ربات تلگرام
             </a>
+            <a
+              href={`https://eitaa.com/radarcarr`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition"
+            >
+              <MessageSquare className="size-3.5" />
+              کانال رسمی ایتا (@radarcarr)
+            </a>
           </div>
         </div>
       </div>

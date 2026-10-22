@@ -1,11 +1,12 @@
 import type { EstimateInput, EstimateResult, PriceEstimationProvider } from "./provider";
 import { getDailyCarPrices } from "../daily-prices/service";
 import { lookupDailyPrice } from "../daily-prices/lookup";
+import { fetchLiveDivarClusterEstimate } from "../daily-prices/divar-market";
 import { BenchmarkPriceEstimationProvider } from "./benchmark";
 
 /**
- * Baravard Price Estimation Provider:
- * Uses the live database of 3,900+ cars extracted directly from baravard.com
+ * Baravard & Divar Market Price Estimation Provider:
+ * Uses live Divar market clusters + Baravard price database
  * with mileage adjustment and fallback to benchmark matrix.
  */
 export class BaravardPriceEstimationProvider implements PriceEstimationProvider {
@@ -20,10 +21,29 @@ export class BaravardPriceEstimationProvider implements PriceEstimationProvider 
   async estimate(input: EstimateInput): Promise<EstimateResult> {
     const year = input.year ?? 1398;
     let basePrice: number | null = null;
+    let estimationSource = "baravard.com";
 
+    // ۱. بررسی میانگین قیمت‌های واقعی موجود در دیوار برای این مدل و سال
+    try {
+      const divarMarket = await fetchLiveDivarClusterEstimate({
+        make: input.make,
+        model: input.model,
+        title: input.title,
+        year: input.year,
+      });
+
+      if (divarMarket && divarMarket.sampleCount >= 2 && divarMarket.medianToman > 0) {
+        basePrice = divarMarket.medianToman;
+        estimationSource = `divar_market (${divarMarket.sampleCount} آگهی هم‌مدل دیوار)`;
+      }
+    } catch {
+      // Continue to daily benchmark prices
+    }
+
+    // ۲. استعلام از پایگاه قیمت‌های روز خودرو (Baravard & Seed Benchmarks)
     try {
       const dailyPrices = await getDailyCarPrices();
-      basePrice = lookupDailyPrice(
+      const benchmarkPrice = lookupDailyPrice(
         dailyPrices,
         input.make,
         `${input.model} ${input.trim ?? ""}`.trim(),
@@ -32,6 +52,16 @@ export class BaravardPriceEstimationProvider implements PriceEstimationProvider 
         input.body_status ?? undefined,
         input.chassis_status ?? undefined,
       );
+
+      if (benchmarkPrice && benchmarkPrice > 0) {
+        if (basePrice && basePrice > 0) {
+          // ترکیب متوازن میانگین بازار دیوار و نرخ روز رسمی
+          basePrice = Math.round(basePrice * 0.65 + benchmarkPrice * 0.35);
+          estimationSource = "ترکیب دیوار و برآورد بازار";
+        } else {
+          basePrice = benchmarkPrice;
+        }
+      }
     } catch (err) {
       console.warn("[baravard-estimator] Failed querying daily prices:", err);
     }
@@ -56,7 +86,7 @@ export class BaravardPriceEstimationProvider implements PriceEstimationProvider 
       confidence: 0.95,
       responseId: `baravard-${Date.now()}`,
       raw: {
-        source: "baravard.com",
+        source: estimationSource,
         make: input.make,
         model: input.model,
         year,

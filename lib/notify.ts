@@ -1,4 +1,5 @@
 import { getTargetChatsForUser } from "./bot-linker";
+import { generateCarAdCard } from "./card-generator";
 
 /**
  * ماژول ارسال پیام‌های هشدار و فرصت‌های خرید به ربات بله و تلگرام
@@ -142,7 +143,30 @@ function buildReplyMarkup(url?: string | null, source?: string) {
 export async function sendLiveAlert(payload: NotificationPayload): Promise<void> {
   const text = buildCleanMessageText(payload);
   const replyMarkup = buildReplyMarkup(payload.url, payload.source);
-  const imageUrl = payload.imageUrl?.startsWith("http") ? payload.imageUrl : null;
+
+  // تولید تصویر کارت گرافیکی اختصاصی (مشابه نمونه شکار خودرو)
+  let cardPngBuffer: Buffer | null = null;
+  try {
+    cardPngBuffer = await generateCarAdCard({
+      title: payload.title,
+      year: payload.year,
+      mileageKm: payload.mileageKm,
+      color: payload.color,
+      sellerPriceToman: payload.priceToman,
+      marketPriceToman: payload.estimatedToman,
+      profitToman: payload.profitToman,
+      discountPercent: payload.discountPercent,
+      city: payload.city,
+      sourceName: payload.source === "sheypoor" ? "شیپور" : "دیوار",
+      imageUrl: payload.imageUrl,
+      isUrgent:
+        payload.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
+        payload.title.includes("فوری") ||
+        payload.title.includes("پول لازم"),
+    });
+  } catch (err) {
+    console.warn("[notify] Failed generating car ad card:", err);
+  }
 
   // دریافت چت‌های متصل به این کاربر
   const { baleChats, telegramChats, rubikaChats } = await getTargetChatsForUser(payload.userId || "admin");
@@ -150,20 +174,17 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
   // ۱. ارسال به پیام‌رسان بله
   for (const chatId of baleChats) {
     try {
-      if (imageUrl) {
-        // تلاش برای ارسال با تصویر
+      if (cardPngBuffer) {
+        const baleForm = new FormData();
+        baleForm.append("chat_id", chatId);
+        baleForm.append("photo", new Blob([new Uint8Array(cardPngBuffer)], { type: "image/png" }), "car_card.png");
+        baleForm.append("caption", text);
+        baleForm.append("reply_markup", JSON.stringify(replyMarkup));
+
         const photoRes = await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendPhoto`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            photo: imageUrl,
-            caption: text,
-            parse_mode: "HTML",
-            reply_markup: replyMarkup,
-            disable_notification: false,
-          }),
-          signal: AbortSignal.timeout(6000),
+          body: baleForm,
+          signal: AbortSignal.timeout(8000),
         });
         if (photoRes.ok) continue;
       }
@@ -189,18 +210,18 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
   // ۲. ارسال به تلگرام
   for (const chatId of telegramChats) {
     try {
-      if (imageUrl) {
+      if (cardPngBuffer) {
+        const tgForm = new FormData();
+        tgForm.append("chat_id", chatId);
+        tgForm.append("photo", new Blob([new Uint8Array(cardPngBuffer)], { type: "image/png" }), "car_card.png");
+        tgForm.append("caption", text);
+        tgForm.append("parse_mode", "HTML");
+        tgForm.append("reply_markup", JSON.stringify(replyMarkup));
+
         const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            photo: imageUrl,
-            caption: text,
-            parse_mode: "HTML",
-            reply_markup: replyMarkup,
-          }),
-          signal: AbortSignal.timeout(5000),
+          body: tgForm,
+          signal: AbortSignal.timeout(8000),
         });
         if (photoRes.ok) continue;
       }
@@ -221,37 +242,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     }
   }
 
-  // ۳. ارسال به پیام‌رسان روبیکا (فعلاً به درخواست کاربر غیرفعال شد)
-  /*
-  const cleanRubikaText = text.replace(/<[^>]+>/g, "");
-  const rubikaButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
-  const rubikaMarkup = payload.url
-    ? {
-        inline_keyboard: [
-          [{ text: rubikaButtonText, url: payload.url }],
-        ],
-      }
-    : undefined;
-
-  for (const chatId of rubikaChats) {
-    try {
-      await fetch(`https://botapi.rubika.ir/v3/${RUBIKA_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: cleanRubikaText,
-          reply_markup: rubikaMarkup,
-        }),
-        signal: AbortSignal.timeout(6000),
-      });
-    } catch {
-      // ادامه بدون توقف
-    }
-  }
-  */
-
-  // ۴. ارسال به کانال رسمی ایتا (فقط موارد فروش فوری، پول‌لازم و کاهش قیمت خوب با تصویر)
+  // ۳. ارسال به کانال رسمی ایتا (موارد فرصت خرید، فروش فوری، پول‌لازم و کاهش قیمت خوب با تصویر کارت اختصاصی)
   const cleanBroadcastText = text.replace(/<[^>]+>/g, "");
   const broadcastButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
 
@@ -261,7 +252,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     payload.title.includes("پول لازم");
   const isGoodDrop =
     Boolean(payload.priceDropToman && payload.priceDropToman > 0) ||
-    Boolean(payload.discountPercent && payload.discountPercent >= 7);
+    Boolean(payload.discountPercent && payload.discountPercent >= 5);
 
   if (isUrgent || isGoodDrop) {
     const eitaaCaption = payload.url
@@ -270,39 +261,34 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
 
     let sentWithPhoto = false;
 
-    // تلاش برای ارسال با تصویر آگهی به ایتا
-    if (imageUrl) {
+    // ارسال تصویر کارت گرافیکی اختصاصی به ایتا
+    if (cardPngBuffer) {
       try {
-        const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(5000) });
-        if (imgRes.ok) {
-          const arrayBuffer = await imgRes.arrayBuffer();
-          const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
-          const formData = new FormData();
-          formData.append("chat_id", EITAA_BROADCAST_CHANNEL);
-          formData.append("file", blob, "car.jpg");
-          formData.append("caption", eitaaCaption);
-          if (payload.url) {
-            formData.append(
-              "reply_markup",
-              JSON.stringify({
-                inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
-              }),
-            );
-          }
-
-          const photoRes = await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendFile`, {
-            method: "POST",
-            body: formData,
-            signal: AbortSignal.timeout(12000),
-          });
-          if (photoRes.ok) sentWithPhoto = true;
+        const formData = new FormData();
+        formData.append("chat_id", EITAA_BROADCAST_CHANNEL);
+        formData.append("file", new Blob([new Uint8Array(cardPngBuffer)], { type: "image/png" }), "car_card.png");
+        formData.append("caption", eitaaCaption);
+        if (payload.url) {
+          formData.append(
+            "reply_markup",
+            JSON.stringify({
+              inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
+            }),
+          );
         }
+
+        const photoRes = await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendFile`, {
+          method: "POST",
+          body: formData,
+          signal: AbortSignal.timeout(15000),
+        });
+        if (photoRes.ok) sentWithPhoto = true;
       } catch {
         sentWithPhoto = false;
       }
     }
 
-    // ارسال متنی استاندارد در صورت عدم وجود عکس یا خطا
+    // ارسال متنی استاندارد در صورت بروز هرگونه خطا
     if (!sentWithPhoto) {
       try {
         const bodyParams = new URLSearchParams({

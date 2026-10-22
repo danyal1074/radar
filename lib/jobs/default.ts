@@ -10,18 +10,12 @@ import type { ListingSourceProvider } from "../sources/provider";
 import { runPipeline } from "./pipeline";
 
 export function activeSources(): ListingSourceProvider[] {
-  // پایش لحظه‌ای و همزمان دیوار و شیپور در شهرهای مهم و پرجمعیت استان خراسان رضوی
-  const keyCities = [
-    "mashhad",
-    "torbat-heydariyeh",
-    "neyshabur",
-    "sabzevar",
-    "kashmar",
-    "quchan",
-    "golbahar",
-  ];
+  // پایش لحظه‌ای و همزمان دیوار و شیپور در شهرهای مهم خراسان رضوی
   return [
-    ...keyCities.map((c) => new DivarListingSourceProvider(c)),
+    new DivarListingSourceProvider("mashhad"),
+    new DivarListingSourceProvider("torbat-heydariyeh"),
+    new DivarListingSourceProvider("neyshabur"),
+    new DivarListingSourceProvider("sabzevar"),
     new SheypoorListingSourceProvider("mashhad"),
     new SheypoorListingSourceProvider("torbat-heydariyeh"),
   ];

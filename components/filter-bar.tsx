@@ -1,3 +1,5 @@
+"use client";
+
 import { BellPlus, RotateCcw, Search, Sparkles, Wrench } from "lucide-react";
 import Link from "next/link";
 import { KHORASAN_RAZAVI_CITIES, POPULAR_CITIES } from "@/lib/cities";

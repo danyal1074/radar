@@ -39,7 +39,7 @@ async function fetchDivarPostDetails(token: string): Promise<DivarPostDetails | 
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       },
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(2000),
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -167,9 +167,10 @@ function detectMake(text: string): string {
 
 export class DivarListingSourceProvider implements ListingSourceProvider {
   get id(): string {
-    return `divar-${this.defaultCity}`;
+    return this.defaultCity === "torbat-heydariyeh" ? "divar" : `divar-${this.defaultCity}`;
   }
   get displayName(): string {
+    if (this.defaultCity === "torbat-heydariyeh") return "دیوار تربت‌حیدریه";
     const cityName = getCityBySlug(this.defaultCity)?.nameFa || normalizeCityNameFa(this.defaultCity);
     return `دیوار ${cityName}`;
   }
@@ -222,8 +223,21 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
       }
     }
 
-    // Process top 12 newest cars with details extraction
-    for (const car of rawCars.slice(0, 15)) {
+    // Process top 10 newest cars with parallel details extraction
+    const carsToProcess = rawCars.slice(0, 10);
+    const detailsList = await Promise.all(
+      carsToProcess.map(async (car) => {
+        const sourceUrl = car.url || null;
+        const tokenMatch = sourceUrl?.match(/\/([a-zA-Z0-9_-]+)(?:\/)?$/);
+        const token = tokenMatch ? tokenMatch[1] : null;
+        if (!token) return null;
+        return fetchDivarPostDetails(token);
+      }),
+    );
+
+    for (let i = 0; i < carsToProcess.length; i++) {
+      const car = carsToProcess[i];
+      const details = detailsList[i];
       try {
         const title = String(car.name || car.web_info?.title || "").trim();
         const sourceUrl = car.url || null;
@@ -237,12 +251,6 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
         const priceToman = Math.floor(priceRial / 10);
         if (priceToman < 10_000_000) {
           continue;
-        }
-
-        // Fetch detailed post data from Divar API
-        let details: DivarPostDetails | null = null;
-        if (token) {
-          details = await fetchDivarPostDetails(token);
         }
 
         // اولویت ۱: مشخصات رسمی جدول دیوار

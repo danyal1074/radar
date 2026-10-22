@@ -20,9 +20,9 @@ export function BotLinkCard({
             <Bot className="size-5" />
           </div>
           <div>
-            <h3 className="font-bold text-ink">اتصال ربات پیام‌رسان‌ها (بله، روبیکا، تلگرام)</h3>
+            <h3 className="font-bold text-ink">اتصال به ربات بله، تلگرام و کانال ایتا</h3>
             <p className="text-xs text-muted">
-              هشدارهای سفارشی و فرصت‌های خرید لحظه‌ای به ربات پیام‌رسان شما ارسال می‌شود
+              هشدارهای سفارشی و فرصت‌های خرید لحظه‌ای به پیام‌رسان شما ارسال می‌شود
             </p>
           </div>
         </div>
@@ -31,10 +31,6 @@ export function BotLinkCard({
           <Badge tone={isBaleLinked ? "good" : "neutral"} className="gap-1">
             {isBaleLinked ? <CheckCircle2 className="size-3" /> : null}
             بله: {isBaleLinked ? "متصل" : "غیرمتصل"}
-          </Badge>
-          <Badge tone={isRubikaLinked ? "good" : "neutral"} className="gap-1">
-            {isRubikaLinked ? <CheckCircle2 className="size-3" /> : null}
-            روبیکا: {isRubikaLinked ? "متصل" : "غیرمتصل"}
           </Badge>
           <Badge tone={isTelegramLinked ? "good" : "neutral"} className="gap-1">
             {isTelegramLinked ? <CheckCircle2 className="size-3" /> : null}
@@ -59,7 +55,7 @@ export function BotLinkCard({
               ۱
             </span>
             <p>
-              وارد ربات در <strong>بله</strong> (<code className="font-mono text-brand-700">@radarcar_bot</code>)، <strong>روبیکا</strong> (<code className="font-mono text-brand-700">@radarcarbot</code>) یا <strong>تلگرام</strong> شوید.
+              وارد ربات در <strong>بله</strong> (<code className="font-mono text-brand-700">@radarcar_bot</code>) یا <strong>تلگرام</strong> شوید.
             </p>
           </div>
           <div className="flex items-start gap-2">
@@ -94,15 +90,6 @@ export function BotLinkCard({
             >
               <MessageSquare className="size-3.5" />
               ربات بله (@radarcar_bot)
-            </a>
-            <a
-              href={`https://rubika.ir/radarcarbot`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-700 transition"
-            >
-              <Bot className="size-3.5" />
-              ربات روبیکا (@radarcarbot)
             </a>
             <a
               href={`https://t.me/radarcar_bot?start=${code}`}

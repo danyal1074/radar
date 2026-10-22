@@ -221,7 +221,8 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     }
   }
 
-  // ۳. ارسال به پیام‌رسان روبیکا (همراه با دکمه شیشه‌ای مشاهده آگهی)
+  // ۳. ارسال به پیام‌رسان روبیکا (فعلاً به درخواست کاربر غیرفعال شد)
+  /*
   const cleanRubikaText = text.replace(/<[^>]+>/g, "");
   const rubikaButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
   const rubikaMarkup = payload.url
@@ -248,6 +249,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
       // ادامه بدون توقف
     }
   }
+  */
 
   // ۴. ارسال به کانال رسمی ایتا (فقط موارد فروش فوری، پول‌لازم و کاهش قیمت خوب با تصویر)
   const isUrgent =
@@ -380,7 +382,8 @@ export async function sendAdminNewUserAlert(user: NewUserRegistrationPayload): P
     console.error("[notify] failed to send new user alert to Bale:", e);
   }
 
-  // ارسال به روبیکای مدیریت
+  // ارسال به روبیکای مدیریت (فعلاً غیرفعال)
+  /*
   try {
     const plainText = text.replace(/<[^>]+>/g, "");
     await fetch(`https://botapi.rubika.ir/v3/${RUBIKA_BOT_TOKEN}/sendMessage`, {
@@ -395,4 +398,5 @@ export async function sendAdminNewUserAlert(user: NewUserRegistrationPayload): P
   } catch (e) {
     console.error("[notify] failed to send new user alert to Rubika:", e);
   }
+  */
 }

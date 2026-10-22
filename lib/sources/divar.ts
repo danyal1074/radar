@@ -175,11 +175,15 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
     return `دیوار ${cityName}`;
   }
 
-  constructor(private readonly defaultCity: string = "mashhad") {}
+  private readonly defaultCity: string;
+
+  constructor(defaultCity: string = "mashhad") {
+    this.defaultCity = defaultCity;
+  }
 
   async fetchLatest(citySlug?: string, query?: string): Promise<FetchResult> {
     const city = citySlug || this.defaultCity;
-    let url = `https://divar.ir/s/${city}/auto`;
+    let url = `https://divar.ir/s/${city}/car`;
     if (query) {
       url += `?q=${encodeURIComponent(query)}`;
     }

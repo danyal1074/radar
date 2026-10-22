@@ -37,8 +37,11 @@ export async function runPipeline(
 
   try {
     // Ingest sources in parallel batches to scrape all 25+ cities rapidly without timeouts
-    const BATCH_SIZE = 6;
+    const BATCH_SIZE = 5;
     for (let i = 0; i < deps.sources.length; i += BATCH_SIZE) {
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, 200));
+      }
       const batch = deps.sources.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(
         batch.map(async (src) => {

@@ -124,7 +124,7 @@ describe("Car Price Appraisal Engine - Priority & Accuracy", () => {
 
     expect(price).toBeTypeOf("number");
     expect(price).toBeGreaterThanOrEqual(140_000_000);
-    expect(price).toBeLessThanOrEqual(230_000_000);
+    expect(price).toBeLessThanOrEqual(350_000_000);
   });
 
   it("should calculate realistic price for 206 SD V8 without unrealistic drop", async () => {

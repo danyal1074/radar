@@ -141,29 +141,17 @@ export async function fetchBaravardPrices(): Promise<DailyCarPrice[]> {
     return [];
   }
 
-  // Extract all brands
-  const jsonLds = [
-    ...mainHtml.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi),
+  // Extract all brand slugs from HTML links
+  const brandSlugs = [
+    ...new Set(
+      [...mainHtml.matchAll(/href=["'](\/pricing\/[a-zA-Z0-9_-]+)["']/g)]
+        .map((m) => m[1])
+        .filter((s) => s !== "/pricing" && !s.includes("faq") && !s.includes("terms"))
+    ),
   ];
-  let brands: { name: string; url: string }[] = [];
-  for (const m of jsonLds) {
-    if (m[1].includes("لیست قیمت برندهای خودرو") || m[1].includes("ItemList")) {
-      try {
-        const data = JSON.parse(m[1]);
-        if (data.itemListElement && data.itemListElement.length > 0) {
-          brands = data.itemListElement.map((x: any) => ({
-            name: x.item?.name,
-            url: x.item?.url,
-          }));
-        }
-      } catch {
-        // ignore parse errors
-      }
-    }
-  }
 
-  if (brands.length === 0) {
-    console.warn("[baravard] No brands found in JSON-LD");
+  if (brandSlugs.length === 0) {
+    console.warn("[baravard] No brand links found on pricing page");
     return [];
   }
 
@@ -171,18 +159,19 @@ export async function fetchBaravardPrices(): Promise<DailyCarPrice[]> {
   const seenIds = new Set<string>();
   const nowStr = new Date().toISOString();
 
-  // Process brands in chunks of 6 concurrent requests
-  const concurrency = 6;
-  for (let i = 0; i < brands.length; i += concurrency) {
-    const chunk = brands.slice(i, i + concurrency);
+  // Process brands in chunks of 8 concurrent requests
+  const concurrency = 8;
+  for (let i = 0; i < brandSlugs.length; i += concurrency) {
+    const chunk = brandSlugs.slice(i, i + concurrency);
 
     await Promise.all(
-      chunk.map(async (brand) => {
+      chunk.map(async (slug) => {
         try {
-          const brandHtml = await fetchWithRetry(brand.url);
+          const brandHtml = await fetchWithRetry(`https://baravard.com${slug}`);
           if (!brandHtml) return;
 
-          const brandCategory = mapBrandNameToCategory(brand.name);
+          const brandRaw = slug.replace("/pricing/", "");
+          const brandCategory = mapBrandNameToCategory(brandRaw);
 
           // Extract title matches
           const titleMatches = [
@@ -267,7 +256,7 @@ export async function fetchBaravardPrices(): Promise<DailyCarPrice[]> {
             }
           }
         } catch (err: any) {
-          console.warn(`[baravard] Error fetching ${brand.name}:`, err.message);
+          console.warn(`[baravard] Error fetching ${slug}:`, err.message);
         }
       }),
     );

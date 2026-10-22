@@ -187,8 +187,8 @@ export function lookupDailyPrice(
   for (const p of prices) {
     const pNorm = normalizeCarText(`${p.name} ${p.year}`);
 
-    // جلوگیری از نسبت دادن خودروهای لوکس و وارداتی چندمیلیاردی به خودروهای داخلی یا کارکرده
-    if (p.priceToman > 2_500_000_000 && !/cx|ez|لندکروز|پرادو|بی\s*ام\s*و|بنز|پورشه|فونیکس\s*fx|تیگو\s*8|اسپورتیج|سانتافه|کمری|سوناتا/.test(fullText)) {
+    // جلوگیری از نسبت دادن خودروهای فوق لوکس چند ده میلیاردی به خودروهای داخلی یا کارکرده
+    if (p.priceToman > 6_000_000_000 && !/cx|ez|لندکروز|پرادو|بی\s*ام\s*و|بنز|پورشه|فونیکس\s*fx|تیگو\s*8|اسپورتیج|سانتافه|کمری|سوناتا/.test(fullText)) {
       continue;
     }
 
@@ -471,13 +471,13 @@ export function lookupDailyPrice(
   }
 
   // ۲. تضمین کف قیمت واقعی بازار بر اساس اتاق خودرو
-  let floor = 130_000_000;
-  if (isPride) floor = 160_000_000;
-  else if (is206 || is405 || isSamand || isTiba) floor = 220_000_000;
-  else if (isPars || isTondar || isSandero || isMazdaPickup) floor = 320_000_000;
-  else if (isDena || isTara) floor = 500_000_000;
-  else if (isX22 || isX33 || isJac || isChery || isBrilliance) floor = 350_000_000;
-  else if (isCamry || isSportage || isSantafe || isSonata) floor = 900_000_000;
+  let floor = 300_000_000;
+  if (isPride) floor = 350_000_000;
+  else if (is206 || is405 || isSamand || isTiba) floor = 500_000_000;
+  else if (isPars || isTondar || isSandero || isMazdaPickup) floor = 750_000_000;
+  else if (isDena || isTara) floor = 1_500_000_000;
+  else if (isX22 || isX33 || isJac || isChery || isBrilliance) floor = 1_200_000_000;
+  else if (isCamry || isSportage || isSantafe || isSonata) floor = 2_200_000_000;
 
   if (finalPrice < floor) {
     finalPrice = floor;

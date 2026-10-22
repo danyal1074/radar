@@ -1,13 +1,13 @@
 import type { EstimateInput, EstimateResult, PriceEstimationProvider } from "./provider";
 import { getDailyCarPrices } from "../daily-prices/service";
 import { lookupDailyPrice } from "../daily-prices/lookup";
-import { fetchLiveDivarClusterEstimate } from "../daily-prices/divar-market";
 import { BenchmarkPriceEstimationProvider } from "./benchmark";
 
 /**
- * Baravard & Divar Market Price Estimation Provider:
- * Uses live Divar market clusters + Baravard price database
- * with mileage adjustment and fallback to benchmark matrix.
+ * Baravard & Internal System Price Estimation Provider:
+ * طبق دستور صریح کاربر: منابع قیمت فقط برآورد رسمی (baravard.com) و لیست داخل سامانه هستند.
+ * در صورت اختلاف قیمت فاحش بین دو منبع، منبعی که قیمت خیلی پایینی دارد به عنوان نرخ منسوخ/معیوب
+ * تشخیص داده شده و رد می‌شود تا نرخ واقعی روز اعمال گردد.
  */
 export class BaravardPriceEstimationProvider implements PriceEstimationProvider {
   readonly id = "baravard";
@@ -23,27 +23,13 @@ export class BaravardPriceEstimationProvider implements PriceEstimationProvider 
     let basePrice: number | null = null;
     let estimationSource = "baravard.com";
 
-    // ۱. بررسی میانگین قیمت‌های واقعی موجود در دیوار برای این مدل و سال
-    try {
-      const divarMarket = await fetchLiveDivarClusterEstimate({
-        make: input.make,
-        model: input.model,
-        title: input.title,
-        year: input.year,
-      });
+    let baravardSystemPrice: number | null = null;
+    let fallbackMatrixPrice: number | null = null;
 
-      if (divarMarket && divarMarket.sampleCount >= 2 && divarMarket.medianToman > 0) {
-        basePrice = divarMarket.medianToman;
-        estimationSource = `divar_market (${divarMarket.sampleCount} آگهی هم‌مدل دیوار)`;
-      }
-    } catch {
-      // Continue to daily benchmark prices
-    }
-
-    // ۲. استعلام از پایگاه قیمت‌های روز خودرو (Baravard & Seed Benchmarks)
+    // ۱. استعلام از پایگاه مرجع قیمت‌های برآورد رسمی و سامانه
     try {
       const dailyPrices = await getDailyCarPrices();
-      const benchmarkPrice = lookupDailyPrice(
+      baravardSystemPrice = lookupDailyPrice(
         dailyPrices,
         input.make,
         `${input.model} ${input.trim ?? ""}`.trim(),
@@ -52,22 +38,44 @@ export class BaravardPriceEstimationProvider implements PriceEstimationProvider 
         input.body_status ?? undefined,
         input.chassis_status ?? undefined,
       );
-
-      if (benchmarkPrice && benchmarkPrice > 0) {
-        if (basePrice && basePrice > 0) {
-          // ترکیب متوازن میانگین بازار دیوار و نرخ روز رسمی
-          basePrice = Math.round(basePrice * 0.65 + benchmarkPrice * 0.35);
-          estimationSource = "ترکیب دیوار و برآورد بازار";
-        } else {
-          basePrice = benchmarkPrice;
-        }
-      }
     } catch (err) {
       console.warn("[baravard-estimator] Failed querying daily prices:", err);
     }
 
+    // ۲. استعلام از ماتریس ثانویه سامانه برای اعتبارسنجی
+    try {
+      const fbRes = await this.fallback.estimate(input);
+      if (fbRes.ok && fbRes.priceToman && fbRes.priceToman > 0) {
+        fallbackMatrixPrice = fbRes.priceToman;
+      }
+    } catch {
+      // ignore
+    }
+
+    // ۳. مقایسه و تشخیص هوشمند منبع مشکل‌دار بر اساس دستور کاربر:
+    // «وقتی هم که اختلاف قیمت دوتا منبع خیلی زیاده بدون اون منبعی که خیلی قیمتش پایین مشکل داره اینو تشخیص بده»
+    if (baravardSystemPrice && fallbackMatrixPrice) {
+      const maxPrice = Math.max(baravardSystemPrice, fallbackMatrixPrice);
+      const minPrice = Math.min(baravardSystemPrice, fallbackMatrixPrice);
+
+      if (minPrice < maxPrice * 0.70) {
+        // اختلاف فاحش بیش از ۳۰٪: منبع با قیمت بسیار پایین منسوخ و معیوب تشخیص داده شده و کنار گذاشته می‌شود
+        basePrice = maxPrice;
+        estimationSource = baravardSystemPrice === maxPrice ? "برآورد رسمی (رد نرخ پایین)" : "ماتریس سامانه (رد نرخ پایین)";
+      } else {
+        // قیمت‌ها در یک دامنه معقول و معتبر قرار دارند: میانگین موزون با اولویت برآورد
+        basePrice = Math.round(baravardSystemPrice * 0.75 + fallbackMatrixPrice * 0.25);
+        estimationSource = "تلفیق برآورد و سامانه";
+      }
+    } else if (baravardSystemPrice && baravardSystemPrice > 0) {
+      basePrice = baravardSystemPrice;
+      estimationSource = "baravard.com";
+    } else if (fallbackMatrixPrice && fallbackMatrixPrice > 0) {
+      basePrice = fallbackMatrixPrice;
+      estimationSource = "ماتریس داخلی سامانه";
+    }
+
     if (!basePrice || basePrice <= 0) {
-      // Fallback to benchmark provider if not directly matched
       return this.fallback.estimate(input);
     }
 

@@ -1,5 +1,4 @@
 import { getTargetChatsForUser } from "./bot-linker";
-import { generateCarAdCard } from "./card-generator";
 
 /**
  * ماژول ارسال پیام‌های هشدار و فرصت‌های خرید به ربات بله و تلگرام
@@ -37,92 +36,96 @@ const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
 const EITAA_BOT_TOKEN = "bot327777:f2d967b9-4d8c-480a-8fcd-16c1dbb59611";
 const EITAA_BROADCAST_CHANNEL = "radarcarr";
 
-function formatTomanPersian(amount: number): string {
-  return new Intl.NumberFormat("fa-IR").format(amount) + " تومان";
+function toPersianDigits(n: number | string | null | undefined): string {
+  if (n === null || n === undefined) return "";
+  return String(n)
+    .replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)])
+    .replace(/\B(?=(\d{3})+(?!\d))/g, "٬");
 }
 
-function buildCleanMessageText(p: NotificationPayload): string {
+function formatTomanPersian(amount: number): string {
+  return toPersianDigits(amount) + " تومان";
+}
+
+function buildCleanMessageText(p: NotificationPayload, platform: "telegram" | "bale" | "eitaa" = "bale"): string {
   const isDivar = p.source === "divar";
   const cityPersian = p.city || "مشهد";
   const sourceName = isDivar ? "دیوار" : "شیپور";
   const sourceTitle = `${sourceName} ${cityPersian}`;
 
-  const lines: string[] = [];
-
-  // بررسی وضعیت‌های خاص: فروش فوری، پول لازم، یا کاهش قیمت
   const isUrgent =
     p.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
     p.title.includes("فوری") ||
     p.title.includes("پول لازم");
   const isPriceDrop = Boolean(p.priceDropToman && p.priceDropToman > 0);
 
+  // ۱. برچسب عنوان و وضعیت اختصاصی
+  let headerBadge = "🎯 <b>#شکار_خودرو | فرصت خرید</b> ✨";
   if (isUrgent) {
-    lines.push(`🚨🚨 <b>#فروش_فوری | #پول_لازم | فوری</b> 🚨🚨`);
-    lines.push(`⚡️ <b>فرصت طلایی:</b> فروشنده پول لازم زیر فی بازار!`);
-    lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+    headerBadge = "🚨 <b>#فروش_فوری | فوری پول‌لازم زیر فی</b> ⚡️";
   } else if (isPriceDrop) {
-    lines.push(`📉💥 <b>سـقـوط قـیـمـت! ارزان‌تـر شـد</b> 💥📉`);
-    lines.push(`🔻 <b>کاهش قیمت:</b> <code>🔥 ${formatTomanPersian(p.priceDropToman!)} ارزان‌تر شد!</code>`);
-    lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+    headerBadge = "📉 <b>#سقوط_قیمت | تخفیف ویژه فروشنده</b> 🔥";
   }
 
-  // ۱. فیلتر فعال اختصاصی کاربر (با تأکید بالا برای تشخیص سریع بین چند قانون)
-  const ruleTag = p.ruleName ? `«${p.ruleName}»` : "«هشدار اختصاصی»";
-  lines.push(`🔔 <b>فیلتر فعال شما:</b> 🎯 <code>${ruleTag}</code>`);
-  lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+  // ۲. مدل و سال خودرو (کاملاً درشت، بولد و چشم‌نواز)
+  const yearStr = p.year ? ` | مدل ${toPersianDigits(p.year)}` : "";
+  const modelLine = `🚘 <b>❮❮ ${p.title}${yearStr} ❯❯</b>`;
 
-  // ۲. عنوان و مدل خودرو (بسیار خوانا، درشت و متمایز)
-  lines.push(`🚘 <b>خودرو:</b> ❮❮ <b>${p.title}</b> ❯❯`);
-  lines.push(``);
-  lines.push(`╭──────────────────────────────╮`);
-  lines.push(`│ 💰 <b>قیمت فروشنده:</b> <b>« ${formatTomanPersian(p.priceToman)} »</b>`);
-  lines.push(`╰──────────────────────────────╯`);
+  // ۳. باکس برجسته قیمت فروشنده و قیمت کارشناسی بازار
+  const priceFormatted = formatTomanPersian(p.priceToman);
+  const marketFormatted = p.estimatedToman ? formatTomanPersian(p.estimatedToman) : null;
 
-  // ۳. ارزیابی سود و تخفیف بازار
-  if (p.estimatedToman && p.estimatedToman > 0) {
-    lines.push(`📊 <b>ارزش کارشناسی بازار:</b> <code>${formatTomanPersian(p.estimatedToman)}</code>`);
+  let priceBox = "";
+  if (platform === "telegram") {
+    priceBox = `<blockquote>💰 <b>قیمت فروشنده:</b> <b>« ${priceFormatted} »</b>\n` +
+      (marketFormatted ? `📊 <b>ارزش بازار:</b> ${marketFormatted}` : "") +
+      `</blockquote>`;
+  } else {
+    priceBox = `╭──────────────────────────────╮\n` +
+      `│ 💰 <b>قیمت فروشنده:</b> <b>« ${priceFormatted} »</b>\n` +
+      (marketFormatted ? `│ 📊 <b>ارزش بازار:</b> ${marketFormatted}\n` : "") +
+      `╰──────────────────────────────╯`;
   }
 
-  if (p.discountPercent && p.discountPercent > 0 && p.profitToman && p.profitToman > 0) {
-    lines.push(
-      `🎁 <b>سود خالص تخمینی:</b> <code>🔥 ${formatTomanPersian(p.profitToman)} (${p.discountPercent}٪ زیر قیمت)</code>`,
-    );
+  // ۴. خط سود کارشناسی و تخفیف بازار (دارای افکت Spoiler در تلگرام)
+  let profitLine = "";
+  if (p.profitToman && p.profitToman > 0) {
+    const profitStr = `${formatTomanPersian(p.profitToman)} (${toPersianDigits(p.discountPercent || 0)}٪ سود)`;
+    if (platform === "telegram") {
+      profitLine = `🎁 <b>سود خالص شما:</b> <tg-spoiler>🔥 ${profitStr}</tg-spoiler>`;
+    } else {
+      profitLine = `🎁 <b>سود خالص شما:</b> 🔥 <b>${profitStr}</b>`;
+    }
+  } else if (isPriceDrop && p.priceDropToman) {
+    profitLine = `🔻 <b>کاهش قیمت:</b> 🔥 <b>${formatTomanPersian(p.priceDropToman)} ارزان‌تر شد</b>`;
   }
 
-  // ۴. مشخصات دقیق استخراج شده (سال، کارکرد، رنگ، وضعیت فنی و بدنه)
+  // ۵. مشخصات کلیدی به صورت خلاصه، شیک و تک‌خطی
   const specs: string[] = [];
-  if (p.year) specs.push(`مدل <code>${p.year}</code>`);
   if (p.mileageKm !== undefined && p.mileageKm !== null) {
-    const kmStr = p.mileageKm === 0 ? "صفر کیلومتر" : `${new Intl.NumberFormat("fa-IR").format(p.mileageKm)} km`;
-    specs.push(`کارکرد <code>${kmStr}</code>`);
+    specs.push(p.mileageKm === 0 ? "صفر کیلومتر" : `${toPersianDigits(p.mileageKm)} km`);
   }
-  if (p.color) specs.push(`رنگ <code>${p.color}</code>`);
-  if (p.insurance) specs.push(`بیمه <code>${p.insurance}</code>`);
+  if (p.color) specs.push(`رنگ ${p.color}`);
+  if (p.bodyHealth) specs.push(p.bodyHealth);
 
-  if (specs.length > 0) {
-    lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
-    lines.push(`📋 <b>مشخصات:</b> ${specs.join("  |  ")}`);
-  }
+  const specsLine = specs.length > 0 ? `⚙️ <b>مشخصات:</b> ${specs.join("  •  ")}` : "";
 
-  // وضعیت ارزیابی سلامت خودرو
-  const healthParts: string[] = [];
-  if (p.bodyHealth) healthParts.push(`بدنه: <code>${p.bodyHealth}</code>`);
-  if (p.chassisHealth) healthParts.push(`شاسی: <code>${p.chassisHealth}</code>`);
-  if (p.engineHealth) healthParts.push(`موتور: <code>${p.engineHealth}</code>`);
-  if (p.gearboxHealth) healthParts.push(`گیربکس: <code>${p.gearboxHealth}</code>`);
+  // ۶. پاورقی و منبع آگهی
+  const footerLine = `📍 <code>${sourceTitle}</code>  |  ⚡️ <b>شناسایی آنی با رادار</b>`;
 
-  if (healthParts.length > 0) {
-    lines.push(`🩺 <b>وضعیت سلامت:</b> ${healthParts.join("  |  ")}`);
-  }
+  const lines = [
+    headerBadge,
+    modelLine,
+    "",
+    priceBox,
+  ];
 
-  if (p.tags && p.tags.length > 0) {
-    lines.push(`✨ <b>نکات آگهی:</b> ${p.tags.join(" • ")}`);
-  }
+  if (profitLine) lines.push(profitLine);
+  if (specsLine) lines.push(specsLine);
+  lines.push("");
+  lines.push(footerLine);
 
-  lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
-  lines.push(`📍 <b>منبع:</b> ${sourceTitle}  |  ⚡ <b>شناسایی آنی با رادار</b>`);
-
-  return lines.join("\n");
+  return lines.filter(Boolean).join("\n");
 }
 
 function buildReplyMarkup(url?: string | null, source?: string) {
@@ -141,49 +144,29 @@ function buildReplyMarkup(url?: string | null, source?: string) {
 }
 
 export async function sendLiveAlert(payload: NotificationPayload): Promise<void> {
-  const text = buildCleanMessageText(payload);
+  const telegramText = buildCleanMessageText(payload, "telegram");
+  const baleText = buildCleanMessageText(payload, "bale");
   const replyMarkup = buildReplyMarkup(payload.url, payload.source);
-
-  // تولید تصویر کارت گرافیکی اختصاصی (مشابه نمونه شکار خودرو)
-  let cardPngBuffer: Buffer | null = null;
-  try {
-    cardPngBuffer = await generateCarAdCard({
-      title: payload.title,
-      year: payload.year,
-      mileageKm: payload.mileageKm,
-      color: payload.color,
-      sellerPriceToman: payload.priceToman,
-      marketPriceToman: payload.estimatedToman,
-      profitToman: payload.profitToman,
-      discountPercent: payload.discountPercent,
-      city: payload.city,
-      sourceName: payload.source === "sheypoor" ? "شیپور" : "دیوار",
-      imageUrl: payload.imageUrl,
-      isUrgent:
-        payload.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
-        payload.title.includes("فوری") ||
-        payload.title.includes("پول لازم"),
-    });
-  } catch (err) {
-    console.warn("[notify] Failed generating car ad card:", err);
-  }
+  const imageUrl = payload.imageUrl?.startsWith("http") ? payload.imageUrl : null;
 
   // دریافت چت‌های متصل به این کاربر
   const { baleChats, telegramChats, rubikaChats } = await getTargetChatsForUser(payload.userId || "admin");
 
-  // ۱. ارسال به پیام‌رسان بله
+  // ۱. ارسال به پیام‌رسان بله (همراه با عکس واقعی خودرو از آگهی)
   for (const chatId of baleChats) {
     try {
-      if (cardPngBuffer) {
-        const baleForm = new FormData();
-        baleForm.append("chat_id", chatId);
-        baleForm.append("photo", new Blob([new Uint8Array(cardPngBuffer)], { type: "image/png" }), "car_card.png");
-        baleForm.append("caption", text);
-        baleForm.append("reply_markup", JSON.stringify(replyMarkup));
-
+      if (imageUrl) {
         const photoRes = await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendPhoto`, {
           method: "POST",
-          body: baleForm,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imageUrl,
+            caption: baleText,
+            parse_mode: "HTML",
+            reply_markup: replyMarkup,
+            disable_notification: false,
+          }),
           signal: AbortSignal.timeout(8000),
         });
         if (photoRes.ok) continue;
@@ -195,7 +178,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text,
+          text: baleText,
           parse_mode: "HTML",
           reply_markup: replyMarkup,
           disable_notification: false,
@@ -207,20 +190,20 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     }
   }
 
-  // ۲. ارسال به تلگرام
+  // ۲. ارسال به تلگرام (همراه با عکس واقعی خودرو و افکت‌های تعاملی و اسپویلر)
   for (const chatId of telegramChats) {
     try {
-      if (cardPngBuffer) {
-        const tgForm = new FormData();
-        tgForm.append("chat_id", chatId);
-        tgForm.append("photo", new Blob([new Uint8Array(cardPngBuffer)], { type: "image/png" }), "car_card.png");
-        tgForm.append("caption", text);
-        tgForm.append("parse_mode", "HTML");
-        tgForm.append("reply_markup", JSON.stringify(replyMarkup));
-
+      if (imageUrl) {
         const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
           method: "POST",
-          body: tgForm,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imageUrl,
+            caption: telegramText,
+            parse_mode: "HTML",
+            reply_markup: replyMarkup,
+          }),
           signal: AbortSignal.timeout(8000),
         });
         if (photoRes.ok) continue;
@@ -231,21 +214,18 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text,
+          text: telegramText,
           parse_mode: "HTML",
           reply_markup: replyMarkup,
         }),
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(5000),
       });
     } catch {
       // ادامه بدون توقف
     }
   }
 
-  // ۳. ارسال به کانال رسمی ایتا (موارد فرصت خرید، فروش فوری، پول‌لازم و کاهش قیمت خوب با تصویر کارت اختصاصی)
-  const cleanBroadcastText = text.replace(/<[^>]+>/g, "");
-  const broadcastButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
-
+  // ۳. ارسال به کانال رسمی ایتا (همراه با عکس واقعی خودرو آگهی و دکمه شیشه‌ای)
   const isUrgent =
     payload.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
     payload.title.includes("فوری") ||
@@ -255,40 +235,52 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     Boolean(payload.discountPercent && payload.discountPercent >= 5);
 
   if (isUrgent || isGoodDrop) {
+    const cleanEitaaText = buildCleanMessageText(payload, "eitaa").replace(/<[^>]+>/g, "");
+    const broadcastButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
     const eitaaCaption = payload.url
-      ? `${cleanBroadcastText}\n\n🔗 لینک مشاهده آگهی: ${payload.url}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
-      : `${cleanBroadcastText}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
+      ? `${cleanEitaaText}\n\n🔗 لینک مشاهده آگهی: ${payload.url}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
+      : `${cleanEitaaText}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
 
     let sentWithPhoto = false;
 
-    // ارسال تصویر کارت گرافیکی اختصاصی به ایتا
-    if (cardPngBuffer) {
+    // ارسال مستقیم عکس واقعی خودرو از دیوار به ایتا
+    if (imageUrl) {
       try {
-        const formData = new FormData();
-        formData.append("chat_id", EITAA_BROADCAST_CHANNEL);
-        formData.append("file", new Blob([new Uint8Array(cardPngBuffer)], { type: "image/png" }), "car_card.png");
-        formData.append("caption", eitaaCaption);
-        if (payload.url) {
-          formData.append(
-            "reply_markup",
-            JSON.stringify({
-              inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
-            }),
-          );
-        }
-
-        const photoRes = await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendFile`, {
-          method: "POST",
-          body: formData,
-          signal: AbortSignal.timeout(15000),
+        const imgRes = await fetch(imageUrl, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          },
+          signal: AbortSignal.timeout(6000),
         });
-        if (photoRes.ok) sentWithPhoto = true;
+        if (imgRes.ok) {
+          const buf = await imgRes.arrayBuffer();
+          const formData = new FormData();
+          formData.append("chat_id", EITAA_BROADCAST_CHANNEL);
+          formData.append("file", new Blob([new Uint8Array(buf)], { type: "image/jpeg" }), "car.jpg");
+          formData.append("caption", eitaaCaption);
+          if (payload.url) {
+            formData.append(
+              "reply_markup",
+              JSON.stringify({
+                inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
+              }),
+            );
+          }
+
+          const photoRes = await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendFile`, {
+            method: "POST",
+            body: formData,
+            signal: AbortSignal.timeout(15000),
+          });
+          if (photoRes.ok) sentWithPhoto = true;
+        }
       } catch {
         sentWithPhoto = false;
       }
     }
 
-    // ارسال متنی استاندارد در صورت بروز هرگونه خطا
+    // ارسال متنی استاندارد در صورت عدم وجود عکس یا بروز خطا
     if (!sentWithPhoto) {
       try {
         const bodyParams = new URLSearchParams({

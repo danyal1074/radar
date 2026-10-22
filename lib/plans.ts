@@ -14,7 +14,8 @@ export interface PlanDef {
   maxSavedListings: number;
   /** opportunity score (0-100) visible + sortable */
   opportunityScore: boolean;
-  /** future channels: sms / telegram. Not implemented yet => flagged false */
+  allowedCitiesCount: number; // 1 for trial/basic, 2 for pro/business
+  canChangeCity: boolean; // false for trial/basic, true for pro/business
   features: string[];
   highlighted?: boolean;
   purchasable: boolean;
@@ -31,12 +32,14 @@ export const PLANS: Record<PlanId, PlanDef> = {
     maxActiveRules: 2,
     maxSavedListings: 20,
     opportunityScore: true,
+    allowedCitiesCount: 1,
+    canChangeCity: false,
     features: [
       "۲ قانون هشدار فعال",
       "۲۰ آگهی ذخیره‌شده",
-      "اعلان داخل سامانه",
-      "پایش دیوار و شیپور تربت‌حیدریه",
-      "اتصال به ربات بله و تلگرام",
+      "اعلان داخل سامانه و ربات بله",
+      "پایش ۱ شهر انتخابی (تربت‌حیدریه یا مشهد)",
+      "ثابت بودن شهر در طول دوره آزمایشی",
     ],
     purchasable: false,
   },
@@ -48,10 +51,13 @@ export const PLANS: Record<PlanId, PlanDef> = {
     maxActiveRules: 5,
     maxSavedListings: 100,
     opportunityScore: false,
+    allowedCitiesCount: 1,
+    canChangeCity: false,
     features: [
       "۵ قانون هشدار فعال همزمان",
       "۱۰۰ آگهی ذخیره‌شده",
-      "اعلان داخل سامانه و ربات‌ها (متنی)",
+      "پایش ۱ شهر انتخابی (تربت‌حیدریه یا مشهد)",
+      "اعلان داخل سامانه و ربات بله",
       "مقایسه با قیمت کارشناسی روز",
       "فیلتر حذف آگهی‌های اسپم و حواله",
       "دکمه شیشه‌ای لینک مستقیم به آگهی",
@@ -60,13 +66,17 @@ export const PLANS: Record<PlanId, PlanDef> = {
   },
   pro: {
     id: "pro",
-    name: "حرفه‌ای (پلن همیشگی)",
+    name: "حرفه‌ای (پلن پرطرفدار)",
     tagline: "ابزار تخصصی و سودآور نمایشگاه‌داران فعال",
     priceToman: 790_000,
     maxActiveRules: 20,
     maxSavedListings: 500,
     opportunityScore: true,
+    allowedCitiesCount: 2,
+    canChangeCity: true,
     features: [
+      "پایش همزمان هر ۲ شهر (تربت‌حیدریه + مشهد) 🏙️",
+      "تغییر و سوئیچ آزادانه بین شهرها",
       "۲۰ قانون هشدار فعال (رصد کل بازار)",
       "۵۰۰ آگهی ذخیره‌شده",
       "سرعت آنی VIP بدون تاخیر (ثانیه اول)",
@@ -75,8 +85,6 @@ export const PLANS: Record<PlanId, PlanDef> = {
       "فیلتر شاسی پلمپ، بدون رنگ و تک‌برگ 🛡️",
       "ردیاب هوشمند کاهش قیمت فروشنده 📉",
       "امتیاز و درصد سود خالص فرصت خرید",
-      "تولید بنر آماده استوری و کانال نمایشگاه 📋",
-      "دفترچه ثبت یادداشت و پیگیری مذاکره (CRM)",
       "ماشین‌حساب هوشمند سود و کارشناسی خودرو",
     ],
     highlighted: true,
@@ -90,13 +98,15 @@ export const PLANS: Record<PlanId, PlanDef> = {
     maxActiveRules: 100,
     maxSavedListings: 5_000,
     opportunityScore: true,
+    allowedCitiesCount: 2,
+    canChangeCity: true,
     features: [
+      "پایش همزمان هر ۲ شهر (تربت‌حیدریه + مشهد) 🏙️",
       "۱۰۰ قانون هشدار فعال همزمان",
       "۵٬۰۰۰ آگهی ذخیره‌شده",
       "تمام امکانات تحلیلی و هوش مصنوعی پلن Pro",
       "اتصال چند شماره بله و تلگرام همکاران",
-      "گزارش‌های جامع تحلیلی بازار خودرو شهر",
-      "اولویت فوق‌العاده در کشف فرصت‌ها",
+      "گزارش‌های جامع تحلیلی بازار خودرو خراسان",
       "پشتیبانی مستقیم و اختصاصی تلفنی (حقدادی)",
     ],
     purchasable: true,

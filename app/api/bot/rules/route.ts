@@ -3,6 +3,7 @@ import { getServiceStore } from "@/lib/db";
 import { getUserIdByChatId, registerDirectChat } from "@/lib/bot-linker";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { PLANS, resolveAccess } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -103,10 +104,19 @@ export async function GET(req: Request) {
     const userId = await resolveOrCreateUserId(chatId, messenger);
     const store = await getServiceStore();
     const rules = await store.listRules(userId);
+    const profile = await store.getProfile(userId);
+    const sub = await store.getSubscription(userId);
+    const access = resolveAccess(sub);
+    const plan = PLANS[access.plan];
+    const allowedCitiesCount = (profile?.role === "admin" || userId === DANIAL_ADMIN_UUID) ? 2 : plan.allowedCitiesCount;
+    const userCity = profile?.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
 
     return NextResponse.json({
       ok: true,
       userId,
+      userCity,
+      allowedCitiesCount,
+      planName: plan.name,
       rules,
     });
   } catch (err: unknown) {
@@ -126,6 +136,17 @@ export async function POST(req: Request) {
 
     const userId = await resolveOrCreateUserId(String(chatId), messenger || "bale", userName);
     const store = await getServiceStore();
+    const profile = await store.getProfile(userId);
+    const sub = await store.getSubscription(userId);
+    const access = resolveAccess(sub);
+    const plan = PLANS[access.plan];
+    const allowedCitiesCount = (profile?.role === "admin" || userId === DANIAL_ADMIN_UUID) ? 2 : plan.allowedCitiesCount;
+    const userCity = profile?.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+
+    let ruleCity = rule.city || null;
+    if (allowedCitiesCount === 1) {
+      ruleCity = userCity;
+    }
 
     const newRule = await store.createRule(userId, {
       name: rule.name,
@@ -139,7 +160,7 @@ export async function POST(req: Request) {
       min_discount_toman: rule.min_discount_toman || null,
       mileage_min_km: null,
       mileage_max_km: null,
-      city: "تربت‌حیدریه",
+      city: ruleCity,
       source: null,
       is_active: true,
       urgent_only: rule.urgent_only || false,

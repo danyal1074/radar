@@ -4,8 +4,13 @@ import { PLANS } from "./plans";
 import { buildListingViews } from "./views";
 
 export async function loadViews(ctx: AppContext) {
+  const plan = PLANS[ctx.access.plan];
+  const userCity = ctx.profile.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+  const limitToCity = ctx.profile.role !== "admin" && plan.allowedCitiesCount === 1 ? userCity : undefined;
+
   return buildListingViews(ctx.store, {
     userId: ctx.user.id,
-    withScore: PLANS[ctx.access.plan].opportunityScore,
+    withScore: plan.opportunityScore,
+    cityRestriction: limitToCity,
   });
 }

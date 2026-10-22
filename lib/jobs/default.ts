@@ -10,10 +10,12 @@ import type { ListingSourceProvider } from "../sources/provider";
 import { runPipeline } from "./pipeline";
 
 export function activeSources(): ListingSourceProvider[] {
-  // Real-time live hunters for both Divar and Sheypoor (Torbat Heydariyeh exclusively)
+  // پایش لحظه‌ای و همزمان دیوار و شیپور در دو شهر تربت‌حیدریه و مشهد
   return [
     new DivarListingSourceProvider("torbat-heydariyeh"),
+    new DivarListingSourceProvider("mashhad"),
     new SheypoorListingSourceProvider("torbat-heydariyeh"),
+    new SheypoorListingSourceProvider("mashhad"),
   ];
 }
 

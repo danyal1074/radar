@@ -2,9 +2,12 @@
 سرویس هوشمند پیام‌رسان بله (Bale Bot Engine & Interactive Wizard)
 پشتیبانی از:
 - ساخت کامل فیلتر و هشدار خودرو مستقیم از داخل بله
+- انتخاب هوشمند شهر (تربت‌حیدریه / مشهد / هر دو شهر در پلن Pro)
+- قفل شهر بر روی شهر انتخابی در پلن آزمایشی و پایه
+- فیلتر فرصت‌های شکار بر اساس شهر
 - مدیریت و حذف فیلترهای فعال
 - مشاهده فوری آخرین فرصت‌های شکار زیر قیمت
-- پشتیبانی کامل از دکمه‌های شیشه‌ای (Inline Keyboards) و رفع مشکل دکمه‌ها
+- پشتیبانی کامل از دکمه‌های شیشه‌ای (Inline Keyboards)
 - مدیریت اشتراک و تنظیم صدای هشدار
 """
 
@@ -38,6 +41,12 @@ MAIN_KEYBOARD = {
 
 # حافظه موقت برای مراحل ساخت فیلتر (Wizard State)
 USER_SESSIONS: dict[str, dict] = {}
+
+CITY_GRID = [
+    [{"text": "🏙️ تربت‌حیدریه", "callback_data": "city:تربت‌حیدریه"}, {"text": "🏙️ مشهد", "callback_data": "city:مشهد"}],
+    [{"text": "🌐 هر دو شهر (مشهد + تربت)", "callback_data": "city:all"}],
+    [{"text": "❌ انصراف", "callback_data": "cancel_wizard"}],
+]
 
 CARS_GRID = [
     [{"text": "🚗 پراید", "callback_data": "car:pride"}, {"text": "🚗 پژو ۲۰۶", "callback_data": "car:206"}],
@@ -125,6 +134,48 @@ async def answer_bale_callback(
         logger.debug(f"خطا در answerCallbackQuery: {e}")
 
 
+async def start_wizard_flow(client: httpx.AsyncClient, chat_id: int | str, user_name: str) -> None:
+    """شروع فرآیند هوشمند ساخت فیلتر با رعایت سهمیه شهر کاربر"""
+    try:
+        res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
+        user_data = res.json() if res.status_code == 200 else {}
+    except Exception:
+        user_data = {}
+
+    allowed_cities = user_data.get("allowedCitiesCount", 1)
+    user_city = user_data.get("userCity") or "تربت‌حیدریه"
+    plan_name = user_data.get("planName") or "آزمایشی"
+
+    if allowed_cities >= 2:
+        USER_SESSIONS[str(chat_id)] = {
+            "step": "city",
+            "allowedCitiesCount": allowed_cities,
+            "userCity": user_city,
+            "userName": user_name,
+        }
+        prompt = (
+            f"🎯 <b>تعریف فیلتر هوشمند رادار خودرو:</b>\n"
+            f"⭐️ پلن شما: <b>{plan_name}</b> (دسترسی همزمان به ۲ شهر)\n\n"
+            f"🏙️ <b>مرحله اول:</b> لطفاً شهر یا محدوده پایش این فیلتر را مشخص کنید:"
+        )
+        await send_bale_reply(client, chat_id, prompt, {"inline_keyboard": CITY_GRID})
+    else:
+        USER_SESSIONS[str(chat_id)] = {
+            "step": "car",
+            "city": user_city,
+            "city_name": user_city,
+            "allowedCitiesCount": 1,
+            "userCity": user_city,
+            "userName": user_name,
+        }
+        prompt = (
+            f"🎯 <b>تعریف فیلتر هوشمند رادار خودرو:</b>\n"
+            f"🏙️ <b>شهر تحت پایش:</b> <b>{user_city}</b> <i>(قفل در پلن {plan_name})</i>\n\n"
+            f"🚗 <b>مرحله اول:</b> لطفاً خودروی مورد نظرتان را برای پایش انتخاب کنید:"
+        )
+        await send_bale_reply(client, chat_id, prompt, {"inline_keyboard": CARS_GRID})
+
+
 async def handle_list_rules(client: httpx.AsyncClient, chat_id: int | str) -> None:
     try:
         res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
@@ -148,9 +199,10 @@ async def handle_list_rules(client: httpx.AsyncClient, chat_id: int | str) -> No
             p_str = f"تا {max_p // 1_000_000} میلیون تومان" if max_p else "بدون سقف قیمت"
             disc = r.get("min_discount_percent")
             disc_str = f"{disc}٪ زیر قیمت" if disc and disc > 0 else "تمام آگهی‌ها"
+            c_name = r.get("city") or "هر دو شهر (مشهد + تربت)"
 
             lines.append(f"{idx}. 🎯 <b>{name}</b>")
-            lines.append(f"   💰 {p_str}  |  🔥 {disc_str}")
+            lines.append(f"   💰 {p_str}  |  🔥 {disc_str}  |  📍 {c_name}")
 
             if rule_id:
                 inline_buttons.append([{"text": f"❌ حذف «{name}»", "callback_data": f"del_rule:{rule_id}"}])
@@ -164,20 +216,56 @@ async def handle_list_rules(client: httpx.AsyncClient, chat_id: int | str) -> No
         await send_bale_reply(client, chat_id, "⚠️ خطا در دریافت لیست فیلترها. لطفاً دوباره تلاش فرمایید.")
 
 
-async def handle_opportunities(client: httpx.AsyncClient, chat_id: int | str) -> None:
+async def handle_opportunities(
+    client: httpx.AsyncClient, chat_id: int | str, city_filter: str | None = None
+) -> None:
     try:
-        res = await client.get(f"{API_BASE}/opportunities", timeout=10.0)
+        # دریافت اطلاعات شهر کاربر و پلن
+        u_res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
+        user_data = u_res.json() if u_res.status_code == 200 else {}
+        allowed_cities = user_data.get("allowedCitiesCount", 1)
+        user_city = user_data.get("userCity") or "تربت‌حیدریه"
+
+        effective_city = city_filter
+        if allowed_cities == 1:
+            effective_city = user_city
+
+        url = f"{API_BASE}/opportunities"
+        if effective_city and effective_city != "all":
+            url += f"?city={effective_city}"
+
+        res = await client.get(url, timeout=10.0)
         data = res.json()
         opps = data.get("opportunities", [])
+
+        title_city = f"({effective_city})" if effective_city and effective_city != "all" else "(همه شهرها)"
         if not opps:
             await send_bale_reply(
                 client,
                 chat_id,
-                "🔍 در حال حاضر آگهی با سود بالای ۵٪ ثبت نشده است. به محض ثبت آگهی جدید، ربات به شما اطلاع می‌دهد.",
+                f"🔍 در حال حاضر آگهی با سود بالا در {title_city} ثبت نشده است. به محض ثبت آگهی جدید، ربات به شما اطلاع می‌دهد.",
             )
             return
 
-        await send_bale_reply(client, chat_id, "🎯 <b>بهترین فرصت‌های شکار بازار (تربت‌حیدریه):</b>")
+        # اگر کاربر دسترسی دو شهر دارد، دکمه‌های فیلتر شهر نشان داده شود
+        filter_markup = None
+        if allowed_cities >= 2:
+            filter_markup = {
+                "inline_keyboard": [
+                    [
+                        {"text": "🏙️ فقط تربت‌حیدریه", "callback_data": "opp:torbat"},
+                        {"text": "🏙️ فقط مشهد", "callback_data": "opp:mashhad"},
+                    ],
+                    [{"text": "🌐 همه فرصت‌ها (مشهد + تربت)", "callback_data": "opp:all"}],
+                ]
+            }
+
+        await send_bale_reply(
+            client,
+            chat_id,
+            f"🎯 <b>بهترین فرصت‌های شکار بازار {title_city}:</b>",
+            filter_markup,
+        )
 
         for item in opps[:4]:
             t = item.get("title", "خودرو")
@@ -186,6 +274,8 @@ async def handle_opportunities(client: httpx.AsyncClient, chat_id: int | str) ->
             profit = item.get("profitToman", 0)
             disc = item.get("discountPercent", 0)
             url = item.get("url")
+            item_city = item.get("city") or "تربت‌حیدریه"
+            city_name = "مشهد" if "مشهد" in item_city else "تربت‌حیدریه"
             source = "دیوار" if item.get("source") == "divar" else "شیپور"
 
             card = (
@@ -193,7 +283,7 @@ async def handle_opportunities(client: httpx.AsyncClient, chat_id: int | str) ->
                 f"💰 قیمت فروشنده: <code>{format_toman_persian(p)}</code>\n"
                 f"📊 کارشناسی بازار: <code>{format_toman_persian(est)}</code>\n"
                 f"🎁 سود تخمینی: <code>🔥 {format_toman_persian(profit)} ({disc}٪ زیر قیمت)</code>\n"
-                f"📍 منبع: {source} تربت‌حیدریه"
+                f"📍 منبع: {source} {city_name}"
             )
             markup = None
             if url:
@@ -205,12 +295,34 @@ async def handle_opportunities(client: httpx.AsyncClient, chat_id: int | str) ->
 
 
 async def handle_subscription_status(client: httpx.AsyncClient, chat_id: int | str) -> None:
+    try:
+        res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
+        data = res.json() if res.status_code == 200 else {}
+    except Exception:
+        data = {}
+
+    plan_name = data.get("planName") or "دوره آزمایشی رایگان (۱۴ روزه)"
+    allowed_cities = data.get("allowedCitiesCount", 1)
+    user_city = data.get("userCity") or "تربت‌حیدریه"
+
+    if allowed_cities >= 2:
+        city_status = (
+            "🏙️ <b>شهرهای تحت پوشش:</b> مشهد و تربت‌حیدریه (پایش همزمان ۲ شهر)\n"
+            "✅ <b>دسترسی:</b> کامل به تمام آگهی‌های دیوار و شیپور هر دو شهر"
+        )
+    else:
+        city_status = (
+            f"🏙️ <b>شهر فعال شما:</b> <b>{user_city}</b> <i>(قفل‌شده در این پلن)</i>\n"
+            f"⚡ <b>قابلیت ویژه پلن پرطرفدار (Pro):</b> رصد همزمان شهرهای مشهد + تربت‌حیدریه"
+        )
+
     status_text = (
         "💳 <b>وضعیت اشتراک سامانه رادار خودرو:</b>\n\n"
-        "✨ <b>نوع اشتراک:</b> دوره آزمایشی رایگان (۱۴ روزه)\n"
-        "✅ <b>وضعیت:</b> فعال و در حال دریافت آنی آگهی‌ها\n"
-        "🚀 <b>سرعت دریافت پیام:</b> کمتر از ۶۰ ثانیه پس از تایید در دیوار و شیپور\n"
-        "🎯 <b>تعداد مجاز فیلترها:</b> نامحدود\n\n"
+        f"✨ <b>نوع اشتراک:</b> {plan_name}\n"
+        f"✅ <b>وضعیت:</b> فعال و در حال دریافت آنی آگهی‌ها\n"
+        f"{city_status}\n"
+        f"🚀 <b>سرعت دریافت پیام:</b> کمتر از ۶۰ ثانیه پس از تایید در دیوار و شیپور\n"
+        f"🎯 <b>تعداد مجاز فیلترها:</b> نامحدود\n\n"
         "برای تمدید یا ارتقای اشتراک می‌توانید از سایت `radar.digiral.ir` اقدام فرمایید."
     )
     await send_bale_reply(client, chat_id, status_text)
@@ -254,6 +366,13 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
         await send_bale_reply(client, chat_id, "عملیات لغو شد. منوی اصلی در دسترس شماست.", MAIN_KEYBOARD)
         return
 
+    # فیلتر فرصت‌ها بر اساس شهر
+    if data.startswith("opp:"):
+        tag = data.split(":", 1)[1]
+        c_filter = "مشهد" if tag == "mashhad" else ("تربت‌حیدریه" if tag == "torbat" else "all")
+        await handle_opportunities(client, chat_id, c_filter)
+        return
+
     # باز کردن منوی فیلترها
     if data in ("menu_rules", "view_rules"):
         await handle_list_rules(client, chat_id)
@@ -282,8 +401,29 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
 
     # شروع فرآیند ساخت فیلتر
     if data == "start_wizard":
-        USER_SESSIONS[str(chat_id)] = {"step": "car"}
-        prompt = "🚗 <b>مرحله اول:</b> لطفاً خودروی مورد نظرتان را برای پایش انتخاب کنید:"
+        await start_wizard_flow(client, chat_id, user_name)
+        return
+
+    # مرحله ۰: انتخاب شهر (مخصوص کاربران با دسترسی دو شهر)
+    if data.startswith("city:"):
+        session = USER_SESSIONS.get(str(chat_id))
+        if not session:
+            await start_wizard_flow(client, chat_id, user_name)
+            return
+
+        choice = data.split(":", 1)[1]
+        if choice == "all":
+            session["city"] = None
+            session["city_name"] = "هر دو شهر (مشهد و تربت‌حیدریه)"
+        else:
+            session["city"] = choice
+            session["city_name"] = choice
+
+        session["step"] = "car"
+        prompt = (
+            f"🏙️ محدوده انتخابی: <b>{session['city_name']}</b>\n\n"
+            f"🚗 <b>مرحله دوم:</b> لطفاً خودروی مورد نظرتان را برای پایش انتخاب کنید:"
+        )
         await send_bale_reply(client, chat_id, prompt, {"inline_keyboard": CARS_GRID})
         return
 
@@ -291,15 +431,17 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
     if data.startswith("car:"):
         car_code = data.split(":", 1)[1]
         make, model, fa_name = CAR_NAMES.get(car_code, ("", "", "خودرو دلخواه"))
-        USER_SESSIONS[str(chat_id)] = {
-            "step": "budget",
-            "make": make,
-            "model": model,
-            "fa_name": fa_name,
-        }
+        session = USER_SESSIONS.setdefault(str(chat_id), {})
+        session["step"] = "budget"
+        session["make"] = make
+        session["model"] = model
+        session["fa_name"] = fa_name
+
+        c_info = f"📍 شهر: <b>{session.get('city_name', 'پیش‌فرض')}</b>\n" if session.get("city_name") else ""
         prompt = (
-            f"✅ خودروی انتخابی: <b>{fa_name}</b>\n\n"
-            f"💰 <b>مرحله دوم:</b> حداکثر سقف بودجه خرید خود را مشخص کنید:"
+            f"✅ خودروی انتخابی: <b>{fa_name}</b>\n"
+            f"{c_info}\n"
+            f"💰 <b>مرحله بعد:</b> حداکثر سقف بودجه خرید خود را مشخص کنید:"
         )
         await send_bale_reply(client, chat_id, prompt, {"inline_keyboard": BUDGET_GRID})
         return
@@ -319,7 +461,7 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
         prompt = (
             f"🚗 خودرو: <b>{session.get('fa_name')}</b>\n"
             f"💰 سقف بودجه: <b>{b_text}</b>\n\n"
-            f"🎯 <b>مرحله سوم:</b> مایلید چه آگهی‌هایی به شما پیام داده شوند؟"
+            f"🎯 <b>مرحله نهایی:</b> مایلید چه آگهی‌هایی به شما پیام داده شوند؟"
         )
         await send_bale_reply(client, chat_id, prompt, {"inline_keyboard": MODE_GRID})
         return
@@ -349,6 +491,7 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
                 "name": rule_name,
                 "make": session.get("make") or None,
                 "model": session.get("model") or None,
+                "city": session.get("city"),
                 "price_max_toman": b_max,
                 "min_discount_percent": min_discount_percent,
             },
@@ -358,14 +501,15 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
             res = await client.post(f"{API_BASE}/rules", json=payload, timeout=10.0)
             data = res.json()
             if data.get("ok"):
+                c_label = session.get("city_name") or session.get("city") or "تربت‌حیدریه"
                 success_text = (
                     f"🎉 <b>فیلتر جدید با موفقیت فعال شد!</b>\n\n"
                     f"🎯 <b>عنوان فیلتر:</b> «{rule_name}»\n"
                     f"🚗 <b>خودرو:</b> {fa_name}\n"
                     f"💰 <b>سقف قیمت:</b> {b_str}\n"
                     f"🔥 <b>نوع آگهی:</b> {mode_str}\n"
-                    f"📍 <b>شهر:</b> تربت‌حیدریه (دیوار و شیپور)\n\n"
-                    f"⚡ از همین حالا، به محض اینکه آگهی با این مشخصات ثبت شود، با زنگ هشدار برای شما ارسال خواهد شد."
+                    f"📍 <b>محدوده پایش:</b> {c_label} (دیوار و شیپور)\n\n"
+                    f"⚡ از همین حالا، به محض اینکه آگهی با این مشخصات ثبت شود، فوراً با زنگ هشدار برای شما ارسال خواهد شد."
                 )
                 markup = {"inline_keyboard": [[{"text": "📋 مشاهده همه فیلترهای من", "callback_data": "menu_rules"}]]}
                 await send_bale_reply(client, chat_id, success_text, markup)
@@ -410,7 +554,7 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
                 reply = (
                     f"🎉 <b>تبریک! حساب کاربری شما با موفقیت متصل شد.</b>\n\n"
                     f"👤 نام کاربر: <b>{user_name}</b>\n"
-                    f"📍 شهر تحت پایش: <b>تربت‌حیدریه</b>\n\n"
+                    f"📍 پایش آنی آگهی‌های خودروی دیوار و شیپور\n\n"
                     f"🔔 تمام هشدارهای اختصاصی و فیلترهای تعریف‌شده در سایت فوراً به این چت ارسال می‌شوند."
                 )
             else:
@@ -424,12 +568,7 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
 
     # ۲. دکمه «➕ تعریف فیلتر خودرو (شکار جدید)»
     if text in ("➕ تعریف فیلتر خودرو (شکار جدید)", "/new", "تعریف فیلتر"):
-        USER_SESSIONS[str(chat_id)] = {"step": "car"}
-        prompt = (
-            "🎯 <b>تعریف فیلتر هوشمند رادار خودرو:</b>\n\n"
-            "خودروی مورد نظرتان را برای دریافت هشدار انتخاب کنید 👇"
-        )
-        await send_bale_reply(client, chat_id, prompt, {"inline_keyboard": CARS_GRID})
+        await start_wizard_flow(client, chat_id, user_name)
         return
 
     # ۳. دکمه «📋 فیلترهای فعال من»
@@ -467,7 +606,7 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
     # پیام پیش‌فرض شروع یا متفرقه
     welcome = (
         f"👋 <b>سلام {user_name} عزیز! به سامانه رادار هوشمند خودرو خوش آمدید.</b>\n\n"
-        "این سامانه آگهی‌های خودرو دیوار و شیپور تربت‌حیدریه را لحظه‌به‌لحظه رصد کرده و آگهی‌های زیر قیمت و شکار را فوراً به شما می‌رساند.\n\n"
+        "این سامانه آگهی‌های خودرو دیوار و شیپور تربت‌حیدریه و مشهد را لحظه‌به‌لحظه رصد کرده و آگهی‌های زیر قیمت و شکار را فوراً به شما می‌رساند.\n\n"
         "👇 <b>برای شروع از دکمه‌های زیر استفاده کنید:</b>"
     )
     await send_bale_reply(client, chat_id, welcome)

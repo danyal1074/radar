@@ -43,7 +43,7 @@ async function checkDailyPrices() {
 
 async function runCycle() {
   const time = new Date().toLocaleTimeString("fa-IR");
-  console.log(`\n[${time}] 🔍 در حال بررسی و پایش آگهی‌های جدید دیوار و شیپور تربت‌حیدریه...`);
+  console.log(`\n[${time}] 🔍 در حال بررسی و پایش آگهی‌های جدید دیوار و شیپور (تربت‌حیدریه + مشهد)...`);
   try {
     const res = await fetch(CRON_URL, {
       method: "GET",
@@ -54,12 +54,19 @@ async function runCycle() {
 
     if (res.ok) {
       const data = await res.json();
-      const divar = data.result?.ingest?.find((x) => x.source === "divar")?.inserted ?? 0;
-      const sheypoor = data.result?.ingest?.find((x) => x.source === "sheypoor")?.inserted ?? 0;
+      const divarTorbat = data.result?.ingest?.find((x) => x.source === "divar")?.inserted ?? 0;
+      const divarMashhad = data.result?.ingest?.find((x) => x.source === "divar-mashhad")?.inserted ?? 0;
+      const sheypoorTorbat = data.result?.ingest?.find((x) => x.source === "sheypoor")?.inserted ?? 0;
+      const sheypoorMashhad = data.result?.ingest?.find((x) => x.source === "sheypoor-mashhad")?.inserted ?? 0;
+      const totalNew = divarTorbat + divarMashhad + sheypoorTorbat + sheypoorMashhad;
       const alerts = data.result?.alerts?.notificationsCreated ?? 0;
-      console.log(`✅ پایش با موفقیت انجام شد: ${divar} آگهی جدید دیوار، ${sheypoor} آگهی جدید شیپور`);
+
+      console.log(
+        `✅ پایش با موفقیت انجام شد (${totalNew} آگهی جدید): ` +
+        `تربت‌حیدریه: ${divarTorbat + sheypoorTorbat} | مشهد: ${divarMashhad + sheypoorMashhad}`,
+      );
       if (alerts > 0) {
-        console.log(`🎯 تعداد ${alerts} هشدار و پیام به ربات بله و تلگرام ارسال شد!`);
+        console.log(`🎯 تعداد ${alerts} هشدار و پیام به ربات بله ارسال شد!`);
       }
     } else {
       console.log(`⚠️ وضعیت پاسخ: ${res.status}`);

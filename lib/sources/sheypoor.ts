@@ -41,10 +41,14 @@ function parseCarInfo(title: string): { make: string; model: string; year: numbe
 }
 
 export class SheypoorListingSourceProvider implements ListingSourceProvider {
-  readonly id = "sheypoor";
-  readonly displayName = "سایت شیپور";
+  get id(): string {
+    return this.defaultCity === "mashhad" ? "sheypoor-mashhad" : "sheypoor";
+  }
+  get displayName(): string {
+    return this.defaultCity === "mashhad" ? "شیپور مشهد" : "شیپور تربت‌حیدریه";
+  }
 
-  constructor(private readonly defaultCity: string = "torbat-heydariyeh") {}
+  constructor(private readonly defaultCity: "torbat-heydariyeh" | "mashhad" | string = "torbat-heydariyeh") {}
 
   async fetchLatest(citySlug?: string, query?: string): Promise<FetchResult> {
     const city = citySlug || this.defaultCity;
@@ -99,8 +103,13 @@ export class SheypoorListingSourceProvider implements ListingSourceProvider {
       const currency = match[5];
       const location = match[6];
 
-      // Strict Torbat Heydariyeh filtering: only accept items in Torbat Heydariyeh region
+      const targetFaCity = fallbackCity === "mashhad" ? "مشهد" : "تربت‌حیدریه";
+
+      // Strict city filtering
       if (fallbackCity === "torbat-heydariyeh" && !location.includes("تربت")) {
+        continue;
+      }
+      if (fallbackCity === "mashhad" && !location.includes("مشهد")) {
         continue;
       }
 
@@ -142,9 +151,9 @@ export class SheypoorListingSourceProvider implements ListingSourceProvider {
         year,
         mileage_km: null,
         color: null,
-        city: "تربت‌حیدریه",
+        city: targetFaCity,
         price_toman: priceToman,
-        description: `آگهی واقعی از سایت شیپور تربت‌حیدریه (${location})`,
+        description: `آگهی واقعی از سایت شیپور ${targetFaCity} (${location})`,
         image_url: null,
         published_at: new Date().toISOString(),
       });

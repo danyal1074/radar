@@ -5,9 +5,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const requestedCity = searchParams.get("city");
+
     const store = await getServiceStore();
     const listings = await store.listListings();
-    const active = listings.filter((l) => l.source_status === "active");
+    let active = listings.filter((l) => l.source_status === "active");
+
+    if (requestedCity) {
+      active = active.filter((l) => (l.city || "").includes(requestedCity));
+    }
+
     const estimates = await store.latestEstimates(active.map((l) => l.id));
 
     // پیدا کردن خودروهایی که زیر قیمت بازار هستند
@@ -27,6 +35,7 @@ export async function GET(req: Request) {
             profitToman: diffToman,
             discountPercent,
             source: l.source,
+            city: l.city || "تربت‌حیدریه",
             url: l.source_url,
             imageUrl: l.image_url,
             year: l.year,

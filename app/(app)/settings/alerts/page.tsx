@@ -31,6 +31,8 @@ export default async function AlertsPage({ searchParams }: PageProps<"/settings/
   const ctx = await requireContext({ access: true });
   const rules = await ctx.store.listRules(ctx.user.id);
   const plan = PLANS[ctx.access.plan];
+  const userCity = ctx.profile.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+  const allowedCitiesCount = ctx.profile.role === "admin" ? 2 : plan.allowedCitiesCount;
   const editing = typeof sp.edit === "string" ? rules.find((r) => r.id === sp.edit) : undefined;
   const showForm = sp.new === "1" || !!editing;
   const active = rules.filter((r) => r.is_active).length;
@@ -63,7 +65,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/settings/
 
       {showForm && (
         <div className="mb-6">
-          <RuleForm rule={editing} />
+          <RuleForm rule={editing} userCity={userCity} allowedCitiesCount={allowedCitiesCount} />
         </div>
       )}
 

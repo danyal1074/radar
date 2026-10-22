@@ -24,7 +24,15 @@ const QUICK_CAR_PILLS = [
   "هایما",
 ];
 
-export function RuleForm({ rule }: { rule?: WatchRule }) {
+export function RuleForm({
+  rule,
+  userCity = "تربت‌حیدریه",
+  allowedCitiesCount = 1,
+}: {
+  rule?: WatchRule;
+  userCity?: string;
+  allowedCitiesCount?: number;
+}) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveRuleAction, null);
   const [selectedMake, setSelectedMake] = useState(rule?.make ?? (rule?.model ? `${rule.make ?? ""} ${rule.model}`.trim() : ""));
 
@@ -189,9 +197,27 @@ export function RuleForm({ rule }: { rule?: WatchRule }) {
               <Input name="year_max" inputMode="numeric" defaultValue={v(rule?.year_max)} placeholder="مثلاً: ۱۴۰۳" />
             </Field>
 
-            <Field label="شهر" error={e.city}>
-              <Input name="city" defaultValue={rule?.city ?? "تربت حیدریه"} placeholder="تربت حیدریه" />
-            </Field>
+            {allowedCitiesCount >= 2 ? (
+              <Field label="شهر تحت پایش" error={e.city}>
+                <Select name="city" defaultValue={rule?.city ?? ""}>
+                  <option value="">هر دو شهر (تربت‌حیدریه + مشهد)</option>
+                  <option value="تربت‌حیدریه">تربت‌حیدریه</option>
+                  <option value="مشهد">مشهد</option>
+                </Select>
+              </Field>
+            ) : (
+              <Field
+                label="شهر تحت پایش"
+                error={e.city}
+                hint="قفل شده روی ۱ شهر در پلن فعلی (برای رصد همزمان مشهد، پلن را به Pro ارتقا دهید)"
+              >
+                <input type="hidden" name="city" value={userCity} />
+                <div className="flex items-center gap-2 rounded-xl border border-line/70 bg-brand-50/50 px-3.5 py-2.5 text-sm font-bold text-brand-950">
+                  <span>🏙️ {userCity}</span>
+                  <span className="ms-auto text-xs text-muted font-normal">قفل شده در پلن شما</span>
+                </div>
+              </Field>
+            )}
 
             <Field label="منبع آگهی" error={e.source}>
               <Select name="source" defaultValue={rule?.source ?? "any"}>

@@ -48,8 +48,20 @@ export function RegisterForm() {
           <Input name="business_name" placeholder="مثال: نمایشگاه اتومبیل رضایی" autoComplete="organization" required />
         </Field>
       </div>
-      <Field label="شهر" error={e.city}>
-        <Input name="city" defaultValue="تربت حیدریه" required />
+      <Field
+        label="انتخاب شهر تحت پایش (الزامی)"
+        error={e.city}
+        hint="در دوره آزمایشی رایگان، حساب شما روی شهر انتخابی قفل می‌شود. (امکان رصد همزمان هر دو شهر مشهد و تربت در پلن Pro فعال است)"
+      >
+        <select
+          name="city"
+          defaultValue="تربت‌حیدریه"
+          className="w-full rounded-xl border border-line bg-card px-3 py-2.5 text-sm font-medium text-foreground shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          required
+        >
+          <option value="تربت‌حیدریه">🏙️ تربت‌حیدریه (رصد دیوار و شیپور تربت‌حیدریه)</option>
+          <option value="مشهد">🏙️ مشهد (رصد دیوار و شیپور مشهد)</option>
+        </select>
       </Field>
       <Field label="شماره موبایل" error={e.phone} hint="جهت ورود به سامانه و دریافت هشدارهای شکار">
         <Input name="phone" type="tel" placeholder="۰۹۱۲۳۴۵۶۷۸۹" autoComplete="tel" dir="ltr" required />

@@ -15,13 +15,16 @@ export default async function OpportunitiesPage() {
   const ctx = await requireContext({ access: true });
   const [views, rules] = await Promise.all([loadViews(ctx), ctx.store.listRules(ctx.user.id)]);
   const plan = PLANS[ctx.access.plan];
+  const userCity = ctx.profile.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+  const isMultiCity = ctx.profile.role === "admin" || plan.allowedCitiesCount >= 2;
+  const cityText = isMultiCity ? "تربت‌حیدریه و مشهد" : userCity;
 
   const activeRules = rules.filter((r) => r.is_active);
   // ۱. فرصت‌های دقیقاً منطبق با هشدارهای کاربر
   const ruleOpps = opportunitiesFor(views, activeRules);
   const ruleOppListingIds = new Set(ruleOpps.map((o) => o.view.listing.id));
 
-  // ۲. تمام فرصت‌های زیر قیمت بازار در تربت‌حیدریه (چه برای آن‌ها هشدار باشد چه نباشد)
+  // ۲. تمام فرصت‌های زیر قیمت بازار در شهر(های) مجاز کاربر
   const marketOpps = views
     .filter((v) => {
       if (ruleOppListingIds.has(v.listing.id)) return false; // جلوگیری از نمایش تکراری
@@ -40,7 +43,7 @@ export default async function OpportunitiesPage() {
     <>
       <PageHeader
         title="فرصت‌های خرید"
-        description="تمام آگهی‌های واقعی دیوار و شیپور تربت‌حیدریه که قیمت آن‌ها پایین‌تر از نرخ کارشناسی روز بازار است."
+        description={`تمام آگهی‌های واقعی دیوار و شیپور ${cityText} که قیمت آن‌ها پایین‌تر از نرخ کارشناسی روز بازار است.`}
         actions={
           <LinkButton href="/settings/alerts?new=1" variant="secondary">
             تعریف هشدار جدید
@@ -51,7 +54,7 @@ export default async function OpportunitiesPage() {
       {totalOpps === 0 ? (
         <EmptyState
           title="در حال حاضر فرصت خریدی یافت نشد"
-          body="به محض انتشار آگهی جدید زیر قیمت در دیوار و شیپور تربت‌حیدریه، در اینجا نمایش داده می‌شود و به بله و تلگرام شما ارسال خواهد شد."
+          body={`به محض انتشار آگهی جدید زیر قیمت در دیوار و شیپور ${cityText}، در اینجا نمایش داده می‌شود و به بله شما ارسال خواهد شد.`}
           action={<LinkButton href="/listings">مشاهده تمام آگهی‌ها</LinkButton>}
         />
       ) : (

@@ -9,17 +9,25 @@ export interface BuildOptions {
   userId: string;
   withScore: boolean;
   now?: Date;
+  cityRestriction?: string;
 }
 
 /** Joins listings with the shared estimate and the user's private state. */
 export async function buildListingViews(store: Store, opts: BuildOptions): Promise<ListingView[]> {
   const now = opts.now ?? new Date();
-  const [listings, savedIds, followups, rules] = await Promise.all([
+  const [allListings, savedIds, followups, rules] = await Promise.all([
     store.listListings(),
     store.listSavedIds(opts.userId),
     store.listFollowups(opts.userId),
     store.listRules(opts.userId),
   ]);
+
+  let listings = allListings;
+  if (opts.cityRestriction) {
+    const target = normalizeFa(opts.cityRestriction);
+    listings = allListings.filter((l) => normalizeFa(l.city || "").includes(target));
+  }
+
   const estimates = await store.latestEstimates(listings.map((l) => l.id));
   const saved = new Set(savedIds);
   const fu = new Map(followups.map((f) => [f.listing_id, f]));

@@ -20,6 +20,9 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
   const sp = await searchParams;
   const ctx = await requireContext({ access: true });
   const plan = PLANS[ctx.access.plan];
+  const userCity = ctx.profile.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+  const allowedCitiesCount = ctx.profile.role === "admin" ? 2 : plan.allowedCitiesCount;
+
   const { filters, sort, page } = parseListingQuery(sp, plan.opportunityScore);
   const all = await loadViews(ctx);
   const filtered = applySort(applyFilters(all, filters), sort);
@@ -36,7 +39,14 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
           </Button>
         </form>
       </div>
-      <FilterBar filters={filters} sort={sort} facets={facets(all)} canScoreSort={plan.opportunityScore} />
+      <FilterBar
+        filters={filters}
+        sort={sort}
+        facets={facets(all)}
+        canScoreSort={plan.opportunityScore}
+        allowedCitiesCount={allowedCitiesCount}
+        userCity={userCity}
+      />
       {pg.items.length === 0 ? (
         <EmptyState
           title="آگهی‌ای پیدا نشد"

@@ -8,10 +8,14 @@ function normalizeFaDigits(str: string): string {
 }
 
 export class DivarListingSourceProvider implements ListingSourceProvider {
-  readonly id = "divar";
-  readonly displayName = "سایت دیوار";
+  get id(): string {
+    return this.defaultCity === "mashhad" ? "divar-mashhad" : "divar";
+  }
+  get displayName(): string {
+    return this.defaultCity === "mashhad" ? "دیوار مشهد" : "دیوار تربت‌حیدریه";
+  }
 
-  constructor(private readonly defaultCity: string = "torbat-heydariyeh") {}
+  constructor(private readonly defaultCity: "torbat-heydariyeh" | "mashhad" | string = "torbat-heydariyeh") {}
 
   async fetchLatest(citySlug?: string, query?: string): Promise<FetchResult> {
     const city = citySlug || this.defaultCity;
@@ -42,6 +46,7 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
   private parseSchemaLd(html: string, defaultCity: string): ListingImportItem[] {
     const matches = html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g);
     const items: ListingImportItem[] = [];
+    const targetFaCity = defaultCity === "mashhad" ? "مشهد" : "تربت‌حیدریه";
 
     for (const match of matches) {
       try {
@@ -133,8 +138,11 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
           const city = car.web_info?.city_persian || defaultCity;
           const imageUrl = car.image ? String(car.image) : null;
 
-          // Strict Torbat Heydariyeh filtering
+          // Strict city filtering
           if (defaultCity === "torbat-heydariyeh" && !city.includes("تربت") && !title.includes("تربت")) {
+            continue;
+          }
+          if (defaultCity === "mashhad" && !city.includes("مشهد") && !title.includes("مشهد")) {
             continue;
           }
 
@@ -161,9 +169,9 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
             year: year && year > 1300 && year < 1500 ? year : null,
             mileage_km: mileageKm,
             color,
-            city: "تربت‌حیدریه",
+            city: targetFaCity,
             price_toman: priceToman,
-            description: `آگهی واقعی از سایت دیوار تربت‌حیدریه`,
+            description: `آگهی واقعی از سایت دیوار ${targetFaCity}`,
             image_url: imageUrl,
             published_at: new Date().toISOString(),
           });

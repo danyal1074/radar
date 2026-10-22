@@ -43,7 +43,12 @@ const optionalText = z.preprocess(
 export const registerSchema = z.object({
   full_name: z.string().trim().min(2, "نام و نام خانوادگی را وارد کنید").max(80),
   business_name: z.string().trim().min(2, "نام نمایشگاه را وارد کنید").max(80),
-  city: z.string().trim().min(2, "شهر را وارد کنید").max(60),
+  city: z
+    .string()
+    .trim()
+    .min(2, "شهر را انتخاب کنید")
+    .max(60)
+    .transform((v) => (v.includes("مشهد") ? "مشهد" : "تربت‌حیدریه")),
   phone: z
     .string()
     .trim()

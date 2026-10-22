@@ -1,4 +1,5 @@
 import "server-only";
+import { KHORASAN_RAZAVI_CITIES } from "../cities";
 import { estimationConfig, getServiceStore } from "../db";
 import { env } from "../env";
 import { BenchmarkPriceEstimationProvider } from "../estimation/benchmark";
@@ -10,14 +11,17 @@ import type { ListingSourceProvider } from "../sources/provider";
 import { runPipeline } from "./pipeline";
 
 export function activeSources(): ListingSourceProvider[] {
-  // پایش لحظه‌ای و همزمان دیوار و شیپور در شهرهای مهم خراسان رضوی
+  // پایش لحظه‌ای و همزمان دیوار در تمامی ۲۵ شهر استان خراسان رضوی + شیپور در شهرهای فعال
+  const divarSources = KHORASAN_RAZAVI_CITIES.map(
+    (c) => new DivarListingSourceProvider(c.slug),
+  );
   return [
-    new DivarListingSourceProvider("mashhad"),
-    new DivarListingSourceProvider("torbat-heydariyeh"),
-    new DivarListingSourceProvider("neyshabur"),
-    new DivarListingSourceProvider("sabzevar"),
+    ...divarSources,
     new SheypoorListingSourceProvider("mashhad"),
     new SheypoorListingSourceProvider("torbat-heydariyeh"),
+    new SheypoorListingSourceProvider("neyshabur"),
+    new SheypoorListingSourceProvider("sabzevar"),
+    new SheypoorListingSourceProvider("kashmar"),
   ];
 }
 

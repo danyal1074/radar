@@ -36,15 +36,36 @@ export async function runPipeline(
   const errors: string[] = [];
 
   try {
-    for (const src of deps.sources) {
-      try {
-        const { items, isSample } = await src.fetchLatest();
-        const r = await store.upsertListings(items, { isSample, now });
-        summary.ingest.push({ source: src.id, inserted: r.inserted, updated: r.updated, unchanged: r.unchanged });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "خطای ناشناخته";
-        errors.push(`${src.id}: ${msg}`);
-        summary.ingest.push({ source: src.id, inserted: 0, updated: 0, unchanged: 0, error: msg });
+    // Ingest sources in parallel batches to scrape all 25+ cities rapidly without timeouts
+    const BATCH_SIZE = 6;
+    for (let i = 0; i < deps.sources.length; i += BATCH_SIZE) {
+      const batch = deps.sources.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (src) => {
+          try {
+            const { items, isSample } = await src.fetchLatest();
+            return { src, items, isSample, error: null };
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "خطای ناشناخته";
+            return { src, items: [], isSample: false, error: msg };
+          }
+        }),
+      );
+
+      for (const res of batchResults) {
+        if (res.error) {
+          errors.push(`${res.src.id}: ${res.error}`);
+          summary.ingest.push({ source: res.src.id, inserted: 0, updated: 0, unchanged: 0, error: res.error });
+        } else {
+          try {
+            const r = await store.upsertListings(res.items, { isSample: res.isSample, now });
+            summary.ingest.push({ source: res.src.id, inserted: r.inserted, updated: r.updated, unchanged: r.unchanged });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "خطای دیتابیس";
+            errors.push(`${res.src.id}: ${msg}`);
+            summary.ingest.push({ source: res.src.id, inserted: 0, updated: 0, unchanged: 0, error: msg });
+          }
+        }
       }
     }
 

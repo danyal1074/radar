@@ -5,10 +5,12 @@ export function BotLinkCard({
   code,
   isBaleLinked,
   isTelegramLinked,
+  isRubikaLinked,
 }: {
   code: string;
   isBaleLinked: boolean;
   isTelegramLinked: boolean;
+  isRubikaLinked?: boolean;
 }) {
   return (
     <Card className="mb-6 overflow-hidden border-brand-200 bg-gradient-to-br from-surface to-paper p-5 shadow-sm">
@@ -18,17 +20,21 @@ export function BotLinkCard({
             <Bot className="size-5" />
           </div>
           <div>
-            <h3 className="font-bold text-ink">اتصال ربات بله و تلگرام به حساب شما</h3>
+            <h3 className="font-bold text-ink">اتصال ربات پیام‌رسان‌ها (بله، روبیکا، تلگرام)</h3>
             <p className="text-xs text-muted">
               هشدارهای سفارشی و فرصت‌های خرید لحظه‌ای به ربات پیام‌رسان شما ارسال می‌شود
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge tone={isBaleLinked ? "good" : "neutral"} className="gap-1">
             {isBaleLinked ? <CheckCircle2 className="size-3" /> : null}
             بله: {isBaleLinked ? "متصل" : "غیرمتصل"}
+          </Badge>
+          <Badge tone={isRubikaLinked ? "good" : "neutral"} className="gap-1">
+            {isRubikaLinked ? <CheckCircle2 className="size-3" /> : null}
+            روبیکا: {isRubikaLinked ? "متصل" : "غیرمتصل"}
           </Badge>
           <Badge tone={isTelegramLinked ? "good" : "neutral"} className="gap-1">
             {isTelegramLinked ? <CheckCircle2 className="size-3" /> : null}
@@ -53,7 +59,7 @@ export function BotLinkCard({
               ۱
             </span>
             <p>
-              وارد ربات در <strong>بله</strong> (آیدی: <code className="font-mono text-brand-700">@radarcar_bot</code>) یا <strong>تلگرام</strong> شوید.
+              وارد ربات در <strong>بله</strong> (<code className="font-mono text-brand-700">@radarcar_bot</code>)، <strong>روبیکا</strong> (<code className="font-mono text-brand-700">@radarcarbot</code>) یا <strong>تلگرام</strong> شوید.
             </p>
           </div>
           <div className="flex items-start gap-2">
@@ -75,7 +81,7 @@ export function BotLinkCard({
               ۳
             </span>
             <p>
-              ربات بلافاصله اتصال حساب شما را تایید کرده و از آن پس تمام آگهی‌های مطابق فیلتر شما را با دکمه شیشه‌ای ارسال می‌کند.
+              ربات بلافاصله اتصال حساب شما را تایید کرده و از آن پس تمام آگهی‌های مطابق فیلتر شما را بلافاصله ارسال می‌کند.
             </p>
           </div>
 
@@ -87,7 +93,16 @@ export function BotLinkCard({
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition"
             >
               <MessageSquare className="size-3.5" />
-              باز کردن در بله (@radarcar_bot)
+              ربات بله (@radarcar_bot)
+            </a>
+            <a
+              href={`https://rubika.ir/radarcarbot`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-700 transition"
+            >
+              <Bot className="size-3.5" />
+              ربات روبیکا (@radarcarbot)
             </a>
             <a
               href={`https://t.me/radarcar_bot?start=${code}`}
@@ -96,7 +111,7 @@ export function BotLinkCard({
               className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-sky-700 transition"
             >
               <Send className="size-3.5" />
-              اتصال فوری با تلگرام
+              ربات تلگرام
             </a>
           </div>
         </div>

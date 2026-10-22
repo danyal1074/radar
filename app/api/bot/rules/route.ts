@@ -15,11 +15,16 @@ function getServiceClient() {
 }
 
 const DANIAL_ADMIN_UUID = "97375339-be50-403e-be7b-0aee1b7c2d99";
+const DANIAL_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
 
-/** یافتن یا ساخت خودکار حساب کاربری برای کاربر پیام‌رسان بله/تلگرام با ۱۴ روز اشتراک رایگان */
-async function resolveOrCreateUserId(chatId: string, messenger: "bale" | "telegram", userName?: string): Promise<string> {
+/** یافتن یا ساخت خودکار حساب کاربری برای کاربر پیام‌رسان‌ها با ۱۴ روز اشتراک رایگان */
+async function resolveOrCreateUserId(
+  chatId: string,
+  messenger: "bale" | "telegram" | "rubika" | "eitaa",
+  userName?: string,
+): Promise<string> {
   // مدیر کل سامانه (دانیال)
-  if (String(chatId) === "772511114") {
+  if (String(chatId) === "772511114" || String(chatId) === DANIAL_RUBIKA_CHAT) {
     await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
     return DANIAL_ADMIN_UUID;
   }
@@ -95,7 +100,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const chatId = searchParams.get("chatId");
-    const messenger = (searchParams.get("messenger") || "bale") as "bale" | "telegram";
+    const messenger = (searchParams.get("messenger") || "bale") as "bale" | "telegram" | "rubika" | "eitaa";
 
     if (!chatId) {
       return NextResponse.json({ ok: false, message: "شناسه چت الزامی است" }, { status: 400 });

@@ -61,6 +61,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/settings/
         code={linkStatus.code}
         isBaleLinked={linkStatus.isBaleLinked}
         isTelegramLinked={linkStatus.isTelegramLinked}
+        isRubikaLinked={linkStatus.isRubikaLinked}
       />
 
       {showForm && (

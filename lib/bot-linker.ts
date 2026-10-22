@@ -5,6 +5,8 @@ export interface BotSubscriber {
   userId: string;
   baleChatId?: string;
   telegramChatId?: string;
+  rubikaChatId?: string;
+  eitaaChatId?: string;
   userName?: string;
   linkedAt: string;
 }
@@ -17,9 +19,10 @@ interface StorageData {
 const DATA_DIR = path.join(process.cwd(), ".data");
 const FILE_PATH = path.join(DATA_DIR, "bot_subscribers.json");
 
-// Default Danial's Bale & Telegram chat ID for admin notifications
+// Default Danial's Bale, Telegram & Rubika chat IDs for admin notifications
 const DEFAULT_ADMIN_BALE_CHAT = "772511114";
 const DEFAULT_ADMIN_TELEGRAM_CHAT = "772511114";
+const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
 
 async function readStorage(): Promise<StorageData> {
   try {
@@ -33,6 +36,7 @@ async function readStorage(): Promise<StorageData> {
         admin: {
           userId: "admin",
           baleChatId: DEFAULT_ADMIN_BALE_CHAT,
+          rubikaChatId: DEFAULT_ADMIN_RUBIKA_CHAT,
           userName: "دانیال حقدادی (مدیر)",
           linkedAt: new Date().toISOString(),
         },
@@ -71,11 +75,11 @@ export async function getOrCreateLinkCode(userId: string): Promise<string> {
   return code;
 }
 
-/** اتصال چت‌آیدی بله یا تلگرام به کاربر با استفاده از کد اتصال */
+/** اتصال چت‌آیدی پیام‌رسان‌ها به کاربر با استفاده از کد اتصال */
 export async function linkChatWithCode(
   inputCode: string,
   chatId: string,
-  messenger: "bale" | "telegram",
+  messenger: "bale" | "telegram" | "rubika" | "eitaa",
   userName?: string,
 ): Promise<{ success: boolean; message: string; userId?: string }> {
   const store = await readStorage();
@@ -113,8 +117,12 @@ export async function linkChatWithCode(
 
   if (messenger === "bale") {
     existing.baleChatId = String(chatId);
-  } else {
+  } else if (messenger === "telegram") {
     existing.telegramChatId = String(chatId);
+  } else if (messenger === "rubika") {
+    existing.rubikaChatId = String(chatId);
+  } else if (messenger === "eitaa") {
+    existing.eitaaChatId = String(chatId);
   }
   if (userName) existing.userName = userName;
 
@@ -133,8 +141,12 @@ export async function getUserLinkStatus(userId: string): Promise<{
   code: string;
   isBaleLinked: boolean;
   isTelegramLinked: boolean;
+  isRubikaLinked: boolean;
+  isEitaaLinked: boolean;
   baleChatId?: string;
   telegramChatId?: string;
+  rubikaChatId?: string;
+  eitaaChatId?: string;
 }> {
   const code = await getOrCreateLinkCode(userId);
   const store = await readStorage();
@@ -144,8 +156,12 @@ export async function getUserLinkStatus(userId: string): Promise<{
     code,
     isBaleLinked: Boolean(sub?.baleChatId),
     isTelegramLinked: Boolean(sub?.telegramChatId),
+    isRubikaLinked: Boolean(sub?.rubikaChatId),
+    isEitaaLinked: Boolean(sub?.eitaaChatId),
     baleChatId: sub?.baleChatId,
     telegramChatId: sub?.telegramChatId,
+    rubikaChatId: sub?.rubikaChatId,
+    eitaaChatId: sub?.eitaaChatId,
   };
 }
 
@@ -153,11 +169,15 @@ export async function getUserLinkStatus(userId: string): Promise<{
 export async function getTargetChatsForUser(userId: string): Promise<{
   baleChats: string[];
   telegramChats: string[];
+  rubikaChats: string[];
+  eitaaChats: string[];
 }> {
   const store = await readStorage();
   const sub = store.subscribers[userId];
   const baleChats: string[] = [];
   const telegramChats: string[] = [];
+  const rubikaChats: string[] = [];
+  const eitaaChats: string[] = [];
 
   // فقط اگر کاربر مدیر (دانیال) باشد، چت‌های پیش‌فرض مدیر اضافه می‌شوند
   if (userId === "admin" || userId === "97375339-be50-403e-be7b-0aee1b7c2d99" || userId.includes("danyal")) {
@@ -166,6 +186,9 @@ export async function getTargetChatsForUser(userId: string): Promise<{
     }
     if (!telegramChats.includes(DEFAULT_ADMIN_TELEGRAM_CHAT)) {
       telegramChats.push(DEFAULT_ADMIN_TELEGRAM_CHAT);
+    }
+    if (!rubikaChats.includes(DEFAULT_ADMIN_RUBIKA_CHAT)) {
+      rubikaChats.push(DEFAULT_ADMIN_RUBIKA_CHAT);
     }
   }
 
@@ -176,20 +199,28 @@ export async function getTargetChatsForUser(userId: string): Promise<{
   if (sub?.telegramChatId && !telegramChats.includes(sub.telegramChatId)) {
     telegramChats.push(sub.telegramChatId);
   }
+  if (sub?.rubikaChatId && !rubikaChats.includes(sub.rubikaChatId)) {
+    rubikaChats.push(sub.rubikaChatId);
+  }
+  if (sub?.eitaaChatId && !eitaaChats.includes(sub.eitaaChatId)) {
+    eitaaChats.push(sub.eitaaChatId);
+  }
 
-  return { baleChats, telegramChats };
+  return { baleChats, telegramChats, rubikaChats, eitaaChats };
 }
 
 /** یافتن یا اتصال کاربر بر اساس Chat ID پیام‌رسان */
 export async function getUserIdByChatId(
   chatId: string,
-  messenger: "bale" | "telegram",
+  messenger: "bale" | "telegram" | "rubika" | "eitaa",
 ): Promise<string | null> {
   const store = await readStorage();
   const cid = String(chatId);
   for (const [uid, sub] of Object.entries(store.subscribers)) {
     if (messenger === "bale" && sub.baleChatId === cid) return uid;
     if (messenger === "telegram" && sub.telegramChatId === cid) return uid;
+    if (messenger === "rubika" && sub.rubikaChatId === cid) return uid;
+    if (messenger === "eitaa" && sub.eitaaChatId === cid) return uid;
   }
   return null;
 }
@@ -198,7 +229,7 @@ export async function getUserIdByChatId(
 export async function registerDirectChat(
   userId: string,
   chatId: string,
-  messenger: "bale" | "telegram",
+  messenger: "bale" | "telegram" | "rubika" | "eitaa",
   userName?: string,
 ): Promise<BotSubscriber> {
   const store = await readStorage();
@@ -209,7 +240,9 @@ export async function registerDirectChat(
   };
 
   if (messenger === "bale") existing.baleChatId = String(chatId);
-  else existing.telegramChatId = String(chatId);
+  else if (messenger === "telegram") existing.telegramChatId = String(chatId);
+  else if (messenger === "rubika") existing.rubikaChatId = String(chatId);
+  else if (messenger === "eitaa") existing.eitaaChatId = String(chatId);
   if (userName) existing.userName = userName;
 
   store.subscribers[userId] = existing;

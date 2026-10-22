@@ -252,6 +252,9 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
   */
 
   // ۴. ارسال به کانال رسمی ایتا (فقط موارد فروش فوری، پول‌لازم و کاهش قیمت خوب با تصویر)
+  const cleanBroadcastText = text.replace(/<[^>]+>/g, "");
+  const broadcastButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
+
   const isUrgent =
     payload.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
     payload.title.includes("فوری") ||
@@ -262,8 +265,8 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
 
   if (isUrgent || isGoodDrop) {
     const eitaaCaption = payload.url
-      ? `${cleanRubikaText}\n\n🔗 لینک مشاهده آگهی: ${payload.url}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
-      : `${cleanRubikaText}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
+      ? `${cleanBroadcastText}\n\n🔗 لینک مشاهده آگهی: ${payload.url}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
+      : `${cleanBroadcastText}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
 
     let sentWithPhoto = false;
 
@@ -282,7 +285,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
             formData.append(
               "reply_markup",
               JSON.stringify({
-                inline_keyboard: [[{ text: rubikaButtonText, url: payload.url }]],
+                inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
               }),
             );
           }
@@ -310,7 +313,7 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
           bodyParams.append(
             "reply_markup",
             JSON.stringify({
-              inline_keyboard: [[{ text: rubikaButtonText, url: payload.url }]],
+              inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
             }),
           );
         }

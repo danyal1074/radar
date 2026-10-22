@@ -11,6 +11,27 @@ function normalizeCarText(text: string): string {
     .replace(/‌/g, " ");
 
   const enFaMap: [RegExp, string][] = [
+    [/ال\s*نود|ال-نود|ال\s*۹۰|l90|logan/g, "تندر 90"],
+    [/دویست\s*و\s*شش/g, "206"],
+    [/دویست\s*و\s*هفت/g, "207"],
+    [/چهارصد\s*و\s*پنج/g, "405"],
+    [/ایکس\s*22|ایکس\s*۲۲|x\s*22/g, "x22"],
+    [/ایکس\s*33|ایکس\s*۳۳|x\s*33/g, "x33"],
+    [/ایکس\s*55|ایکس\s*۵۵|x\s*55/g, "x55"],
+    [/اف\s*ایکس/g, "fx"],
+    [/تیگو\s*5|تیگو\s*۵/g, "tiggo 5"],
+    [/تیگو\s*7|تیگو\s*۷/g, "tiggo 7"],
+    [/تیگو\s*8|تیگو\s*۸/g, "tiggo 8"],
+    [/آریزو\s*5|آریزو\s*۵/g, "arrizo 5"],
+    [/آریزو\s*6|آریزو\s*۶/g, "arrizo 6"],
+    [/وانت\s*مزدا|مزدا\s*2000|مزدا\s*۲۰۰۰|مزدا\s*1600|مزدا\s*۱۶۰۰|مزدا\s*کارا/g, "وانت مزدا"],
+    [/کمری/g, "camry"],
+    [/اسپورتیج/g, "sportage"],
+    [/سانتافه/g, "santafe"],
+    [/سوناتا/g, "sonata"],
+    [/توسان/g, "tucson"],
+    [/سراتو/g, "cerato"],
+    [/اپتیما/g, "optima"],
     [/pride/g, "پراید"],
     [/peugeot/g, "پژو"],
     [/pars|persia/g, "پارس"],
@@ -34,7 +55,7 @@ function normalizeCarText(text: string): string {
     [/mvm/g, "ام وی ام"],
     [/brilliance/g, "برلیانس"],
     [/lifan/g, "لیفان"],
-    [/tondar|l90/g, "تندر"],
+    [/tondar/g, "تندر"],
     [/sandero/g, "ساندرو"],
     [/megane/g, "مگان"],
     [/xantia/g, "زانتیا"],
@@ -68,7 +89,37 @@ export function lookupDailyPrice(
 
   const fullText = normalizeCarText(`${make} ${model} ${title || ""}`);
 
+  // در صورتی که سال در مشخصات خالی باشد، از عنوان استخراج می‌کنیم
+  let effectiveYear = year;
+  if (!effectiveYear) {
+    const yMatch4 = fullText.match(/\b(13[789]\d|140\d)\b/);
+    if (yMatch4) {
+      effectiveYear = parseInt(yMatch4[1], 10);
+    } else {
+      const yMatch2 = fullText.match(/(?:مدل|اخر|سال|\b)\s*([789]\d)\b/);
+      if (yMatch2) {
+        const y2 = parseInt(yMatch2[1], 10);
+        effectiveYear = y2 < 30 ? 1400 + y2 : 1300 + y2;
+      }
+    }
+  }
+
   // تشخیص دقیق خانواده خودرو
+  const isMazdaPickup = /وانت\s*مزدا|مزدا\s*2000|مزدا\s*1600|کارا|تک\s*کابین|دو\s*کابین/.test(fullText);
+  const isMazda3 = !isMazdaPickup && /مزدا\s*3\b|مزدا\s*۳\b/.test(fullText);
+  const isMazda323 = !isMazdaPickup && /323|۳۲۳/.test(fullText);
+
+  const isX22 = /x22/.test(fullText);
+  const isX33 = /x33/.test(fullText);
+  const isX55 = /x55/.test(fullText);
+  const isMvm315 = /315/.test(fullText);
+  const isMvm110 = /110/.test(fullText);
+  const isMvm = !isX22 && !isX33 && !isX55 && !isMvm315 && !isMvm110 && /ام\s*وی\s*ام|mvm/.test(fullText);
+
+  const isTondar = /تندر|ال\s*90|l90|نود/.test(fullText);
+  const isSandero = /ساندرو|استپ\s*وی/.test(fullText);
+  const isMegane = /مگان/.test(fullText);
+
   const isSorenPlus = /سورن\s*پلاس/.test(fullText);
   const isSoren = !isSorenPlus && /سورن/.test(fullText);
   const isSamand = !isSorenPlus && !isSoren && /سمند/.test(fullText);
@@ -77,27 +128,33 @@ export function lookupDailyPrice(
   const isPars = /پارس|پرشیا/.test(fullText);
   const isDena = /دنا/.test(fullText);
   const isTara = /تارا/.test(fullText);
-  const isPride = /پراید|صبا|نسیم/.test(fullText);
+  const isPride = /پراید|صبا|نسیم|111|131|132|141|151/.test(fullText);
   const isQuick = /کوییک|کوئیک/.test(fullText);
   const isSaina = /ساینا/.test(fullText);
   const isShahin = /شاهین/.test(fullText);
   const isTiba = /تیبا/.test(fullText);
   const isRana = /رانا/.test(fullText);
   const is405 = /405/.test(fullText);
-  const isZamyad = /زامیاد|نیسان/.test(fullText);
-  const isTondar = /تندر|ال\s*90|ال۹۰|l90/.test(fullText);
-  const isSandero = /ساندرو|استپ\s*وی/.test(fullText);
-  const isMegane = /مگان/.test(fullText);
-  const isMvm = /ام\s*وی\s*ام|mvm/.test(fullText);
-  const isChery = /چری|فونیکس|تیگو|آریزو/.test(fullText);
+  const isZamyad = /زامیاد|نیسان\s*وانت|وانت\s*نیسان/.test(fullText);
+  const isPaykan = /پیکان|وانت\s*پیکان/.test(fullText);
+  const isArisan = /آریسان/.test(fullText);
+  const isXantia = /زانتیا/.test(fullText);
+  const isRio = /ریو/.test(fullText);
+
+  const isCamry = /camry|کمری/.test(fullText);
+  const isCorolla = /corolla|کرولا/.test(fullText);
+  const isSportage = /sportage|اسپورتیج/.test(fullText);
+  const isCerato = /cerato|سراتو/.test(fullText);
+  const isOptima = /optima|اپتیما/.test(fullText);
+  const isSantafe = /santafe|سانتافه/.test(fullText);
+  const isSonata = /sonata|سوناتا/.test(fullText);
+  const isTucson = /tucson|توسان/.test(fullText);
+
+  const isChery = /چری|فونیکس|تیگو|آریزو|fx/.test(fullText);
   const isJac = /جک|jac|کی\s*ام\s*سی|kmc/.test(fullText);
   const isHaima = /هایما/.test(fullText);
   const isBrilliance = /برلیانس/.test(fullText);
   const isLifan = /لیفان/.test(fullText);
-  const isPaykan = /پیکان/.test(fullText);
-  const isArisan = /آریسان/.test(fullText);
-  const isXantia = /زانتیا/.test(fullText);
-  const isRio = /ریو/.test(fullText);
 
   // زیرویژگی‌ها
   const isDual = /دوگانه|گاز|cng|پایه گازسوز/.test(fullText);
@@ -112,10 +169,55 @@ export function lookupDailyPrice(
 
   for (const p of prices) {
     const pNorm = normalizeCarText(`${p.name} ${p.year}`);
+
+    // جلوگیری از نسبت دادن خودروهای لوکس و وارداتی چندمیلیاردی به خودروهای داخلی یا کارکرده
+    if (p.priceToman > 2_500_000_000 && !/cx|ez|لندکروز|پرادو|بی\s*ام\s*و|بنز|پورشه|فونیکس\s*fx|تیگو\s*8|اسپورتیج|سانتافه|کمری|سوناتا/.test(fullText)) {
+      continue;
+    }
+
     let score = 0;
 
     // تطابق خانواده
-    if (isSorenPlus) {
+    if (isMazdaPickup) {
+      if (!/وانت\s*مزدا|کارا/.test(pNorm) || /cx|ez|پریمیوم|3\b/.test(pNorm)) continue;
+      score += 70;
+      if (/دو\s*کابین/.test(fullText) && /دو\s*کابین/.test(pNorm)) score += 30;
+      if (/تک\s*کابین/.test(fullText) && /تک\s*کابین/.test(pNorm)) score += 30;
+    } else if (isMazda3) {
+      if (!/مزدا\s*3\b/.test(pNorm) || /وانت|cx|ez/.test(pNorm)) continue;
+      score += 70;
+    } else if (isMazda323) {
+      if (!/323/.test(pNorm)) continue;
+      score += 70;
+    } else if (isX22) {
+      if (!/x22/.test(pNorm)) continue;
+      score += 70;
+      if (/پرو/.test(fullText) && /پرو/.test(pNorm)) score += 25;
+    } else if (isX33) {
+      if (!/x33/.test(pNorm)) continue;
+      score += 70;
+    } else if (isX55) {
+      if (!/x55/.test(pNorm)) continue;
+      score += 70;
+    } else if (isMvm315) {
+      if (!/315/.test(pNorm)) continue;
+      score += 70;
+    } else if (isMvm110) {
+      if (!/110/.test(pNorm)) continue;
+      score += 70;
+    } else if (isTondar) {
+      if (!/تندر|l90|لوگان/.test(pNorm)) continue;
+      score += 70;
+      if (/پارس\s*تندر/.test(fullText) && /پارس\s*تندر/.test(pNorm)) score += 25;
+      if (/e2/.test(fullText) && /e2/.test(pNorm)) score += 20;
+    } else if (isSandero) {
+      if (!/ساندرو/.test(pNorm)) continue;
+      score += 70;
+      if (/استپ\s*وی/.test(fullText) && /استپ\s*وی/.test(pNorm)) score += 25;
+    } else if (isMegane) {
+      if (!/مگان/.test(pNorm)) continue;
+      score += 70;
+    } else if (isSorenPlus) {
       if (!/سورن\s*پلاس/.test(pNorm)) continue;
       score += 60;
     } else if (isSoren) {
@@ -160,14 +262,14 @@ export function lookupDailyPrice(
     } else if (is405) {
       if (!/405/.test(pNorm)) continue;
       score += 60;
-    } else if (isTondar) {
-      if (!/تندر|ال\s*90/.test(pNorm)) continue;
+    } else if (isZamyad) {
+      if (!/زامیاد|نیسان/.test(pNorm)) continue;
       score += 60;
-    } else if (isSandero) {
-      if (!/ساندرو/.test(pNorm)) continue;
+    } else if (isPaykan) {
+      if (!/پیکان/.test(pNorm)) continue;
       score += 60;
-    } else if (isMegane) {
-      if (!/مگان/.test(pNorm)) continue;
+    } else if (isArisan) {
+      if (!/آریسان/.test(pNorm)) continue;
       score += 60;
     } else if (isXantia) {
       if (!/زانتیا/.test(pNorm)) continue;
@@ -175,11 +277,35 @@ export function lookupDailyPrice(
     } else if (isRio) {
       if (!/ریو/.test(pNorm)) continue;
       score += 60;
+    } else if (isCamry) {
+      if (!/camry|کمری/.test(pNorm)) continue;
+      score += 70;
+    } else if (isCorolla) {
+      if (!/corolla|کرولا/.test(pNorm)) continue;
+      score += 70;
+    } else if (isSportage) {
+      if (!/sportage|اسپورتیج/.test(pNorm)) continue;
+      score += 70;
+    } else if (isCerato) {
+      if (!/cerato|سراتو/.test(pNorm)) continue;
+      score += 70;
+    } else if (isOptima) {
+      if (!/optima|اپتیما/.test(pNorm)) continue;
+      score += 70;
+    } else if (isSantafe) {
+      if (!/santafe|سانتافه/.test(pNorm)) continue;
+      score += 70;
+    } else if (isSonata) {
+      if (!/sonata|سوناتا/.test(pNorm)) continue;
+      score += 70;
+    } else if (isTucson) {
+      if (!/tucson|توسان/.test(pNorm)) continue;
+      score += 70;
     } else if (isMvm) {
       if (!/ام\s*وی\s*ام|mvm/.test(pNorm)) continue;
       score += 60;
     } else if (isChery) {
-      if (!/چری|فونیکس|تیگو|آریزو/.test(pNorm)) continue;
+      if (!/چری|فونیکس|تیگو|آریزو|fx/.test(pNorm)) continue;
       score += 60;
     } else if (isJac) {
       if (!/جک|jac|کی\s*ام\s*سی|kmc/.test(pNorm)) continue;
@@ -193,23 +319,18 @@ export function lookupDailyPrice(
     } else if (isLifan) {
       if (!/لیفان/.test(pNorm)) continue;
       score += 60;
-    } else if (isZamyad) {
-      if (!/زامیاد|نیسان/.test(pNorm)) continue;
-      score += 60;
-    } else if (isPaykan) {
-      if (!/پیکان/.test(pNorm)) continue;
-      score += 60;
-    } else if (isArisan) {
-      if (!/آریسان/.test(pNorm)) continue;
-      score += 60;
     } else {
       const cleanMake = normalizeCarText(make);
-      if (!cleanMake || !pNorm.includes(cleanMake)) continue;
+      if (!cleanMake || cleanMake === "سایر") continue;
+      if (!pNorm.includes(cleanMake)) continue;
+      const tokens = fullText.split(/\s+/).filter((t) => t.length > 2 && t !== cleanMake);
+      const hasTokenMatch = tokens.some((t) => pNorm.includes(t));
+      if (!hasTokenMatch) continue;
       score += 25;
     }
 
     // اولویت مدل‌های متوقف تولید و قیمت‌های واقعی باما برای سال‌های پایین
-    if (year && year <= 1401 && p.source === "bama.ir") {
+    if (effectiveYear && effectiveYear <= 1401 && p.source === "bama.ir") {
       score += 55;
     }
 
@@ -235,24 +356,12 @@ export function lookupDailyPrice(
     if (is207) {
       if (isPanorama && /پانوراما/.test(pNorm)) score += 30;
       if (isAutomatic && /اتومات/.test(pNorm)) score += 30;
+      if (/فرمان برقی|فرمون برقی/.test(fullText) && /فرمان برقی/.test(pNorm)) score += 30;
     }
     if (isPars) {
       if (isTu5 && /tu5|lx/.test(pNorm)) score += 35;
       if (isXu7p && /xu7p|سال/.test(pNorm)) score += 35;
       if (/elx/.test(fullText) && /elx/.test(pNorm)) score += 35;
-    }
-    if (isMvm) {
-      if (/x22/.test(fullText) && /x22/.test(pNorm)) score += 40;
-      if (/x33/.test(fullText) && /x33/.test(pNorm)) score += 40;
-      if (/315/.test(fullText) && /315/.test(pNorm)) score += 40;
-      if (/530/.test(fullText) && /530/.test(pNorm)) score += 40;
-    }
-    if (isJac) {
-      if (/s5/.test(fullText) && /s5/.test(pNorm)) score += 40;
-      if (/j5/.test(fullText) && /j5/.test(pNorm)) score += 40;
-      if (/s3/.test(fullText) && /s3/.test(pNorm)) score += 40;
-      if (/j4/.test(fullText) && /j4/.test(pNorm)) score += 40;
-      if (/t8/.test(fullText) && /t8/.test(pNorm)) score += 40;
     }
 
     if (isDual && /دوگانه|گاز/.test(pNorm)) score += 30;
@@ -264,15 +373,15 @@ export function lookupDailyPrice(
     if (isTurbo && /توربو/.test(pNorm)) score += 25;
 
     // تطابق سال
-    if (year) {
+    if (effectiveYear) {
       const pYearMatch = p.year.match(/\d{4}/);
       if (pYearMatch) {
         const pYear = parseInt(pYearMatch[0], 10);
-        const diff = Math.abs(pYear - year);
+        const diff = Math.abs(pYear - effectiveYear);
         if (diff === 0) {
-          score += 45;
+          score += 50;
         } else {
-          score += Math.max(0, 30 - diff * 3);
+          score += Math.max(0, 35 - diff * 4);
         }
       }
     }
@@ -288,11 +397,11 @@ export function lookupDailyPrice(
   let finalPrice = bestCandidate.priceToman;
 
   // ۱. فرمول لگاریتمی واقع‌گرایانه افت سال
-  if (year) {
+  if (effectiveYear) {
     const numMatch = bestCandidate.year.match(/\d{4}/);
     if (numMatch) {
       const baseYear = parseInt(numMatch[0], 10);
-      const ageDiff = baseYear - year;
+      const ageDiff = baseYear - effectiveYear;
       if (ageDiff > 0) {
         let factor = 1.0;
         for (let y = 1; y <= ageDiff; y++) {
@@ -307,11 +416,12 @@ export function lookupDailyPrice(
 
   // ۲. تضمین کف قیمت واقعی بازار بر اساس اتاق خودرو
   let floor = 130_000_000;
-  if (isPride) floor = 170_000_000;
-  else if (is206 || is405 || isSamand || isTiba) floor = 240_000_000;
-  else if (isPars || isTondar || isSandero) floor = 320_000_000;
+  if (isPride) floor = 160_000_000;
+  else if (is206 || is405 || isSamand || isTiba) floor = 220_000_000;
+  else if (isPars || isTondar || isSandero || isMazdaPickup) floor = 320_000_000;
   else if (isDena || isTara) floor = 500_000_000;
-  else if (isMvm || isJac || isChery || isBrilliance) floor = 350_000_000;
+  else if (isX22 || isX33 || isJac || isChery || isBrilliance) floor = 350_000_000;
+  else if (isCamry || isSportage || isSantafe || isSonata) floor = 900_000_000;
 
   if (finalPrice < floor) {
     finalPrice = floor;

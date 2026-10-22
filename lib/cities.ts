@@ -1,5 +1,5 @@
 /**
- * تمام شهرهای استان خراسان رضوی با نام فارسی و اسلاگ استاندارد دیوار و شیپور
+ * شهرهای فعال سامانه (فعلاً به صورت آزمایشی فقط تربت‌حیدریه و مشهد فعال هستند)
  */
 export interface KhorasanCity {
   slug: string;
@@ -7,7 +7,10 @@ export interface KhorasanCity {
   popular?: boolean;
 }
 
-export const KHORASAN_RAZAVI_CITIES: KhorasanCity[] = [
+/**
+ * لیست کامل شهرهای استان خراسان رضوی جهت استفاده در آینده
+ */
+export const ALL_KHORASAN_CITIES: KhorasanCity[] = [
   { slug: "mashhad", nameFa: "مشهد", popular: true },
   { slug: "torbat-heydariyeh", nameFa: "تربت حیدریه", popular: true },
   { slug: "neyshabur", nameFa: "نیشابور", popular: true },
@@ -35,23 +38,31 @@ export const KHORASAN_RAZAVI_CITIES: KhorasanCity[] = [
   { slug: "firuzeh", nameFa: "فیروزه" },
 ];
 
-export const POPULAR_CITIES = KHORASAN_RAZAVI_CITIES.filter((c) => c.popular);
+// فعلاً طبق دستور کاربر، فقط تربت حیدریه و مشهد در سامانه فعال هستند
+export const ACTIVE_CITIES: KhorasanCity[] = [
+  { slug: "torbat-heydariyeh", nameFa: "تربت حیدریه", popular: true },
+  { slug: "mashhad", nameFa: "مشهد", popular: true },
+];
+
+export const KHORASAN_RAZAVI_CITIES: KhorasanCity[] = ACTIVE_CITIES;
+
+export const POPULAR_CITIES = ACTIVE_CITIES;
 
 export function getCityBySlug(slug: string): KhorasanCity | undefined {
-  return KHORASAN_RAZAVI_CITIES.find(
+  return ALL_KHORASAN_CITIES.find(
     (c) => c.slug.toLowerCase() === slug.toLowerCase(),
   );
 }
 
 export function getCityByNameFa(name: string): KhorasanCity | undefined {
   if (!name) return undefined;
-  return KHORASAN_RAZAVI_CITIES.find(
+  return ALL_KHORASAN_CITIES.find(
     (c) => name.includes(c.nameFa) || c.nameFa.includes(name),
   );
 }
 
 export function normalizeCityNameFa(input?: string | null): string {
-  if (!input) return "کل خراسان رضوی";
+  if (!input) return "کل شهرهای فعال";
   const found = getCityByNameFa(input);
   if (found) return found.nameFa;
   const bySlug = getCityBySlug(input);

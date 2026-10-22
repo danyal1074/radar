@@ -5,6 +5,9 @@ export type CarBrand =
   | "مدیران خودرو"
   | "کرمان موتور"
   | "گروه بهمن"
+  | "تویوتا"
+  | "کیا"
+  | "هیوندای"
   | "سایر";
 
 export interface DailyCarPrice {

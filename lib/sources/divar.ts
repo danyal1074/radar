@@ -131,31 +131,35 @@ function parseDivarPostJson(data: any): DivarPostDetails {
 }
 
 const BRAND_PATTERNS: { make: string; re: RegExp }[] = [
-  { make: "پراید", re: /پراید|111|131|132|141|151|صبا|نسیم/ },
-  { make: "پژو", re: /پژو|peugeot|206|207|405|پارس|پرشیا|2008/ },
-  { make: "سمند", re: /سمند|samand/ },
-  { make: "سورن", re: /سورن|soren/ },
-  { make: "دنا", re: /دنا|dena/ },
-  { make: "تارا", re: /تارا|tara/ },
-  { make: "کوییک", re: /کوییک|کوئیک|quick|quik/ },
-  { make: "ساینا", re: /ساینا|saina/ },
-  { make: "شاهین", re: /شاهین|shahin/ },
-  { make: "تیبا", re: /تیبا|tiba/ },
-  { make: "رانا", re: /رانا|runna|rana/ },
-  { make: "رنو", re: /رنو|renault|تندر|ال\s*90|ال۹۰|ساندرو|مگان|استپ\s*وی/ },
-  { make: "هایما", re: /هایما|haima/ },
-  { make: "جک", re: /جک|jac/ },
-  { make: "کی ام سی", re: /کی\s*ام\s*سی|kmc/ },
-  { make: "ام‌وی‌ام", re: /ام\s*وی\s*ام|mvm/ },
-  { make: "چری", re: /چری|chery|تیگو|آریزو/ },
-  { make: "فونیکس", re: /فونیکس|fownix/ },
-  { make: "برلیانس", re: /برلیانس|brilliance/ },
-  { make: "لیفان", re: /لیفان|lifan/ },
-  { make: "زامیاد", re: /زامیاد|نیسان|zamyad/ },
-  { make: "پیکان", re: /پیکان|paykan/ },
-  { make: "آریسان", re: /آریسان|arisan/ },
-  { make: "کیا", re: /کیا|kia|ریو|سراتو/ },
-  { make: "سیتروئن", re: /زانتیا|سیتروئن/ },
+  { make: "پراید", re: /پراید|pride|111|131|132|141|151|۱۱۱|۱۳۱|۱۳۲|۱۴۱|۱۵۱|صبا|نسیم/i },
+  { make: "پژو", re: /پژو|peugeot|206|207|405|۲۰۶|۲۰۷|۴۰۵|پارس|پرشیا|2008|۲۰۰۸|slx|glx/i },
+  { make: "سمند", re: /سمند|samand/i },
+  { make: "سورن", re: /سورن|soren/i },
+  { make: "دنا", re: /دنا|dena/i },
+  { make: "تارا", re: /تارا|tara/i },
+  { make: "کوییک", re: /کوییک|کوئیک|quick|quik/i },
+  { make: "ساینا", re: /ساینا|saina/i },
+  { make: "شاهین", re: /شاهین|shahin/i },
+  { make: "تیبا", re: /تیبا|tiba/i },
+  { make: "رانا", re: /رانا|runna|rana/i },
+  { make: "رنو", re: /رنو|renault|تندر|ال\s*90|ال۹۰|ال\s*نود|ساندرو|مگان|استپ\s*وی|l90|logan/i },
+  { make: "هایما", re: /هایما|haima|s7|s5|8s|7x/i },
+  { make: "جک", re: /جک|jac|کی\s*ام\s*سی|kmc|j4|j5|s3|s5|t8|t9|k7/i },
+  { make: "ام‌وی‌ام", re: /ام\s*وی\s*ام|mvm|x22|x33|x55|ایکس\s*22|ایکس\s*33|ایکس\s*55|ایکس\s*۲۲|ایکس\s*۳۳|ایکس\s*۵۵|110|315|530|550|۱۱۰|۳۱۵|۵۳۰|۵۵۰/i },
+  { make: "چری", re: /چری|chery|تیگو|آریزو|tiggo|arrizo/i },
+  { make: "فونیکس", re: /فونیکس|fownix|fx|اف\s*ایکس/i },
+  { make: "تویوتا", re: /تویوتا|toyota|کمری|camry|کرولا|corolla|پرادو|prado|لندکروز|land\s*cruiser|یاریس|yaris|هایلوکس|hilux/i },
+  { make: "هیوندای", re: /هیوندای|hyundai|سوناتا|sonata|النترا|elantra|سانتافه|santafe|توسان|tucson|اکسنت|accent|آوانته|avante|ورنا|verna|i20|i30/i },
+  { make: "کیا", re: /کیا|kia|ریو|rio|سراتو|cerato|اسپورتیج|sportage|اپتیما|optima|سورنتو|sorento|پیکانتو/i },
+  { make: "مزدا", re: /مزدا|mazda|کارا|cara|323/i },
+  { make: "چانگان", re: /چانگان|changan|cs35|cs55/i },
+  { make: "بسترن", re: /بسترن|besturn|b30|b50/i },
+  { make: "برلیانس", re: /برلیانس|brilliance|h220|h230|h320|h330/i },
+  { make: "لیفان", re: /لیفان|lifan|x50|x60|620|520/i },
+  { make: "زامیاد", re: /زامیاد|نیسان\s*وانت|وانت\s*نیسان|نیسان|zamyad/i },
+  { make: "پیکان", re: /پیکان|وانت\s*پیکان|paykan/i },
+  { make: "آریسان", re: /آریسان|arisan/i },
+  { make: "سیتروئن", re: /زانتیا|xantia|سیتروئن|citroen/i },
 ];
 
 function detectMake(text: string): string {
@@ -314,8 +318,17 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
           model = title;
         }
         if (!year) {
-          const tMatch = normalizeFaDigits(title).match(/\b(13[789]\d|140\d)\b/);
-          if (tMatch) year = parseInt(tMatch[1], 10);
+          const normTitle = normalizeFaDigits(title);
+          const tMatch4 = normTitle.match(/\b(13[789]\d|140\d)\b/);
+          if (tMatch4) {
+            year = parseInt(tMatch4[1], 10);
+          } else {
+            const tMatch2 = normTitle.match(/(?:مدل|اخر|سال|\b)\s*([789]\d)\b/);
+            if (tMatch2) {
+              const y2 = parseInt(tMatch2[1], 10);
+              year = y2 < 30 ? 1400 + y2 : 1300 + y2;
+            }
+          }
         }
         if (mileageKm === null) {
           const kmRaw = car.mileageFromOdometer?.value ? String(car.mileageFromOdometer.value) : null;

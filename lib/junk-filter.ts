@@ -43,6 +43,12 @@ export const JUNK_KEYWORDS = [
   "معاوضه با واحد",
   "اوراقی",
   "اسقاطی",
+  "فروش دولتی",
+  "فروش سازمانی",
+  "مزایده دولتی",
+  "مزایده سازمانی",
+  "واگذاری دولتی",
+  "خودرو دولتی",
 ];
 
 export function isJunkOrUnrealisticListing(listing: {

@@ -11,7 +11,7 @@ const INTERVAL_SECONDS = 60; // هر ۶۰ ثانیه پایش آگهی‌ها ا
 
 let lastPricesUpdateDate = "";
 
-console.log("⚡ شروع پایشگر خودکار رادار لحظه‌ای خودرو (دیوار و شیپور ۲۵ شهر استان خراسان رضوی)...");
+console.log("⚡ شروع پایشگر خودکار رادار خودرو (نسخه آزمایشی: تربت‌حیدریه + مشهد)...");
 console.log("📊 بروزرسانی روزانه خودکار قیمت‌های خودرو از baravard.com فعال است (هر روز ساعت ۱۵:۰۰ ظهر).");
 console.log(`⏱ زمان هر چرخه پایش آگهی‌ها: هر ${INTERVAL_SECONDS} ثانیه یک‌بار`);
 
@@ -43,7 +43,7 @@ async function checkDailyPrices() {
 
 async function runCycle() {
   const time = new Date().toLocaleTimeString("fa-IR");
-  console.log(`\n[${time}] 🔍 در حال بررسی و پایش لحظه‌ای آگهی‌های ۲۵ شهر استان خراسان رضوی (دیوار + شیپور)...`);
+  console.log(`\n[${time}] 🔍 در حال پایش لحظه‌ای آگهی‌های خودرو (تربت‌حیدریه + مشهد)...`);
   try {
     const res = await fetch(CRON_URL, {
       method: "GET",

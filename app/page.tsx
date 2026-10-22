@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -638,13 +639,15 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-3 md:col-span-1">
               <div className="flex items-center gap-2 font-black text-slate-900 text-lg">
-                <span className="grid size-8 place-items-center rounded-lg bg-blue-600 text-white shadow-xs">
-                  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="9" opacity=".4" />
-                    <circle cx="12" cy="12" r="4.5" />
-                    <path d="M12 12 19 6" />
-                  </svg>
-                </span>
+                <div className="relative size-9 shrink-0 overflow-hidden rounded-xl bg-blue-50/60 p-1 border border-blue-100 shadow-xs">
+                  <Image
+                    src="/logo.png"
+                    alt="لوگوی رادار شکار خودرو"
+                    width={36}
+                    height={36}
+                    className="size-full object-contain"
+                  />
+                </div>
                 <span>رادار خرید خودرو</span>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">

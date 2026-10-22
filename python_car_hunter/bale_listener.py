@@ -279,11 +279,13 @@ async def handle_opportunities(
             source = "دیوار" if item.get("source") == "divar" else "شیپور"
 
             card = (
-                f"🚗 <b>{t}</b>\n"
-                f"💰 قیمت فروشنده: <code>{format_toman_persian(p)}</code>\n"
-                f"📊 کارشناسی بازار: <code>{format_toman_persian(est)}</code>\n"
-                f"🎁 سود تخمینی: <code>🔥 {format_toman_persian(profit)} ({disc}٪ زیر قیمت)</code>\n"
-                f"📍 منبع: {source} {city_name}"
+                f"🚘 <b>خودرو:</b> ❮❮ <b>{t}</b> ❯❯\n\n"
+                f"╭─────────────────────────╮\n"
+                f"│ 💰 <b>قیمت فروشنده:</b> <b>« {format_toman_persian(p)} »</b>\n"
+                f"╰─────────────────────────╯\n"
+                f"📊 <b>ارزش کارشناسی بازار:</b> <code>{format_toman_persian(est)}</code>\n"
+                f"🎁 <b>سود خالص شکار:</b> <code>🔥 {format_toman_persian(profit)} ({disc}٪ زیر قیمت)</code>\n"
+                f"📍 <b>منبع:</b> {source} {city_name}"
             )
             markup = None
             if url:

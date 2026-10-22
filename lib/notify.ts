@@ -48,14 +48,34 @@ function buildCleanMessageText(p: NotificationPayload): string {
 
   const lines: string[] = [];
 
+  // بررسی وضعیت‌های خاص: فروش فوری، پول لازم، یا کاهش قیمت
+  const isUrgent =
+    p.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
+    p.title.includes("فوری") ||
+    p.title.includes("پول لازم");
+  const isPriceDrop = Boolean(p.priceDropToman && p.priceDropToman > 0);
+
+  if (isUrgent) {
+    lines.push(`🚨🚨 <b>#فروش_فوری | #پول_لازم | فوری</b> 🚨🚨`);
+    lines.push(`⚡️ <b>فرصت طلایی:</b> فروشنده پول لازم زیر فی بازار!`);
+    lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+  } else if (isPriceDrop) {
+    lines.push(`📉💥 <b>سـقـوط قـیـمـت! ارزان‌تـر شـد</b> 💥📉`);
+    lines.push(`🔻 <b>کاهش قیمت:</b> <code>🔥 ${formatTomanPersian(p.priceDropToman!)} ارزان‌تر شد!</code>`);
+    lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
+  }
+
   // ۱. فیلتر فعال اختصاصی کاربر (با تأکید بالا برای تشخیص سریع بین چند قانون)
   const ruleTag = p.ruleName ? `«${p.ruleName}»` : "«هشدار اختصاصی»";
   lines.push(`🔔 <b>فیلتر فعال شما:</b> 🎯 <code>${ruleTag}</code>`);
   lines.push(`━━━━━━━━━━━━━━━━━━━━━`);
 
-  // ۲. عنوان و مدل خودرو (بسیار خوانا و درشت)
-  lines.push(`🚗 <b>خودرو:</b> <code>${p.title}</code>`);
-  lines.push(`💰 <b>قیمت فروشنده:</b> <code>${formatTomanPersian(p.priceToman)}</code>`);
+  // ۲. عنوان و مدل خودرو (بسیار خوانا، درشت و متمایز)
+  lines.push(`🚘 <b>خودرو:</b> ❮❮ <b>${p.title}</b> ❯❯`);
+  lines.push(``);
+  lines.push(`╭──────────────────────────────╮`);
+  lines.push(`│ 💰 <b>قیمت فروشنده:</b> <b>« ${formatTomanPersian(p.priceToman)} »</b>`);
+  lines.push(`╰──────────────────────────────╯`);
 
   // ۳. ارزیابی سود و تخفیف بازار
   if (p.estimatedToman && p.estimatedToman > 0) {
@@ -64,10 +84,8 @@ function buildCleanMessageText(p: NotificationPayload): string {
 
   if (p.discountPercent && p.discountPercent > 0 && p.profitToman && p.profitToman > 0) {
     lines.push(
-      `🎁 <b>سود تخمینی شکار:</b> <code>🔥 ${formatTomanPersian(p.profitToman)} (${p.discountPercent}٪ زیر قیمت)</code>`,
+      `🎁 <b>سود خالص تخمینی:</b> <code>🔥 ${formatTomanPersian(p.profitToman)} (${p.discountPercent}٪ زیر قیمت)</code>`,
     );
-  } else if (p.priceDropToman && p.priceDropToman > 0) {
-    lines.push(`📉 <b>کاهش قیمت:</b> <code>${formatTomanPersian(p.priceDropToman)} ارزان‌تر شد!</code>`);
   }
 
   // ۴. مشخصات دقیق استخراج شده (سال، کارکرد، رنگ، وضعیت فنی و بدنه)
@@ -203,11 +221,16 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     }
   }
 
-  // ۳. ارسال به پیام‌رسان روبیکا
+  // ۳. ارسال به پیام‌رسان روبیکا (همراه با دکمه شیشه‌ای مشاهده آگهی)
   const cleanRubikaText = text.replace(/<[^>]+>/g, "");
-  const rubikaMsg = payload.url
-    ? `${cleanRubikaText}\n\n🔗 مشاهده آگهی: ${payload.url}`
-    : cleanRubikaText;
+  const rubikaButtonText = payload.source === "divar" ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
+  const rubikaMarkup = payload.url
+    ? {
+        inline_keyboard: [
+          [{ text: rubikaButtonText, url: payload.url }],
+        ],
+      }
+    : undefined;
 
   for (const chatId of rubikaChats) {
     try {
@@ -216,7 +239,8 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: rubikaMsg,
+          text: cleanRubikaText,
+          reply_markup: rubikaMarkup,
         }),
         signal: AbortSignal.timeout(6000),
       });
@@ -225,24 +249,79 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     }
   }
 
-  // ۴. ارسال به کانال رسمی ایتا (رادار شکار خودرو)
-  if ((payload.profitToman && payload.profitToman > 0) || (payload.discountPercent && payload.discountPercent >= 5)) {
-    try {
-      const eitaaMsg = payload.url
-        ? `${cleanRubikaText}\n\n🔗 مشاهده آگهی: ${payload.url}\n📢 کانال رسمی رادار: @${EITAA_BROADCAST_CHANNEL}`
-        : `${cleanRubikaText}\n📢 کانال رسمی رادار: @${EITAA_BROADCAST_CHANNEL}`;
+  // ۴. ارسال به کانال رسمی ایتا (فقط موارد فروش فوری، پول‌لازم و کاهش قیمت خوب با تصویر)
+  const isUrgent =
+    payload.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
+    payload.title.includes("فوری") ||
+    payload.title.includes("پول لازم");
+  const isGoodDrop =
+    Boolean(payload.priceDropToman && payload.priceDropToman > 0) ||
+    Boolean(payload.discountPercent && payload.discountPercent >= 7);
 
-      await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
+  if (isUrgent || isGoodDrop) {
+    const eitaaCaption = payload.url
+      ? `${cleanRubikaText}\n\n🔗 لینک مشاهده آگهی: ${payload.url}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
+      : `${cleanRubikaText}\n📢 کانال رسمی شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
+
+    let sentWithPhoto = false;
+
+    // تلاش برای ارسال با تصویر آگهی به ایتا
+    if (imageUrl) {
+      try {
+        const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(5000) });
+        if (imgRes.ok) {
+          const arrayBuffer = await imgRes.arrayBuffer();
+          const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+          const formData = new FormData();
+          formData.append("chat_id", EITAA_BROADCAST_CHANNEL);
+          formData.append("file", blob, "car.jpg");
+          formData.append("caption", eitaaCaption);
+          if (payload.url) {
+            formData.append(
+              "reply_markup",
+              JSON.stringify({
+                inline_keyboard: [[{ text: rubikaButtonText, url: payload.url }]],
+              }),
+            );
+          }
+
+          const photoRes = await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendFile`, {
+            method: "POST",
+            body: formData,
+            signal: AbortSignal.timeout(12000),
+          });
+          if (photoRes.ok) sentWithPhoto = true;
+        }
+      } catch {
+        sentWithPhoto = false;
+      }
+    }
+
+    // ارسال متنی استاندارد در صورت عدم وجود عکس یا خطا
+    if (!sentWithPhoto) {
+      try {
+        const bodyParams = new URLSearchParams({
           chat_id: EITAA_BROADCAST_CHANNEL,
-          text: eitaaMsg,
-        }),
-        signal: AbortSignal.timeout(6000),
-      });
-    } catch {
-      // ادامه بدون توقف
+          text: eitaaCaption,
+        });
+        if (payload.url) {
+          bodyParams.append(
+            "reply_markup",
+            JSON.stringify({
+              inline_keyboard: [[{ text: rubikaButtonText, url: payload.url }]],
+            }),
+          );
+        }
+
+        await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: bodyParams,
+          signal: AbortSignal.timeout(6000),
+        });
+      } catch {
+        // ادامه بدون توقف
+      }
     }
   }
 }

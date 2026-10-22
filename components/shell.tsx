@@ -1,4 +1,5 @@
 import { Bell, LogOut, Radio } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions";
 import type { AppContext } from "@/lib/auth";
@@ -11,15 +12,21 @@ import { MobileNav } from "./mobile-nav";
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2 font-bold text-brand-900">
-      <span className="grid size-8 place-items-center rounded-lg bg-brand-600 text-white shadow-sm" aria-hidden>
-        <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="9" opacity=".45" />
-          <circle cx="12" cy="12" r="4.5" />
-          <path d="M12 12 19 6" />
-        </svg>
-      </span>
-      <span className="text-base sm:text-lg">رادار خرید خودرو</span>
+    <Link href="/" className="flex items-center gap-2.5 font-bold text-brand-900 group">
+      <div className="relative size-10 shrink-0 overflow-hidden rounded-xl bg-blue-50/50 p-1 border border-blue-100/80 shadow-xs transition-transform group-hover:scale-105">
+        <Image
+          src="/logo.png"
+          alt="لوگوی رادار شکار خودرو"
+          width={40}
+          height={40}
+          className="size-full object-contain"
+          priority
+        />
+      </div>
+      <div className="text-right leading-tight">
+        <span className="block text-base font-black text-brand-900 tracking-tight">رادار خودرو</span>
+        <span className="block text-[10px] font-bold text-brand-600">شکار فرصت‌های خرید</span>
+      </div>
     </Link>
   );
 }

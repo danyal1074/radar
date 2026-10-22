@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Menu, X, ArrowLeft, PhoneCall, User } from "lucide-react";
 
@@ -13,13 +14,16 @@ export function LandingHeader() {
         {/* سمت راست: لوگو و نام برند */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="grid size-10 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/25 transition-transform group-hover:scale-105" aria-hidden>
-              <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="9" opacity=".4" />
-                <circle cx="12" cy="12" r="4.5" />
-                <path d="M12 12 19 6" />
-              </svg>
-            </span>
+            <div className="relative size-11 shrink-0 overflow-hidden rounded-xl bg-blue-50/60 p-1 border border-blue-100 shadow-xs transition-transform group-hover:scale-105">
+              <Image
+                src="/logo.png"
+                alt="لوگوی رادار شکار خودرو"
+                width={44}
+                height={44}
+                className="size-full object-contain"
+                priority
+              />
+            </div>
             <div className="text-right">
               <span className="block text-lg font-black text-slate-900 tracking-tight">رادار</span>
               <span className="block text-[11px] font-bold text-blue-600 -mt-0.5">شکار فرصت‌های خرید خودرو</span>

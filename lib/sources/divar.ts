@@ -390,7 +390,7 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "fa,en;q=0.9",
       },
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -422,8 +422,8 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
       }
     }
 
-    // Process top 10 newest cars with fast parallel details extraction
-    const carsToProcess = rawCars.slice(0, 10);
+    // Process top 20 newest cars with fast parallel details extraction
+    const carsToProcess = rawCars.slice(0, 20);
     const detailsList = await Promise.all(
       carsToProcess.map(async (car) => {
         const sourceUrl = car.url || null;

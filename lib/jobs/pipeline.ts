@@ -12,8 +12,10 @@ export interface PipelineSummary {
   alerts: AlertRunSummary | null;
 }
 
-// Guards against two runs overlapping inside one server process.
+// Guards against two runs overlapping inside one server process with automatic 3-minute safety release.
 let running = false;
+let runningStartedAt = 0;
+const LOCK_TIMEOUT_MS = 3 * 60 * 1000;
 
 /**
  * ingest → estimate → evaluate alerts. Every stage failure is recorded in
@@ -28,8 +30,12 @@ export async function runPipeline(
     now?: Date;
   },
 ): Promise<PipelineSummary | { skipped: "already_running" }> {
-  if (running) return { skipped: "already_running" };
+  const nowMs = Date.now();
+  if (running && nowMs - runningStartedAt < LOCK_TIMEOUT_MS) {
+    return { skipped: "already_running" };
+  }
   running = true;
+  runningStartedAt = nowMs;
   const now = deps.now ?? new Date();
   const job = await store.startJob("pipeline");
   const summary: PipelineSummary = { ingest: [], estimation: null, alerts: null };

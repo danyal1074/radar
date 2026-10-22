@@ -34,6 +34,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title="رادار آگهی‌ها" description={`${formatNumber(pg.total)} آگهی مطابق فیلتر شما`} />
         <form action={syncLiveDivarAction}>
+          <input type="hidden" name="city" value={filters.city ?? ""} />
           <Button type="submit" className="min-h-11 gap-2 bg-brand-600 text-white hover:bg-brand-700">
             <Radio className="size-4 animate-pulse" />
             رادار لحظه‌ای دیوار و شیپور (دریافت جدیدترین آگهی‌ها)

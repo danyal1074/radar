@@ -100,9 +100,10 @@ export async function deleteSampleListingsAction() {
   refresh();
 }
 
-export async function syncLiveDivarAction(_formData?: FormData) {
+export async function syncLiveDivarAction(formData?: FormData) {
   await requireContext({ access: true });
+  const requestedCity = formData ? String(formData.get("city") || "").trim() : "";
   const { runDefaultPipeline } = await import("@/lib/jobs/default");
-  await runDefaultPipeline();
+  await runDefaultPipeline(requestedCity || undefined);
   refresh();
 }

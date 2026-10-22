@@ -18,8 +18,10 @@ function authorized(req: Request): boolean {
 /** Scheduler entry point (Vercel Cron / system cron): Authorization: Bearer $CRON_SECRET */
 export async function GET(req: Request) {
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const url = new URL(req.url);
+  const city = url.searchParams.get("city") || undefined;
   try {
-    return NextResponse.json({ ok: true, result: await runDefaultPipeline() });
+    return NextResponse.json({ ok: true, result: await runDefaultPipeline(city) });
   } catch {
     return NextResponse.json({ ok: false, error: "pipeline_failed" }, { status: 500 });
   }

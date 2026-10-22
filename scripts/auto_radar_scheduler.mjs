@@ -54,16 +54,16 @@ async function runCycle() {
 
     if (res.ok) {
       const data = await res.json();
-      const divarTorbat = data.result?.ingest?.find((x) => x.source === "divar")?.inserted ?? 0;
-      const divarMashhad = data.result?.ingest?.find((x) => x.source === "divar-mashhad")?.inserted ?? 0;
-      const sheypoorTorbat = data.result?.ingest?.find((x) => x.source === "sheypoor")?.inserted ?? 0;
-      const sheypoorMashhad = data.result?.ingest?.find((x) => x.source === "sheypoor-mashhad")?.inserted ?? 0;
-      const totalNew = divarTorbat + divarMashhad + sheypoorTorbat + sheypoorMashhad;
+      const sources = data.result?.ingest || [];
+      const totalNew = sources.reduce((acc, x) => acc + (x.inserted || 0), 0);
+      const summaryList = sources
+        .filter((x) => (x.inserted || 0) > 0 || (x.unchanged || 0) > 0)
+        .map((x) => `${x.source.replace("divar-", "دیوار ").replace("sheypoor-", "شیپور ")}: +${x.inserted}`)
+        .join(" | ");
       const alerts = data.result?.alerts?.notificationsCreated ?? 0;
 
       console.log(
-        `✅ پایش با موفقیت انجام شد (${totalNew} آگهی جدید): ` +
-        `تربت‌حیدریه: ${divarTorbat + sheypoorTorbat} | مشهد: ${divarMashhad + sheypoorMashhad}`,
+        `✅ پایش با موفقیت انجام شد (+${totalNew} آگهی جدید): ${summaryList || "بدون آگهی جدید"}`,
       );
       if (alerts > 0) {
         console.log(`🎯 تعداد ${alerts} هشدار و پیام به ربات بله ارسال شد!`);

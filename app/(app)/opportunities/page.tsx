@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
 import { Badge, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { requireContext } from "@/lib/auth";
+import { normalizeCityNameFa } from "@/lib/cities";
 import { formatNumber } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
 import { loadViews } from "@/lib/page-data";
@@ -15,9 +16,9 @@ export default async function OpportunitiesPage() {
   const ctx = await requireContext({ access: true });
   const [views, rules] = await Promise.all([loadViews(ctx), ctx.store.listRules(ctx.user.id)]);
   const plan = PLANS[ctx.access.plan];
-  const userCity = ctx.profile.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+  const userCity = normalizeCityNameFa(ctx.profile.city) || "مشهد";
   const isMultiCity = ctx.profile.role === "admin" || plan.allowedCitiesCount >= 2;
-  const cityText = isMultiCity ? "تربت‌حیدریه و مشهد" : userCity;
+  const cityText = isMultiCity ? "کل شهرهای استان خراسان رضوی" : userCity;
 
   const activeRules = rules.filter((r) => r.is_active);
   // ۱. فرصت‌های دقیقاً منطبق با هشدارهای کاربر

@@ -43,10 +43,10 @@ export const env = {
     return int("ESTIMATE_FAILURE_RETRY_MINUTES", 60);
   },
   get maxEstimatesPerRun() {
-    return int("MAX_ESTIMATES_PER_RUN", 50);
+    return int("MAX_ESTIMATES_PER_RUN", 200);
   },
   get maxEstimatesPerDay() {
-    return int("MAX_ESTIMATES_PER_DAY", 500);
+    return int("MAX_ESTIMATES_PER_DAY", 50000);
   },
   /** Cost of one paid estimate in toman (set from Baravard's real pricing). */
   get estimateCostToman() {

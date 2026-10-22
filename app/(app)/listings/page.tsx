@@ -6,6 +6,7 @@ import { ListingCard } from "@/components/listing-card";
 import { Pagination } from "@/components/pagination";
 import { Button, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { requireContext } from "@/lib/auth";
+import { normalizeCityNameFa } from "@/lib/cities";
 import { formatNumber } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
 import { loadViews } from "@/lib/page-data";
@@ -20,8 +21,8 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
   const sp = await searchParams;
   const ctx = await requireContext({ access: true });
   const plan = PLANS[ctx.access.plan];
-  const userCity = ctx.profile.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
-  const allowedCitiesCount = ctx.profile.role === "admin" ? 2 : plan.allowedCitiesCount;
+  const userCity = normalizeCityNameFa(ctx.profile.city) || "مشهد";
+  const allowedCitiesCount = ctx.profile.role === "admin" ? 999 : plan.allowedCitiesCount;
 
   const { filters, sort, page } = parseListingQuery(sp, plan.opportunityScore);
   const all = await loadViews(ctx);

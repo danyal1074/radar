@@ -106,6 +106,148 @@ const SEED_DISCONTINUED: Omit<DailyCarPrice, "id" | "updatedAt">[] = [
   { brand: "سایپا", name: "پراید 131 صبا", year: "مدل 1382", priceToman: 165_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "پراید 131 صبا", year: "مدل 1380", priceToman: 145_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "وانت پیکان بنزینی", year: "مدل 1387", priceToman: 160_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // ساینا
+  { brand: "سایپا", name: "ساینا S دنده‌ای", year: "مدل 1403", priceToman: 450_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "ساینا S دنده‌ای", year: "مدل 1402", priceToman: 420_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "ساینا S دنده‌ای", year: "مدل 1401", priceToman: 395_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "ساینا S دنده‌ای", year: "مدل 1400", priceToman: 370_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "ساینا دنده‌ای EX", year: "مدل 1399", priceToman: 345_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "ساینا دنده‌ای EX", year: "مدل 1398", priceToman: 320_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "ساینا دنده‌ای EX", year: "مدل 1397", priceToman: 295_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // کوییک
+  { brand: "سایپا", name: "کوییک دنده‌ای ساده", year: "مدل 1403", priceToman: 425_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک دنده‌ای ساده", year: "مدل 1402", priceToman: 395_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک دنده‌ای ساده", year: "مدل 1401", priceToman: 375_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک دنده‌ای ساده", year: "مدل 1400", priceToman: 350_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک دنده‌ای ساده", year: "مدل 1399", priceToman: 330_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک دنده‌ای ساده", year: "مدل 1398", priceToman: 310_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک R دنده‌ای", year: "مدل 1402", priceToman: 410_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک R دنده‌ای", year: "مدل 1401", priceToman: 385_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک S دنده‌ای", year: "مدل 1403", priceToman: 440_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک S دنده‌ای", year: "مدل 1402", priceToman: 415_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "کوییک GX دنده‌ای", year: "مدل 1403", priceToman: 455_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // سایپا اطلس و پارس خودرو سهند
+  { brand: "سایپا", name: "سایپا اطلس G", year: "مدل 1403", priceToman: 585_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "سایپا اطلس G", year: "مدل 1402", priceToman: 545_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "پارس خودرو سهند S", year: "مدل 1403", priceToman: 530_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // شاهین
+  { brand: "سایپا", name: "شاهین G دنده‌ای", year: "مدل 1403", priceToman: 750_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "شاهین G دنده‌ای", year: "مدل 1402", priceToman: 695_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "شاهین G دنده‌ای", year: "مدل 1401", priceToman: 640_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "شاهین G دنده‌ای", year: "مدل 1400", priceToman: 590_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "شاهین اتوماتیک CVT", year: "مدل 1403", priceToman: 880_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "شاهین اتوماتیک CVT", year: "مدل 1402", priceToman: 820_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // دنا
+  { brand: "ایران خودرو", name: "دنا پلاس دنده‌ای", year: "مدل 1403", priceToman: 810_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس دنده‌ای", year: "مدل 1402", priceToman: 745_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس دنده‌ای", year: "مدل 1401", priceToman: 690_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس دنده‌ای", year: "مدل 1400", priceToman: 635_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس دنده‌ای", year: "مدل 1399", priceToman: 585_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس توربو اتوماتیک", year: "مدل 1403", priceToman: 1_040_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس توربو اتوماتیک", year: "مدل 1402", priceToman: 960_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا پلاس توربو اتوماتیک", year: "مدل 1401", priceToman: 890_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دنا معمولی", year: "مدل 1399", priceToman: 530_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // تارا
+  { brand: "ایران خودرو", name: "تارا دنده‌ای V1", year: "مدل 1403", priceToman: 820_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "تارا دنده‌ای V1", year: "مدل 1402", priceToman: 760_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "تارا اتوماتیک V2/V4", year: "مدل 1403", priceToman: 1_020_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "تارا اتوماتیک V2/V4", year: "مدل 1402", priceToman: 940_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // سورن
+  { brand: "ایران خودرو", name: "سورن پلاس EF7", year: "مدل 1403", priceToman: 770_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سورن پلاس EF7", year: "مدل 1402", priceToman: 715_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سورن پلاس EF7", year: "مدل 1401", priceToman: 660_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سمند سورن ELX", year: "مدل 1396", priceToman: 440_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سمند سورن ELX", year: "مدل 1394", priceToman: 385_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سمند سورن ELX", year: "مدل 1391", priceToman: 310_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // وانت نیسان زامیاد
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1403", priceToman: 650_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1402", priceToman: 600_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1401", priceToman: 550_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1399", priceToman: 470_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1396", priceToman: 380_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1393", priceToman: 310_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1390", priceToman: 250_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1386", priceToman: 200_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "وانت نیسان زامیاد Z24 بنزینی", year: "مدل 1382", priceToman: 160_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // چری آریزو و تیگو
+  { brand: "مدیران خودرو", name: "چری آریزو 5 دنده‌ای و اتومات", year: "مدل 1402", priceToman: 1_180_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "چری آریزو 5 دنده‌ای و اتومات", year: "مدل 1400", priceToman: 980_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "چری آریزو 5 دنده‌ای و اتومات", year: "مدل 1398", priceToman: 840_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "چری آریزو 5 دنده‌ای و اتومات", year: "مدل 1396", priceToman: 720_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "چری تیگو 7 IE", year: "مدل 1401", priceToman: 1_480_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "چری تیگو 5", year: "مدل 1399", priceToman: 1_050_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // دیگنیتی و فیدلیتی
+  { brand: "گروه بهمن", name: "دیگنیتی پرایم", year: "مدل 1403", priceToman: 2_050_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "گروه بهمن", name: "دیگنیتی پرایم", year: "مدل 1402", priceToman: 1_880_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "گروه بهمن", name: "دیگنیتی پرایم", year: "مدل 1401", priceToman: 1_720_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "گروه بهمن", name: "فیدلیتی پرایم 7 نفره", year: "مدل 1403", priceToman: 2_150_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "گروه بهمن", name: "فیدلیتی پرایم 7 نفره", year: "مدل 1402", priceToman: 1_980_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // هایما
+  { brand: "ایران خودرو", name: "هایما S7 توربو پلاس", year: "مدل 1403", priceToman: 1_750_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "هایما S7 توربو پلاس", year: "مدل 1402", priceToman: 1_620_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "هایما S7 توربو پلاس", year: "مدل 1401", priceToman: 1_490_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "هایما S7 توربو پلاس", year: "مدل 1399", priceToman: 1_290_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "هایما S5 توربو", year: "مدل 1403", priceToman: 1_450_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "هایما S5 توربو", year: "مدل 1401", priceToman: 1_250_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // جک
+  { brand: "کرمان موتور", name: "جک S5 اتوماتیک", year: "مدل 1402", priceToman: 1_550_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "کرمان موتور", name: "جک J4", year: "مدل 1403", priceToman: 880_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "کرمان موتور", name: "جک S3", year: "مدل 1402", priceToman: 1_120_000_000, isDiscontinued: false, source: "bama.ir" },
+
+  // وانت پیکاپ و کاپرا و ریچ و آریسان
+  { brand: "ایران خودرو", name: "وانت آریسان 2", year: "مدل 1403", priceToman: 490_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "وانت آریسان 2", year: "مدل 1402", priceToman: 440_000_000, isDiscontinued: false, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "پیکاپ ریچ", year: "مدل 1395", priceToman: 840_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "گروه بهمن", name: "کاپرا دوکابین", year: "مدل 1390", priceToman: 550_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو روآ و روآ سال", year: "مدل 1387", priceToman: 175_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // لیفان
+  { brand: "کرمان موتور", name: "لیفان 620", year: "مدل 1390", priceToman: 300_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "کرمان موتور", name: "لیفان X60", year: "مدل 1394", priceToman: 510_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // سیتروئن C3
+  { brand: "سایپا", name: "سیتروئن C3", year: "مدل 1397", priceToman: 1_920_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // هیوندای اکسنت و سراتو
+  { brand: "هیوندای", name: "هیوندای اکسنت", year: "مدل 2017", priceToman: 1_950_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "کیا", name: "کیا سراتو مونتاژ سایپا 2.0", year: "مدل 1394", priceToman: 1_380_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // دانگ فنگ H30 کراس
+  { brand: "ایران خودرو", name: "دانگ فنگ H30 کراس اتوماتیک", year: "مدل 1398", priceToman: 740_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دانگ فنگ H30 کراس اتوماتیک", year: "مدل 1397", priceToman: 680_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "دانگ فنگ H30 کراس اتوماتیک", year: "مدل 1396", priceToman: 610_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // نیسان ماکسیما
+  { brand: "پارس خودرو", name: "نیسان ماکسیما اتوماتیک و دنده‌ای", year: "مدل 1390", priceToman: 1_450_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "نیسان ماکسیما اتوماتیک و دنده‌ای", year: "مدل 1387", priceToman: 1_120_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "نیسان ماکسیما اتوماتیک و دنده‌ای", year: "مدل 1385", priceToman: 920_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "نیسان ماکسیما اتوماتیک و دنده‌ای", year: "مدل 1382", priceToman: 760_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // سوزوکی گرند ویتارا
+  { brand: "ایران خودرو", name: "سوزوکی گرند ویتارا 2.4 اتوماتیک", year: "مدل 1397", priceToman: 2_350_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سوزوکی گرند ویتارا 2.4 اتوماتیک", year: "مدل 1394", priceToman: 1_780_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "سوزوکی گرند ویتارا 2.4 اتوماتیک", year: "مدل 1390", priceToman: 1_350_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // رنو مگان
+  { brand: "پارس خودرو", name: "رنو مگان 2000", year: "مدل 1392", priceToman: 920_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو مگان 2000", year: "مدل 1390", priceToman: 780_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو مگان 1600", year: "مدل 1388", priceToman: 640_000_000, isDiscontinued: true, source: "bama.ir" },
+
+  // چانگان CS35
+  { brand: "سایپا", name: "چانگان CS35 اتوماتیک", year: "مدل 1398", priceToman: 890_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "چانگان CS35 اتوماتیک", year: "مدل 1396", priceToman: 760_000_000, isDiscontinued: true, source: "bama.ir" },
 ];
 
 function generateId(name: string, year: string): string {

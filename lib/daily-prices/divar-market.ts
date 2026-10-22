@@ -222,9 +222,24 @@ export async function fetchLiveDivarClusterEstimate(
   let listings = recentDivarListingsCache?.data || [];
 
   if (!listings || listings.length === 0 || (recentDivarListingsCache && recentDivarListingsCache.expiresAt < now)) {
-    if (supabaseClient) {
+    let sb = supabaseClient;
+    if (!sb) {
       try {
-        const { data } = await supabaseClient
+        const { env } = await import("../env");
+        if (env.hasSupabase && env.supabaseServiceRoleKey) {
+          const { createClient } = await import("@supabase/supabase-js");
+          sb = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+        }
+      } catch {
+        // Fallback silently if not available
+      }
+    }
+
+    if (sb) {
+      try {
+        const { data } = await sb
           .from("listings")
           .select("make, model, title, year, price_toman")
           .eq("source", "divar")

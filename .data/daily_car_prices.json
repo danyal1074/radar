@@ -888,5 +888,1005 @@
     "source": "bama.ir",
     "id": "seed-وانت-پیکان-بنزینی-مدل-1390",
     "updatedAt": "2026-10-22T09:27:01.681Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا S دنده‌ای",
+    "year": "مدل 1403",
+    "priceToman": 450000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-ساینا-s-دندهای-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا S دنده‌ای",
+    "year": "مدل 1402",
+    "priceToman": 420000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-ساینا-s-دندهای-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا S دنده‌ای",
+    "year": "مدل 1401",
+    "priceToman": 395000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-ساینا-s-دندهای-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا S دنده‌ای",
+    "year": "مدل 1400",
+    "priceToman": 370000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-ساینا-s-دندهای-مدل-1400",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا دنده‌ای EX",
+    "year": "مدل 1399",
+    "priceToman": 345000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-ساینا-دندهای-ex-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا دنده‌ای EX",
+    "year": "مدل 1398",
+    "priceToman": 320000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-ساینا-دندهای-ex-مدل-1398",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "ساینا دنده‌ای EX",
+    "year": "مدل 1397",
+    "priceToman": 295000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-ساینا-دندهای-ex-مدل-1397",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک دنده‌ای ساده",
+    "year": "مدل 1403",
+    "priceToman": 425000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-دندهای-ساده-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک دنده‌ای ساده",
+    "year": "مدل 1402",
+    "priceToman": 395000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-دندهای-ساده-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک دنده‌ای ساده",
+    "year": "مدل 1401",
+    "priceToman": 375000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-دندهای-ساده-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک دنده‌ای ساده",
+    "year": "مدل 1400",
+    "priceToman": 350000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-کوییک-دندهای-ساده-مدل-1400",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک دنده‌ای ساده",
+    "year": "مدل 1399",
+    "priceToman": 330000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-کوییک-دندهای-ساده-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک دنده‌ای ساده",
+    "year": "مدل 1398",
+    "priceToman": 310000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-کوییک-دندهای-ساده-مدل-1398",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک R دنده‌ای",
+    "year": "مدل 1402",
+    "priceToman": 410000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-r-دندهای-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک R دنده‌ای",
+    "year": "مدل 1401",
+    "priceToman": 385000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-r-دندهای-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک S دنده‌ای",
+    "year": "مدل 1403",
+    "priceToman": 440000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-s-دندهای-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک S دنده‌ای",
+    "year": "مدل 1402",
+    "priceToman": 415000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-s-دندهای-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "کوییک GX دنده‌ای",
+    "year": "مدل 1403",
+    "priceToman": 455000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-کوییک-gx-دندهای-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "سایپا اطلس G",
+    "year": "مدل 1403",
+    "priceToman": 585000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-سایپا-اطلس-g-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "سایپا اطلس G",
+    "year": "مدل 1402",
+    "priceToman": 545000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-سایپا-اطلس-g-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "پارس خودرو سهند S",
+    "year": "مدل 1403",
+    "priceToman": 530000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-پارس-خودرو-سهند-s-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "شاهین G دنده‌ای",
+    "year": "مدل 1403",
+    "priceToman": 750000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-شاهین-g-دندهای-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "شاهین G دنده‌ای",
+    "year": "مدل 1402",
+    "priceToman": 695000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-شاهین-g-دندهای-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "شاهین G دنده‌ای",
+    "year": "مدل 1401",
+    "priceToman": 640000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-شاهین-g-دندهای-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "شاهین G دنده‌ای",
+    "year": "مدل 1400",
+    "priceToman": 590000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-شاهین-g-دندهای-مدل-1400",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "شاهین اتوماتیک CVT",
+    "year": "مدل 1403",
+    "priceToman": 880000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-شاهین-اتوماتیک-cvt-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "شاهین اتوماتیک CVT",
+    "year": "مدل 1402",
+    "priceToman": 820000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-شاهین-اتوماتیک-cvt-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس دنده‌ای",
+    "year": "مدل 1403",
+    "priceToman": 810000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-دندهای-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس دنده‌ای",
+    "year": "مدل 1402",
+    "priceToman": 745000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-دندهای-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس دنده‌ای",
+    "year": "مدل 1401",
+    "priceToman": 690000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-دندهای-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس دنده‌ای",
+    "year": "مدل 1400",
+    "priceToman": 635000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-دندهای-مدل-1400",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس دنده‌ای",
+    "year": "مدل 1399",
+    "priceToman": 585000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-دندهای-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس توربو اتوماتیک",
+    "year": "مدل 1403",
+    "priceToman": 1040000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-توربو-اتوماتیک-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس توربو اتوماتیک",
+    "year": "مدل 1402",
+    "priceToman": 960000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-توربو-اتوماتیک-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا پلاس توربو اتوماتیک",
+    "year": "مدل 1401",
+    "priceToman": 890000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دنا-پلاس-توربو-اتوماتیک-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دنا معمولی",
+    "year": "مدل 1399",
+    "priceToman": 530000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-دنا-معمولی-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "تارا دنده‌ای V1",
+    "year": "مدل 1403",
+    "priceToman": 820000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-تارا-دندهای-v1-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "تارا دنده‌ای V1",
+    "year": "مدل 1402",
+    "priceToman": 760000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-تارا-دندهای-v1-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "تارا اتوماتیک V2/V4",
+    "year": "مدل 1403",
+    "priceToman": 1020000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-تارا-اتوماتیک-v2v4-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "تارا اتوماتیک V2/V4",
+    "year": "مدل 1402",
+    "priceToman": 940000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-تارا-اتوماتیک-v2v4-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سورن پلاس EF7",
+    "year": "مدل 1403",
+    "priceToman": 770000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-سورن-پلاس-ef7-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سورن پلاس EF7",
+    "year": "مدل 1402",
+    "priceToman": 715000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-سورن-پلاس-ef7-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سورن پلاس EF7",
+    "year": "مدل 1401",
+    "priceToman": 660000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-سورن-پلاس-ef7-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سمند سورن ELX",
+    "year": "مدل 1396",
+    "priceToman": 440000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سمند-سورن-elx-مدل-1396",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سمند سورن ELX",
+    "year": "مدل 1394",
+    "priceToman": 385000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سمند-سورن-elx-مدل-1394",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سمند سورن ELX",
+    "year": "مدل 1391",
+    "priceToman": 310000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سمند-سورن-elx-مدل-1391",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1403",
+    "priceToman": 650000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1402",
+    "priceToman": 600000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1401",
+    "priceToman": 550000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1399",
+    "priceToman": 470000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1396",
+    "priceToman": 380000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1396",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1393",
+    "priceToman": 310000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1393",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1390",
+    "priceToman": 250000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1390",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1386",
+    "priceToman": 200000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1386",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "وانت نیسان زامیاد Z24 بنزینی",
+    "year": "مدل 1382",
+    "priceToman": 160000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-وانت-نیسان-زامیاد-z24-بنزینی-مدل-1382",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "مدیران خودرو",
+    "name": "چری آریزو 5 دنده‌ای و اتومات",
+    "year": "مدل 1402",
+    "priceToman": 1180000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-چری-آریزو-5-دندهای-و-اتومات-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "مدیران خودرو",
+    "name": "چری آریزو 5 دنده‌ای و اتومات",
+    "year": "مدل 1400",
+    "priceToman": 980000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-چری-آریزو-5-دندهای-و-اتومات-مدل-1400",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "مدیران خودرو",
+    "name": "چری آریزو 5 دنده‌ای و اتومات",
+    "year": "مدل 1398",
+    "priceToman": 840000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-چری-آریزو-5-دندهای-و-اتومات-مدل-1398",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "مدیران خودرو",
+    "name": "چری آریزو 5 دنده‌ای و اتومات",
+    "year": "مدل 1396",
+    "priceToman": 720000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-چری-آریزو-5-دندهای-و-اتومات-مدل-1396",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "مدیران خودرو",
+    "name": "چری تیگو 7 IE",
+    "year": "مدل 1401",
+    "priceToman": 1480000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-چری-تیگو-7-ie-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "مدیران خودرو",
+    "name": "چری تیگو 5",
+    "year": "مدل 1399",
+    "priceToman": 1050000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-چری-تیگو-5-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "گروه بهمن",
+    "name": "دیگنیتی پرایم",
+    "year": "مدل 1403",
+    "priceToman": 2050000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دیگنیتی-پرایم-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "گروه بهمن",
+    "name": "دیگنیتی پرایم",
+    "year": "مدل 1402",
+    "priceToman": 1880000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دیگنیتی-پرایم-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "گروه بهمن",
+    "name": "دیگنیتی پرایم",
+    "year": "مدل 1401",
+    "priceToman": 1720000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-دیگنیتی-پرایم-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "گروه بهمن",
+    "name": "فیدلیتی پرایم 7 نفره",
+    "year": "مدل 1403",
+    "priceToman": 2150000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-فیدلیتی-پرایم-7-نفره-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "گروه بهمن",
+    "name": "فیدلیتی پرایم 7 نفره",
+    "year": "مدل 1402",
+    "priceToman": 1980000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-فیدلیتی-پرایم-7-نفره-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "هایما S7 توربو پلاس",
+    "year": "مدل 1403",
+    "priceToman": 1750000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-هایما-s7-توربو-پلاس-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "هایما S7 توربو پلاس",
+    "year": "مدل 1402",
+    "priceToman": 1620000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-هایما-s7-توربو-پلاس-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "هایما S7 توربو پلاس",
+    "year": "مدل 1401",
+    "priceToman": 1490000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-هایما-s7-توربو-پلاس-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "هایما S7 توربو پلاس",
+    "year": "مدل 1399",
+    "priceToman": 1290000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-هایما-s7-توربو-پلاس-مدل-1399",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "هایما S5 توربو",
+    "year": "مدل 1403",
+    "priceToman": 1450000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-هایما-s5-توربو-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "هایما S5 توربو",
+    "year": "مدل 1401",
+    "priceToman": 1250000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-هایما-s5-توربو-مدل-1401",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "کرمان موتور",
+    "name": "جک S5 اتوماتیک",
+    "year": "مدل 1402",
+    "priceToman": 1550000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-جک-s5-اتوماتیک-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "کرمان موتور",
+    "name": "جک J4",
+    "year": "مدل 1403",
+    "priceToman": 880000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-جک-j4-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "کرمان موتور",
+    "name": "جک S3",
+    "year": "مدل 1402",
+    "priceToman": 1120000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-جک-s3-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "وانت آریسان 2",
+    "year": "مدل 1403",
+    "priceToman": 490000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-وانت-آریسان-2-مدل-1403",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "وانت آریسان 2",
+    "year": "مدل 1402",
+    "priceToman": 440000000,
+    "isDiscontinued": false,
+    "source": "bama.ir",
+    "id": "seed-وانت-آریسان-2-مدل-1402",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "پیکاپ ریچ",
+    "year": "مدل 1395",
+    "priceToman": 840000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-پیکاپ-ریچ-مدل-1395",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "گروه بهمن",
+    "name": "کاپرا دوکابین",
+    "year": "مدل 1390",
+    "priceToman": 550000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-کاپرا-دوکابین-مدل-1390",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "پژو روآ و روآ سال",
+    "year": "مدل 1387",
+    "priceToman": 175000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-پژو-روآ-و-روآ-سال-مدل-1387",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "کرمان موتور",
+    "name": "لیفان 620",
+    "year": "مدل 1390",
+    "priceToman": 300000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-لیفان-620-مدل-1390",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "کرمان موتور",
+    "name": "لیفان X60",
+    "year": "مدل 1394",
+    "priceToman": 510000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-لیفان-x60-مدل-1394",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "سیتروئن C3",
+    "year": "مدل 1397",
+    "priceToman": 1920000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سیتروئن-c3-مدل-1397",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "هیوندای",
+    "name": "هیوندای اکسنت",
+    "year": "مدل 2017",
+    "priceToman": 1950000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-هیوندای-اکسنت-مدل-2017",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "کیا",
+    "name": "کیا سراتو مونتاژ سایپا 2.0",
+    "year": "مدل 1394",
+    "priceToman": 1380000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-کیا-سراتو-مونتاژ-سایپا-20-مدل-1394",
+    "updatedAt": "2026-10-22T15:26:22.878Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دانگ فنگ H30 کراس اتوماتیک",
+    "year": "مدل 1398",
+    "priceToman": 740000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-دانگ-فنگ-h30-کراس-اتوماتیک-مدل-1398",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دانگ فنگ H30 کراس اتوماتیک",
+    "year": "مدل 1397",
+    "priceToman": 680000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-دانگ-فنگ-h30-کراس-اتوماتیک-مدل-1397",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "دانگ فنگ H30 کراس اتوماتیک",
+    "year": "مدل 1396",
+    "priceToman": 610000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-دانگ-فنگ-h30-کراس-اتوماتیک-مدل-1396",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "نیسان ماکسیما اتوماتیک و دنده‌ای",
+    "year": "مدل 1390",
+    "priceToman": 1450000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-نیسان-ماکسیما-اتوماتیک-و-دندهای-مدل-1390",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "نیسان ماکسیما اتوماتیک و دنده‌ای",
+    "year": "مدل 1387",
+    "priceToman": 1120000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-نیسان-ماکسیما-اتوماتیک-و-دندهای-مدل-1387",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "نیسان ماکسیما اتوماتیک و دنده‌ای",
+    "year": "مدل 1385",
+    "priceToman": 920000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-نیسان-ماکسیما-اتوماتیک-و-دندهای-مدل-1385",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "نیسان ماکسیما اتوماتیک و دنده‌ای",
+    "year": "مدل 1382",
+    "priceToman": 760000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-نیسان-ماکسیما-اتوماتیک-و-دندهای-مدل-1382",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سوزوکی گرند ویتارا 2.4 اتوماتیک",
+    "year": "مدل 1397",
+    "priceToman": 2350000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سوزوکی-گرند-ویتارا-24-اتوماتیک-مدل-1397",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سوزوکی گرند ویتارا 2.4 اتوماتیک",
+    "year": "مدل 1394",
+    "priceToman": 1780000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سوزوکی-گرند-ویتارا-24-اتوماتیک-مدل-1394",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "ایران خودرو",
+    "name": "سوزوکی گرند ویتارا 2.4 اتوماتیک",
+    "year": "مدل 1390",
+    "priceToman": 1350000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-سوزوکی-گرند-ویتارا-24-اتوماتیک-مدل-1390",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "رنو مگان 2000",
+    "year": "مدل 1392",
+    "priceToman": 920000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-رنو-مگان-2000-مدل-1392",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "رنو مگان 2000",
+    "year": "مدل 1390",
+    "priceToman": 780000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-رنو-مگان-2000-مدل-1390",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "پارس خودرو",
+    "name": "رنو مگان 1600",
+    "year": "مدل 1388",
+    "priceToman": 640000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-رنو-مگان-1600-مدل-1388",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "چانگان CS35 اتوماتیک",
+    "year": "مدل 1398",
+    "priceToman": 890000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-چانگان-cs35-اتوماتیک-مدل-1398",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
+  },
+  {
+    "brand": "سایپا",
+    "name": "چانگان CS35 اتوماتیک",
+    "year": "مدل 1396",
+    "priceToman": 760000000,
+    "isDiscontinued": true,
+    "source": "bama.ir",
+    "id": "seed-چانگان-cs35-اتوماتیک-مدل-1396",
+    "updatedAt": "2026-10-22T15:34:43.623Z"
   }
 ]

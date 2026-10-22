@@ -60,6 +60,10 @@ function normalizeCarText(text: string): string {
     [/megane/g, "مگان"],
     [/xantia/g, "زانتیا"],
     [/rio/g, "ریو"],
+    [/h30\s*cross|h30|اچ\s*سی\s*کراس/g, "h30 کراس"],
+    [/maxima/g, "ماکسیما"],
+    [/vitara/g, "ویتارا"],
+    [/changan/g, "چانگان"],
     [/plus/g, "پلاس"],
     [/turbo/g, "توربو"],
     [/automatic|auto/g, "اتوماتیک"],
@@ -140,6 +144,15 @@ export function lookupDailyPrice(
   const isArisan = /آریسان/.test(fullText);
   const isXantia = /زانتیا/.test(fullText);
   const isRio = /ریو/.test(fullText);
+  const isAtlas = /اطلس/.test(fullText);
+  const isSahand = /سهند/.test(fullText);
+  const isDignity = /دیگنیتی/.test(fullText);
+  const isFidelity = /فیدلیتی/.test(fullText);
+  const isRooa = /روآ|روا|rooa/.test(fullText);
+  const isRich = /ریچ/.test(fullText);
+  const isCapra = /کاپرا/.test(fullText);
+  const isAccent = /اکسنت/.test(fullText);
+  const isC3 = /c3|سی\s*3|سی\s*۳/.test(fullText);
 
   const isCamry = /camry|کمری/.test(fullText);
   const isCorolla = /corolla|کرولا/.test(fullText);
@@ -155,6 +168,10 @@ export function lookupDailyPrice(
   const isHaima = /هایما/.test(fullText);
   const isBrilliance = /برلیانس/.test(fullText);
   const isLifan = /لیفان/.test(fullText);
+  const isH30 = /h30|اچ\s*سی/.test(fullText);
+  const isMaxima = /ماکسیما|maxima/.test(fullText);
+  const isVitara = /ویتارا|vitara/.test(fullText);
+  const isChangan = /چانگان|cs35/.test(fullText);
 
   // زیرویژگی‌ها
   const isDual = /دوگانه|گاز|cng|پایه گازسوز/.test(fullText);
@@ -319,6 +336,45 @@ export function lookupDailyPrice(
     } else if (isLifan) {
       if (!/لیفان/.test(pNorm)) continue;
       score += 60;
+    } else if (isAtlas) {
+      if (!/اطلس/.test(pNorm)) continue;
+      score += 65;
+    } else if (isSahand) {
+      if (!/سهند/.test(pNorm)) continue;
+      score += 65;
+    } else if (isDignity) {
+      if (!/دیگنیتی/.test(pNorm)) continue;
+      score += 70;
+    } else if (isFidelity) {
+      if (!/فیدلیتی/.test(pNorm)) continue;
+      score += 70;
+    } else if (isRooa) {
+      if (!/روآ|روا/.test(pNorm)) continue;
+      score += 60;
+    } else if (isRich) {
+      if (!/ریچ/.test(pNorm)) continue;
+      score += 65;
+    } else if (isCapra) {
+      if (!/کاپرا/.test(pNorm)) continue;
+      score += 65;
+    } else if (isAccent) {
+      if (!/اکسنت/.test(pNorm)) continue;
+      score += 70;
+    } else if (isC3) {
+      if (!/c3|سی\s*3|سی\s*۳/.test(pNorm)) continue;
+      score += 70;
+    } else if (isH30) {
+      if (!/h30|اچ\s*سی/.test(pNorm)) continue;
+      score += 65;
+    } else if (isMaxima) {
+      if (!/ماکسیما|maxima/.test(pNorm)) continue;
+      score += 70;
+    } else if (isVitara) {
+      if (!/ویتارا|vitara/.test(pNorm)) continue;
+      score += 70;
+    } else if (isChangan) {
+      if (!/چانگان|cs35/.test(pNorm)) continue;
+      score += 65;
     } else {
       const cleanMake = normalizeCarText(make);
       if (!cleanMake || cleanMake === "سایر") continue;

@@ -257,6 +257,68 @@ const BENCHMARK_MAP: Record<string, Record<number, number>> = {
     1402: 1_550_000_000,
     1403: 1_720_000_000,
   },
+  // دانگ فنگ H30 کراس
+  h30: {
+    1395: 580_000_000,
+    1396: 630_000_000,
+    1397: 680_000_000,
+    1398: 740_000_000,
+  },
+  // نیسان ماکسیما
+  maxima: {
+    1382: 760_000_000,
+    1385: 920_000_000,
+    1387: 1_120_000_000,
+    1389: 1_280_000_000,
+    1390: 1_450_000_000,
+  },
+  // سوزوکی گرند ویتارا
+  vitara: {
+    1389: 1_200_000_000,
+    1391: 1_450_000_000,
+    1394: 1_780_000_000,
+    1397: 2_350_000_000,
+  },
+  // رنو مگان
+  megan: {
+    1388: 640_000_000,
+    1390: 780_000_000,
+    1392: 920_000_000,
+  },
+  // چانگان CS35
+  changan: {
+    1396: 760_000_000,
+    1397: 820_000_000,
+    1398: 890_000_000,
+  },
+  // کیا سراتو
+  cerato: {
+    1394: 1_380_000_000,
+    1396: 1_650_000_000,
+    1397: 1_850_000_000,
+    1398: 2_050_000_000,
+  },
+  // چری و فونیکس (تیگو و آریزو)
+  chery: {
+    1396: 720_000_000,
+    1398: 910_000_000,
+    1400: 1_150_000_000,
+    1402: 1_480_000_000,
+  },
+  // دیگنیتی و فیدلیتی
+  dignity: {
+    1400: 1_420_000_000,
+    1401: 1_580_000_000,
+    1402: 1_780_000_000,
+    1403: 1_950_000_000,
+  },
+  // برلیانس (H330, H320, Cross)
+  brilliance: {
+    1396: 590_000_000,
+    1397: 660_000_000,
+    1398: 720_000_000,
+    1399: 780_000_000,
+  },
 };
 
 function normalizeKey(make: string, model: string): string | null {
@@ -285,8 +347,17 @@ function normalizeKey(make: string, model: string): string | null {
   if (/ماتیز|سیلو|daewoo/i.test(s)) return "daewoo";
   if (/لیفان|lifan/i.test(s)) return "lifan";
   if (/ام وی ام|ام‌وی‌ام|mvm/i.test(s)) return "mvm";
-  if (/جک|jac/i.test(s)) return "jac";
+  if (/جک|jac|kmc/i.test(s)) return "jac";
   if (/هایما|haima/i.test(s)) return "haima";
+  if (/h30|اچ\s*سی/i.test(s)) return "h30";
+  if (/ماکسیما|maxima/i.test(s)) return "maxima";
+  if (/ویتارا|vitara/i.test(s)) return "vitara";
+  if (/مگان|megane/i.test(s)) return "megan";
+  if (/چانگان|cs35/i.test(s)) return "changan";
+  if (/سراتو|cerato/i.test(s)) return "cerato";
+  if (/دیگنیتی|فیدلیتی|dignity|fidelity/i.test(s)) return "dignity";
+  if (/تیگو|آریزو|chery|tiggo|arrizo/i.test(s)) return "chery";
+  if (/برلیانس|brilliance/i.test(s)) return "brilliance";
 
   return null;
 }

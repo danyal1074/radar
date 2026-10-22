@@ -344,16 +344,20 @@ export default async function Home() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">پلن پایه</h3>
-                  <p className="text-xs text-slate-500 mt-1">مناسب خریداران شخصی و پیگیری خودروهای دلخواه</p>
+                  <p className="text-xs text-slate-500 mt-1">مناسب پیگیری خودروها در ۱ شهر انتخابی استان</p>
                 </div>
                 <div className="py-2 border-y border-slate-100">
-                  <span className="text-3xl font-black text-slate-900">۲۹۰,۰۰۰</span>
+                  <span className="text-3xl font-black text-slate-900">۴۹۰,۰۰۰</span>
                   <span className="text-xs font-bold text-slate-500 mr-1.5">تومان / ماهانه</span>
                 </div>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600">
+                  <li className="flex items-center gap-2 font-medium text-slate-800">
+                    <Check className="size-4 text-emerald-600 shrink-0" />
+                    <span>پایش ۱ شهر انتخابی در خراسان رضوی 🏙️</span>
+                  </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-emerald-600 shrink-0" />
-                    <span>۵ قانون هشدار فعال همزمان</span>
+                    <span>۳ قانون هشدار فعال همزمان</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-emerald-600 shrink-0" />
@@ -382,37 +386,41 @@ export default async function Home() {
             {/* پلن حرفه‌ای (برجسته) */}
             <div className="rounded-2xl border-2 border-blue-600 bg-white p-6 sm:p-7 shadow-xl shadow-blue-500/10 flex flex-col justify-between text-right relative scale-102">
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-3.5 py-1 text-[11px] font-black text-white shadow-md">
-                ⭐ محبوب‌ترین انتخاب نمایشگاه‌داران
+                ⭐ پیشنهاد رادار / پرفروش‌ترین پلن بازار
               </div>
               <div className="space-y-4 pt-1">
                 <div>
-                  <h3 className="text-lg font-bold text-blue-900">پلن حرفه‌ای (شکارچی)</h3>
-                  <p className="text-xs text-slate-500 mt-1">مناسب برای نمایشگاه‌داران فعال و معامله‌گران بازار</p>
+                  <h3 className="text-lg font-bold text-blue-900">پلن حرفه‌ای (طلایی)</h3>
+                  <p className="text-xs text-slate-500 mt-1">کل شهرهای استان + سرعت توربو + رادار تصادفی و شکار</p>
                 </div>
                 <div className="py-2 border-y border-slate-100">
-                  <span className="text-3xl font-black text-blue-600">۷۹۰,۰۰۰</span>
+                  <span className="text-3xl font-black text-blue-600">۹۹۰,۰۰۰</span>
                   <span className="text-xs font-bold text-slate-500 mr-1.5">تومان / ماهانه</span>
                 </div>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 font-medium">
                   <li className="flex items-center gap-2 font-bold text-blue-950">
                     <Check className="size-4 text-blue-600 shrink-0" />
-                    <span>۲۰ قانون هشدار فعال (رصد کامل بازار)</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-4 text-blue-600 shrink-0" />
-                    <span>۵۰۰ آگهی ذخیره‌شده</span>
+                    <span>پایش همزمان کل شهرهای خراسان رضوی 🏙️</span>
                   </li>
                   <li className="flex items-center gap-2 font-bold text-amber-600">
                     <Check className="size-4 text-amber-500 shrink-0" />
-                    <span>سرعت آنی VIP بدون تاخیر (ثانیه اول)</span>
+                    <span>سرعت توربو آنی VIP بدون تاخیر (ثانیه اول) ⚡</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-4 text-blue-600 shrink-0" />
-                    <span>ارسال عکس خودرو در بله و تلگرام</span>
+                  <li className="flex items-center gap-2 font-bold text-emerald-700">
+                    <Check className="size-4 text-emerald-600 shrink-0" />
+                    <span>رادار اختصاصی خودروهای تصادفی / تعمیری 💥</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-blue-600 shrink-0" />
                     <span>رادار فروش فوری و پول‌لازم 🔥</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-4 text-blue-600 shrink-0" />
+                    <span>۲۵ قانون هشدار فعال (رصد کامل بازار)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-4 text-blue-600 shrink-0" />
+                    <span>ارسال عکس خودرو در بله و تلگرام 📸</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-blue-600 shrink-0" />
@@ -429,7 +437,7 @@ export default async function Home() {
                   href="/register"
                   className="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 py-3 text-xs sm:text-sm font-bold text-white hover:bg-blue-700 shadow-md shadow-blue-500/25 transition-all"
                 >
-                  شروع رایگان ۱۴ روزه
+                  🚀 شروع تست رایگان ۱۴ روزه (با تمام امکانات)
                 </Link>
               </div>
             </div>
@@ -442,25 +450,29 @@ export default async function Home() {
                   <p className="text-xs text-slate-500 mt-1">برای اتوگالری‌های چندشعبه، هلدینگ‌ها و سرمایه‌گذاران</p>
                 </div>
                 <div className="py-2 border-y border-slate-100">
-                  <span className="text-3xl font-black text-slate-900">۱,۹۹۰,۰۰۰</span>
-                  <span className="text-xs font-bold text-slate-500 mr-1.5">تومان / ماهانه</span>
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900">تماس بگیرید</span>
+                  <span className="text-xs font-bold text-slate-500 mr-1.5">(مشاوره رایگان)</span>
                 </div>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600">
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-emerald-600 shrink-0" />
-                    <span>۱۰۰ قانون هشدار فعال همزمان</span>
+                    <span>دسترسی چندکاربره برای همکاران نمایشگاه</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-emerald-600 shrink-0" />
-                    <span>۵٬۰۰۰ آگهی ذخیره‌شده</span>
+                    <span>پایش همزمان کل شهرهای کشور</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-emerald-600 shrink-0" />
-                    <span>اتصال چند شماره بله و تلگرام همکاران</span>
+                    <span>ربات اختصاصی با برند اتوگالری شما</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="size-4 text-emerald-600 shrink-0" />
-                    <span>پشتیبانی اختصاصی مستقیم تلفنی</span>
+                    <span>اتصال چند شماره بله، تلگرام و پیامک VIP</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-4 text-emerald-600 shrink-0" />
+                    <span>پشتیبانی مستقیم و اختصاصی تلفنی ۲۴/۷</span>
                   </li>
                 </ul>
               </div>
@@ -469,7 +481,7 @@ export default async function Home() {
                   href="tel:09999212209"
                   className="w-full inline-flex items-center justify-center rounded-xl border border-slate-300 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-xs"
                 >
-                  مشاوره و انتخاب پلن
+                  📞 تماس جهت مشاوره و فعال‌سازی
                 </a>
               </div>
             </div>

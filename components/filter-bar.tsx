@@ -1,5 +1,6 @@
-import { BellPlus, RotateCcw, Search, Sparkles } from "lucide-react";
+import { BellPlus, RotateCcw, Search, Sparkles, Wrench } from "lucide-react";
 import Link from "next/link";
+import { KHORASAN_RAZAVI_CITIES, POPULAR_CITIES } from "@/lib/cities";
 import type { ListingFilters, SortKey } from "@/lib/validation";
 import { Button, Input } from "./ui";
 
@@ -49,35 +50,41 @@ export function FilterBar({
       <div className="mb-3.5 pb-3 border-b border-line/60">
         {allowedCitiesCount >= 2 ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 rounded-xl border border-line bg-paper/60 p-1 text-xs font-semibold">
-              <span className="text-muted px-1.5">🏙️ شهر:</span>
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-paper/60 p-1 text-xs font-semibold">
+              <span className="text-muted px-1.5">🏙️ استان خراسان رضوی:</span>
               <button
                 type="submit"
                 name="city"
                 value=""
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${!filters.city ? "bg-brand-600 text-white shadow-sm" : "text-muted hover:text-ink"}`}
               >
-                همه (تربت + مشهد)
+                کل استان
               </button>
-              <button
-                type="submit"
+              {POPULAR_CITIES.slice(0, 6).map((c) => (
+                <button
+                  key={c.slug}
+                  type="submit"
+                  name="city"
+                  value={c.nameFa}
+                  className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${filters.city === c.nameFa ? "bg-brand-600 text-white shadow-sm" : "text-muted hover:text-ink"}`}
+                >
+                  {c.nameFa}
+                </button>
+              ))}
+              <select
                 name="city"
-                value="تربت‌حیدریه"
-                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${filters.city?.includes("تربت") ? "bg-brand-600 text-white shadow-sm" : "text-muted hover:text-ink"}`}
+                value={filters.city ?? ""}
+                onChange={(e) => e.target.form?.requestSubmit()}
+                className="rounded-lg border border-line bg-surface px-2 py-1 text-xs font-semibold text-ink cursor-pointer"
               >
-                تربت‌حیدریه
-              </button>
-              <button
-                type="submit"
-                name="city"
-                value="مشهد"
-                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${filters.city?.includes("مشهد") ? "bg-brand-600 text-white shadow-sm" : "text-muted hover:text-ink"}`}
-              >
-                مشهد
-              </button>
+                <option value="">سایر شهرهای استان…</option>
+                {KHORASAN_RAZAVI_CITIES.map((c) => (
+                  <option key={c.slug} value={c.nameFa}>{c.nameFa}</option>
+                ))}
+              </select>
             </div>
             <span className="text-[11px] font-bold text-good-600 bg-good-50 px-2.5 py-1 rounded-lg border border-good-200">
-              ✓ رصد هم‌زمان هر دو شهر فعال است
+              ✓ رصد هم‌زمان کل استان فعال است
             </span>
           </div>
         ) : (
@@ -85,10 +92,10 @@ export function FilterBar({
             <div className="flex items-center gap-2">
               <span className="font-bold">🏙️ شهر تحت رصد شما:</span>
               <span className="font-black text-brand-700 bg-brand-100/70 px-2 py-0.5 rounded-md">{userCity}</span>
-              <span className="text-muted text-[11px] hidden sm:inline">(قفل شده روی ۱ شهر در پلن فعلی)</span>
+              <span className="text-muted text-[11px] hidden sm:inline">(محدود به ۱ شهر در پلن ۴۹۰ تومانی)</span>
             </div>
             <Link href="/settings/billing" className="text-brand-600 hover:text-brand-800 font-bold underline text-[11px]">
-              🔓 بازکردن دسترسی همزمان به مشهد (پلن Pro)
+              🔓 بازکردن دسترسی همزمان به کل استان (پلن ۹۹۰ ت)
             </Link>
           </div>
         )}
@@ -175,6 +182,22 @@ export function FilterBar({
             <span>🛡️</span>
             بدون رنگ و شاسی پلمپ
           </label>
+
+          {/* فیلتر خودروهای تصادفی */}
+          <div className="flex items-center gap-1.5 rounded-xl border border-line bg-paper/60 px-2.5 py-1 text-xs font-semibold">
+            <Wrench className="size-3.5 text-amber-600" />
+            <select
+              name="damage"
+              defaultValue={filters.damageFilter || "all"}
+              onChange={(e) => e.target.form?.requestSubmit()}
+              aria-label="فیلتر وضعیت بدنه و تصادف"
+              className="bg-transparent text-xs font-semibold text-ink cursor-pointer focus:outline-hidden"
+            >
+              <option value="all">همه (سالم و تصادفی)</option>
+              <option value="clean_only">🛡️ فقط سالم و بدون تصادف</option>
+              <option value="damaged_only">💥 فقط تصادفی / تعمیری</option>
+            </select>
+          </div>
 
           <input type="hidden" name="sort" value={sort} />
         </div>

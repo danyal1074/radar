@@ -26,6 +26,7 @@ export function parseListingQuery(sp: SP, canScoreSort: boolean) {
     onlyOpportunities: toStr(sp.opp) === "1" || toStr(sp.onlyOpportunities) === "1" || undefined,
     onlyUrgent: toStr(sp.urgent) === "1" || undefined,
     onlyPaintless: toStr(sp.paintless) === "1" || undefined,
+    damageFilter: (toStr(sp.damage) as "all" | "clean_only" | "damaged_only") || undefined,
   };
   const rawSort = toStr(sp.sort) as SortKey | undefined;
   let sort: SortKey = rawSort && (SORT_KEYS as readonly string[]).includes(rawSort) ? rawSort : "newest";

@@ -7,7 +7,8 @@ import type { ActionState } from "@/app/actions";
 import { SOURCE_LABEL } from "@/lib/labels";
 import type { WatchRule } from "@/lib/types";
 import { Alert, Button, Field, Input, Select } from "./ui";
-import { ChevronDown, Sparkles, Zap, ShieldCheck } from "lucide-react";
+import { ChevronDown, Sparkles, Zap, ShieldCheck, Wrench } from "lucide-react";
+import { KHORASAN_RAZAVI_CITIES } from "@/lib/cities";
 
 const QUICK_CAR_PILLS = [
   "همه خودروها",
@@ -169,6 +170,46 @@ export function RuleForm({
         </label>
       </div>
 
+      {/* وضعیت بدنه و خودروهای تصادفی */}
+      <div className="rounded-xl border border-line bg-surface p-3.5 space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-ink">
+          <Wrench className="size-4 text-amber-600" />
+          <span>فیلتر خودروهای تصادفی / تعمیری</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <label className="flex items-center gap-2 p-2 rounded-lg bg-paper border border-line/60 cursor-pointer hover:border-brand-400">
+            <input
+              type="radio"
+              name="damage_filter"
+              value="all"
+              defaultChecked={!rule?.damage_filter || rule.damage_filter === "all"}
+              className="text-brand-600 accent-brand-600"
+            />
+            <span className="text-xs font-semibold text-ink">همه (سالم و تصادفی)</span>
+          </label>
+          <label className="flex items-center gap-2 p-2 rounded-lg bg-paper border border-line/60 cursor-pointer hover:border-brand-400">
+            <input
+              type="radio"
+              name="damage_filter"
+              value="clean_only"
+              defaultChecked={rule?.damage_filter === "clean_only"}
+              className="text-brand-600 accent-brand-600"
+            />
+            <span className="text-xs font-semibold text-emerald-700">🛡️ فقط سالم و بدون تصادف</span>
+          </label>
+          <label className="flex items-center gap-2 p-2 rounded-lg bg-paper border border-line/60 cursor-pointer hover:border-brand-400">
+            <input
+              type="radio"
+              name="damage_filter"
+              value="damaged_only"
+              defaultChecked={rule?.damage_filter === "damaged_only"}
+              className="text-brand-600 accent-brand-600"
+            />
+            <span className="text-xs font-semibold text-amber-700">💥 فقط تصادفی / تعمیری</span>
+          </label>
+        </div>
+      </div>
+
       {/* ۴. تنظیمات پیشرفته (اختیاری و بازشونده برای خلوت ماندن صفحه) */}
       <details className="group rounded-xl border border-line bg-surface">
         <summary className="flex items-center justify-between p-3.5 text-xs font-bold text-muted cursor-pointer hover:text-ink select-none">
@@ -198,24 +239,25 @@ export function RuleForm({
             </Field>
 
             {allowedCitiesCount >= 2 ? (
-              <Field label="شهر تحت پایش" error={e.city}>
+              <Field label="شهر تحت پایش" error={e.city} hint="پایش همزمان کل استان یا ۱ شهر اختصاصی">
                 <Select name="city" defaultValue={rule?.city ?? ""}>
-                  <option value="">هر دو شهر (تربت‌حیدریه + مشهد)</option>
-                  <option value="تربت‌حیدریه">تربت‌حیدریه</option>
-                  <option value="مشهد">مشهد</option>
+                  <option value="">✨ کل شهرهای خراسان رضوی (پایش همزمان)</option>
+                  {KHORASAN_RAZAVI_CITIES.map((c) => (
+                    <option key={c.slug} value={c.nameFa}>{c.nameFa}</option>
+                  ))}
                 </Select>
               </Field>
             ) : (
               <Field
                 label="شهر تحت پایش"
                 error={e.city}
-                hint="قفل شده روی ۱ شهر در پلن فعلی (برای رصد همزمان مشهد، پلن را به Pro ارتقا دهید)"
+                hint="در پلن پایه می‌توانید ۱ شهر را برای پایش انتخاب کنید (برای پایش همزمان کل استان، به پلن ۹۹۰ ت ارتقا دهید)"
               >
-                <input type="hidden" name="city" value={userCity} />
-                <div className="flex items-center gap-2 rounded-xl border border-line/70 bg-brand-50/50 px-3.5 py-2.5 text-sm font-bold text-brand-950">
-                  <span>🏙️ {userCity}</span>
-                  <span className="ms-auto text-xs text-muted font-normal">قفل شده در پلن شما</span>
-                </div>
+                <Select name="city" defaultValue={rule?.city || userCity || "مشهد"}>
+                  {KHORASAN_RAZAVI_CITIES.map((c) => (
+                    <option key={c.slug} value={c.nameFa}>{c.nameFa}</option>
+                  ))}
+                </Select>
               </Field>
             )}
 

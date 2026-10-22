@@ -55,6 +55,17 @@ export function ruleMatchesListing(rule: WatchRule, l: Listing): boolean {
     if (!isClean) return false;
   }
 
+  // فیلتر وضعیت بدنه و خودروهای تصادفی / تعمیری
+  if (rule.damage_filter === "clean_only") {
+    const fullText = `${l.title} ${l.description ?? ""}`.toLowerCase();
+    const isDamaged = Boolean(l.is_damaged) || /دور\s*رنگ|تمام\s*رنگ|چند\s*لکه|شاسی\s*(ضربه|خوردگی|جوش|ترک)|سرشاسی|تعویض\s*اتاق|تصادفی|چپ\s*شده|چپی|سوخته|اسقاط|اوراق/i.test(fullText);
+    if (isDamaged) return false;
+  } else if (rule.damage_filter === "damaged_only") {
+    const fullText = `${l.title} ${l.description ?? ""}`.toLowerCase();
+    const isDamaged = Boolean(l.is_damaged) || /دور\s*رنگ|تمام\s*رنگ|چند\s*لکه|شاسی\s*(ضربه|خوردگی|جوش|ترک)|سرشاسی|تعویض\s*اتاق|تصادفی|چپ\s*شده|چپی|سوخته|اسقاط|اوراق/i.test(fullText);
+    if (!isDamaged) return false;
+  }
+
   return true;
 }
 

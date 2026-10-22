@@ -102,6 +102,7 @@ export const watchRuleSchema = z
     min_discount_toman: optionalInt(0, 100_000_000_000),
     urgent_only: z.boolean().default(false),
     paint_free_only: z.boolean().default(false),
+    damage_filter: z.enum(["all", "clean_only", "damaged_only"]).default("all").nullable(),
     is_active: z.boolean().default(true),
   })
   .superRefine((r, ctx) => {
@@ -150,6 +151,7 @@ export const listingImportItemSchema = z.object({
   price_toman: z.number().int().positive().max(100_000_000_000),
   description: z.string().max(5000).nullable().optional(),
   image_url: z.string().url().nullable().optional(),
+  is_damaged: z.boolean().optional(),
   published_at: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
@@ -185,6 +187,7 @@ export interface ListingFilters {
   onlyOpportunities?: boolean;
   onlyUrgent?: boolean;
   onlyPaintless?: boolean;
+  damageFilter?: "all" | "clean_only" | "damaged_only";
 }
 
 export function toInt(v: string | string[] | undefined): number | undefined {

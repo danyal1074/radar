@@ -47,6 +47,8 @@ export interface Listing {
   first_seen_at: string;
   last_seen_at: string;
   source_status: SourceStatus;
+  /** true => car has crash, body damage, full paint, or severe chassis hit */
+  is_damaged?: boolean;
   /** true => demo/sample record, must be labelled in the UI */
   is_sample: boolean;
   created_at: string;
@@ -93,6 +95,7 @@ export interface WatchRule {
   min_discount_toman: number | null;
   urgent_only?: boolean;
   paint_free_only?: boolean;
+  damage_filter?: "all" | "clean_only" | "damaged_only" | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

@@ -77,6 +77,17 @@ export function applyFilters(views: ListingView[], f: ListingFilters): ListingVi
       );
       if (!isPaintless) return false;
     }
+    if (f.damageFilter === "clean_only") {
+      const isDamaged = Boolean(l.is_damaged) || /تصادفی|چپی|سوخته|اسقاط|اوراق|شاسی\s*(ضربه|خورده|جوش|ترک)|تمام\s*رنگ|دور\s*رنگ|اتاق\s*تعویض/.test(
+        `${l.title} ${l.description || ""}`,
+      );
+      if (isDamaged) return false;
+    } else if (f.damageFilter === "damaged_only") {
+      const isDamaged = Boolean(l.is_damaged) || /تصادفی|چپی|سوخته|اسقاط|اوراق|شاسی\s*(ضربه|خورده|جوش|ترک)|تمام\s*رنگ|دور\s*رنگ|اتاق\s*تعویض/.test(
+        `${l.title} ${l.description || ""}`,
+      );
+      if (!isDamaged) return false;
+    }
     return true;
   });
 }

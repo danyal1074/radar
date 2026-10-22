@@ -42,7 +42,7 @@ function formatTomanPersian(amount: number): string {
 
 function buildCleanMessageText(p: NotificationPayload): string {
   const isDivar = p.source === "divar";
-  const cityPersian = p.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+  const cityPersian = p.city || "مشهد";
   const sourceName = isDivar ? "دیوار" : "شیپور";
   const sourceTitle = `${sourceName} ${cityPersian}`;
 

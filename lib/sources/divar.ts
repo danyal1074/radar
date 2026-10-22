@@ -1,21 +1,180 @@
+import { getCityBySlug, normalizeCityNameFa } from "../cities";
 import { isJunkOrUnrealisticListing } from "../junk-filter";
 import type { ListingImportItem } from "../validation";
 import type { FetchResult, ListingSourceProvider } from "./provider";
 
 function normalizeFaDigits(str: string): string {
   if (!str) return "";
-  return str.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+  return str
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+}
+
+interface DivarPostDetails {
+  brandModel?: string | null;
+  year?: number | null;
+  mileageKm?: number | null;
+  color?: string | null;
+  gearbox?: string | null;
+  fuel?: string | null;
+  motor?: string | null;
+  chassis?: string | null;
+  body?: string | null;
+  description?: string | null;
+  isDamaged?: boolean;
+}
+
+// In-memory cache for post details (10 minutes TTL)
+const postDetailsCache = new Map<string, { data: DivarPostDetails; expiresAt: number }>();
+
+async function fetchDivarPostDetails(token: string): Promise<DivarPostDetails | null> {
+  const cached = postDetailsCache.get(token);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
+  try {
+    const res = await fetch(`https://api.divar.ir/v8/posts-v2/web/${token}`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const details = parseDivarPostJson(json);
+    postDetailsCache.set(token, { data: details, expiresAt: Date.now() + 10 * 60 * 1000 });
+    return details;
+  } catch {
+    return null;
+  }
+}
+
+function parseDivarPostJson(data: any): DivarPostDetails {
+  const result: DivarPostDetails = {
+    brandModel: null,
+    year: null,
+    mileageKm: null,
+    color: null,
+    gearbox: null,
+    fuel: null,
+    motor: null,
+    chassis: null,
+    body: null,
+    description: null,
+    isDamaged: false,
+  };
+
+  for (const s of data.sections || []) {
+    for (const w of s.widgets || []) {
+      const title = w.data?.title?.trim();
+      const val = w.data?.value ? String(w.data.value).trim() : null;
+
+      if (title === "برند و مدل" && val) result.brandModel = val;
+      if (title === "گیربکس" && val) result.gearbox = val;
+      if (title === "نوع سوخت" && val) result.fuel = val;
+
+      if (w.widget_type === "GROUP_INFO_ROW") {
+        for (const item of w.data?.items || []) {
+          const it = item.title?.trim();
+          const iv = item.value ? String(item.value).trim() : "";
+          if (it === "کارکرد") {
+            const cleanDigits = normalizeFaDigits(iv).replace(/[^\d]/g, "");
+            const num = parseInt(cleanDigits, 10);
+            if (!isNaN(num)) result.mileageKm = num;
+          }
+          if (it?.includes("مدل") || it?.includes("سال")) {
+            const cleanDigits = normalizeFaDigits(iv);
+            const match = cleanDigits.match(/(13[789]\d|140\d|20\d{2})/);
+            if (match) {
+              let y = parseInt(match[1], 10);
+              if (y > 1900 && y < 2050) y = y - 621;
+              result.year = y;
+            }
+          }
+          if (it === "رنگ") result.color = iv;
+        }
+      }
+
+      if (w.widget_type === "SCORE_ROW") {
+        const desc = w.data?.descriptive_score?.trim();
+        if (title === "موتور" && desc) result.motor = desc;
+        if ((title?.includes("شاسی") || title === "وضعیت شاسی‌ها") && desc) result.chassis = desc;
+        if (title === "بدنه" && desc) result.body = desc;
+        if (title === "گیربکس" && desc && !result.gearbox) result.gearbox = desc;
+      }
+
+      if (w.widget_type === "DESCRIPTION_ROW" && w.data?.text) {
+        result.description = w.data.text.trim();
+      }
+    }
+  }
+
+  // بررسی آسیب‌دیدگی بدنه یا تصادفی بودن
+  const bodyText = `${result.body || ""} ${result.chassis || ""}`.toLowerCase();
+  if (
+    bodyText.includes("ضربه‌خورده") ||
+    bodyText.includes("ضربه خورده") ||
+    bodyText.includes("رنگ‌شدگی در ۳") ||
+    bodyText.includes("دوررنگ") ||
+    bodyText.includes("دور رنگ") ||
+    bodyText.includes("تمام‌رنگ") ||
+    bodyText.includes("تمام رنگ") ||
+    bodyText.includes("تصادفی") ||
+    bodyText.includes("چپی")
+  ) {
+    result.isDamaged = true;
+  }
+
+  return result;
+}
+
+const BRAND_PATTERNS: { make: string; re: RegExp }[] = [
+  { make: "پراید", re: /پراید|111|131|132|141|151|صبا|نسیم/ },
+  { make: "پژو", re: /پژو|peugeot|206|207|405|پارس|پرشیا|2008/ },
+  { make: "سمند", re: /سمند|samand/ },
+  { make: "سورن", re: /سورن|soren/ },
+  { make: "دنا", re: /دنا|dena/ },
+  { make: "تارا", re: /تارا|tara/ },
+  { make: "کوییک", re: /کوییک|کوئیک|quick|quik/ },
+  { make: "ساینا", re: /ساینا|saina/ },
+  { make: "شاهین", re: /شاهین|shahin/ },
+  { make: "تیبا", re: /تیبا|tiba/ },
+  { make: "رانا", re: /رانا|runna|rana/ },
+  { make: "رنو", re: /رنو|renault|تندر|ال\s*90|ال۹۰|ساندرو|مگان|استپ\s*وی/ },
+  { make: "هایما", re: /هایما|haima/ },
+  { make: "جک", re: /جک|jac/ },
+  { make: "کی ام سی", re: /کی\s*ام\s*سی|kmc/ },
+  { make: "ام‌وی‌ام", re: /ام\s*وی\s*ام|mvm/ },
+  { make: "چری", re: /چری|chery|تیگو|آریزو/ },
+  { make: "فونیکس", re: /فونیکس|fownix/ },
+  { make: "برلیانس", re: /برلیانس|brilliance/ },
+  { make: "لیفان", re: /لیفان|lifan/ },
+  { make: "زامیاد", re: /زامیاد|نیسان|zamyad/ },
+  { make: "پیکان", re: /پیکان|paykan/ },
+  { make: "آریسان", re: /آریسان|arisan/ },
+  { make: "کیا", re: /کیا|kia|ریو|سراتو/ },
+  { make: "سیتروئن", re: /زانتیا|سیتروئن/ },
+];
+
+function detectMake(text: string): string {
+  for (const b of BRAND_PATTERNS) {
+    if (b.re.test(text)) return b.make;
+  }
+  return "سایر";
 }
 
 export class DivarListingSourceProvider implements ListingSourceProvider {
   get id(): string {
-    return this.defaultCity === "mashhad" ? "divar-mashhad" : "divar";
+    return `divar-${this.defaultCity}`;
   }
   get displayName(): string {
-    return this.defaultCity === "mashhad" ? "دیوار مشهد" : "دیوار تربت‌حیدریه";
+    const cityName = getCityBySlug(this.defaultCity)?.nameFa || normalizeCityNameFa(this.defaultCity);
+    return `دیوار ${cityName}`;
   }
 
-  constructor(private readonly defaultCity: "torbat-heydariyeh" | "mashhad" | string = "torbat-heydariyeh") {}
+  constructor(private readonly defaultCity: string = "mashhad") {}
 
   async fetchLatest(citySlug?: string, query?: string): Promise<FetchResult> {
     const city = citySlug || this.defaultCity;
@@ -39,145 +198,154 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
     }
 
     const html = await res.text();
-    const items = this.parseSchemaLd(html, city);
+    const items = await this.parseSchemaLd(html, city);
     return { items, isSample: false };
   }
 
-  private parseSchemaLd(html: string, defaultCity: string): ListingImportItem[] {
+  private async parseSchemaLd(html: string, defaultCity: string): Promise<ListingImportItem[]> {
     const matches = html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g);
     const items: ListingImportItem[] = [];
-    const targetFaCity = defaultCity === "mashhad" ? "مشهد" : "تربت‌حیدریه";
+    const targetFaCity = getCityBySlug(defaultCity)?.nameFa || normalizeCityNameFa(defaultCity);
 
+    const rawCars: any[] = [];
     for (const match of matches) {
       try {
         const parsed = JSON.parse(match[1]);
         const list = Array.isArray(parsed) ? parsed : [parsed];
-
         for (const car of list) {
-          if (!car || car["@type"] !== "Car") continue;
-
-          const title = String(car.name || car.web_info?.title || "").trim();
-          const sourceUrl = car.url || null;
-          const tokenMatch = sourceUrl?.match(/\/([a-zA-Z0-9_-]+)(?:\/)?$/);
-          const sourcePostId = tokenMatch ? tokenMatch[1] : `divar-${Date.now()}-${Math.random()}`;
-
-          // Price extraction: Divar offers.price is in IRR (Rials) -> convert to Toman
-          const priceRaw = car.offers?.price ? String(car.offers.price) : "0";
-          const priceRial = Number(normalizeFaDigits(priceRaw)) || 0;
-          const priceToman = Math.floor(priceRial / 10);
-
-          if (priceToman < 10_000_000) {
-            // Ignore token prices below 10M Toman
-            continue;
+          if (car && car["@type"] === "Car") {
+            rawCars.push(car);
           }
-
-          const yearRaw = car.productionDate ? String(car.productionDate) : null;
-          const year = yearRaw ? Number(normalizeFaDigits(yearRaw)) || null : null;
-
-          const kmRaw = car.mileageFromOdometer?.value ? String(car.mileageFromOdometer.value) : null;
-          const mileageKm = kmRaw ? Number(normalizeFaDigits(kmRaw)) || 0 : null;
-
-          const brandObj = car.brand;
-          let make = String(typeof brandObj === "object" ? brandObj?.name || "" : brandObj || "").trim();
-          const cleanMakeLower = make.toLowerCase();
-          const brandMap: Record<string, string> = {
-            pride: "پراید",
-            peugeot: "پژو",
-            samand: "سمند",
-            soren: "سورن",
-            dena: "دنا",
-            tara: "تارا",
-            quick: "کوییک",
-            quik: "کوییک",
-            saina: "ساینا",
-            shahin: "شاهین",
-            tiba: "تیبا",
-            rana: "رانا",
-            paykan: "پیکان",
-            zamyad: "زامیاد",
-            nissan: "نیسان",
-            arisan: "آریسان",
-            haima: "هایما",
-            jac: "جک",
-            kmc: "کی ام سی",
-            mvm: "ام وی ام",
-            chery: "چری",
-            fownix: "فونیکس",
-            brilliance: "برلیانس",
-            lifan: "لیفان",
-            renault: "رنو",
-            kia: "کیا",
-            hyundai: "هیوندای",
-            toyota: "تویوتا",
-          };
-          if (brandMap[cleanMakeLower]) {
-            make = brandMap[cleanMakeLower];
-          }
-
-          if (!make || make === "light" || make === "سایر") {
-            const makes = [
-              "پژو", "پراید", "تیبا", "ساینا", "کوییک", "کوئیک", "شاهین", "تارا", "دنا", "رانا", "سمند", "سورن",
-              "پیکان", "ریو", "زانتیا", "ماتیز", "مزدا", "نیسان", "زامیاد", "آریسان", "هایما", "جک", "ام وی ام",
-              "چری", "فونیکس", "فیدلیتی", "دیگنیتی", "لاماری", "کیا", "هیوندای", "تویوتا", "رنو", "برلیانس", "لیفان"
-            ];
-            for (const m of makes) {
-              if (title.includes(m)) {
-                make = m;
-                break;
-              }
-            }
-          }
-
-          // مدل دقیق خودرو: ترجیحاً از نام آگهی و مشخصات اگر شامل تیپ باشد
-          let model = String(car.model || "").trim() || title;
-          if (title && (title.includes("پلاس") || title.includes("دوگانه") || title.includes("TU5") || title.includes("تیپ") || title.includes("اتوماتیک"))) {
-            model = title;
-          }
-
-          const color = car.color ? String(car.color) : null;
-          const city = car.web_info?.city_persian || defaultCity;
-          const imageUrl = car.image ? String(car.image) : null;
-
-          // Strict city filtering
-          if (defaultCity === "torbat-heydariyeh" && !city.includes("تربت") && !title.includes("تربت")) {
-            continue;
-          }
-          if (defaultCity === "mashhad" && !city.includes("مشهد") && !title.includes("مشهد")) {
-            continue;
-          }
-
-          // Filter out junk listings (حواله، اقساط، قیمت‌های غیرواقعی، خریدار، و...)
-          const junkCheck = isJunkOrUnrealisticListing({
-            title,
-            price_toman: priceToman,
-            make: make || "سایر",
-            model: model || "نامشخص",
-            year: year && year > 1300 && year < 1500 ? year : null,
-          });
-          if (junkCheck.isJunk) {
-            continue;
-          }
-
-          items.push({
-            source: "divar",
-            source_post_id: sourcePostId,
-            source_url: sourceUrl,
-            title,
-            make: make || "سایر",
-            model: model || "نامشخص",
-            trim: null,
-            year: year && year > 1300 && year < 1500 ? year : null,
-            mileage_km: mileageKm,
-            color,
-            city: targetFaCity,
-            price_toman: priceToman,
-            description: `آگهی واقعی از سایت دیوار ${targetFaCity}`,
-            image_url: imageUrl,
-            published_at: new Date().toISOString(),
-          });
         }
       } catch {
         // Skip invalid JSON-LD blocks
+      }
+    }
+
+    // Process top 12 newest cars with details extraction
+    for (const car of rawCars.slice(0, 15)) {
+      try {
+        const title = String(car.name || car.web_info?.title || "").trim();
+        const sourceUrl = car.url || null;
+        const tokenMatch = sourceUrl?.match(/\/([a-zA-Z0-9_-]+)(?:\/)?$/);
+        const token = tokenMatch ? tokenMatch[1] : null;
+        const sourcePostId = token || `divar-${Date.now()}-${Math.random()}`;
+
+        // Price extraction
+        const priceRaw = car.offers?.price ? String(car.offers.price) : "0";
+        const priceRial = Number(normalizeFaDigits(priceRaw)) || 0;
+        const priceToman = Math.floor(priceRial / 10);
+        if (priceToman < 10_000_000) {
+          continue;
+        }
+
+        // Fetch detailed post data from Divar API
+        let details: DivarPostDetails | null = null;
+        if (token) {
+          details = await fetchDivarPostDetails(token);
+        }
+
+        // اولویت ۱: مشخصات رسمی جدول دیوار
+        let model = details?.brandModel?.trim() || "";
+        let year = details?.year || null;
+        let mileageKm = details?.mileageKm ?? null;
+        let color = details?.color || (car.color ? String(car.color) : null);
+        let isDamaged = details?.isDamaged ?? false;
+
+        // اولویت ۲: استخراج از توضیحات آگهی در صورت ناقص بودن
+        const descText = details?.description || "";
+        if (!model && descText) {
+          const modelMatch = descText.match(/(پژو\s*پارس|پراید\s*\d+|پژو\s*206|پژو\s*207|کوییک|ساینا|تیبا|تارا|دنا|شاهین|سمند|سورن)/);
+          if (modelMatch) model = modelMatch[1];
+        }
+        if (!year && descText) {
+          const yMatch = normalizeFaDigits(descText).match(/مدل\s*(13[789]\d|140\d|\d{2})/);
+          if (yMatch) {
+            const y = parseInt(yMatch[1], 10);
+            year = y < 100 ? (y < 30 ? 1400 + y : 1300 + y) : y;
+          }
+        }
+        if (mileageKm === null && descText) {
+          const kmMatch = normalizeFaDigits(descText).match(/(\d+)\s*(هزار|کیلومتر|تا کار)/);
+          if (kmMatch) {
+            const val = parseInt(kmMatch[1], 10);
+            mileageKm = kmMatch[2] === "هزار" ? val * 1000 : val;
+          }
+        }
+        if (!isDamaged && descText) {
+          const dmgCheck = /تصادفی|چپی|سوخته|اسقاط|اوراق|شاسی\s*(ضربه|خورده|جوش|ترک)|تمام\s*رنگ|دور\s*رنگ|اتاق\s*تعویض/.test(descText);
+          if (dmgCheck) isDamaged = true;
+        }
+
+        // اولویت ۳: استخراج از عنوان آگهی در صورت خالی بودن
+        if (!model) {
+          model = title;
+        }
+        if (!year) {
+          const yearRaw = car.productionDate ? String(car.productionDate) : null;
+          const yFromProd = yearRaw ? Number(normalizeFaDigits(yearRaw)) || null : null;
+          if (yFromProd && yFromProd > 1300 && yFromProd < 1500) {
+            year = yFromProd;
+          } else {
+            const tMatch = normalizeFaDigits(title).match(/\b(13[789]\d|140\d)\b/);
+            if (tMatch) year = parseInt(tMatch[1], 10);
+          }
+        }
+        if (mileageKm === null) {
+          const kmRaw = car.mileageFromOdometer?.value ? String(car.mileageFromOdometer.value) : null;
+          mileageKm = kmRaw ? Number(normalizeFaDigits(kmRaw)) || 0 : null;
+        }
+        if (!isDamaged) {
+          const dmgTitle = /تصادفی|چپی|سوخته|اسقاط|اوراق|شاسی\s*(ضربه|خورده|جوش|ترک)|تمام\s*رنگ|دور\s*رنگ/.test(title);
+          if (dmgTitle) isDamaged = true;
+        }
+
+        const make = detectMake(`${model} ${title}`);
+
+        // ساخت توضیحات کامل شامل ارزیابی بدنه و شاسی
+        const descParts: string[] = [];
+        if (details?.body) descParts.push(`بدنه: ${details.body}`);
+        if (details?.chassis) descParts.push(`شاسی: ${details.chassis}`);
+        if (details?.motor) descParts.push(`موتور: ${details.motor}`);
+        if (details?.gearbox) descParts.push(`گیربکس: ${details.gearbox}`);
+        if (details?.fuel) descParts.push(`سوخت: ${details.fuel}`);
+        if (descText) descParts.push(descText);
+        const fullDescription = descParts.join(" | ") || `آگهی واقعی از سایت دیوار ${targetFaCity}`;
+
+        const imageUrl = car.image ? String(car.image) : null;
+
+        // فیلتر آگهی‌های اسپم و نامعتبر
+        const junkCheck = isJunkOrUnrealisticListing({
+          title,
+          price_toman: priceToman,
+          make,
+          model,
+          year: year && year > 1300 && year < 1500 ? year : null,
+        });
+        if (junkCheck.isJunk) {
+          continue;
+        }
+
+        items.push({
+          source: "divar",
+          source_post_id: sourcePostId,
+          source_url: sourceUrl,
+          title,
+          make: make || "سایر",
+          model: model || "نامشخص",
+          trim: null,
+          year: year && year > 1300 && year < 1500 ? year : null,
+          mileage_km: mileageKm,
+          color,
+          city: targetFaCity,
+          price_toman: priceToman,
+          description: fullDescription,
+          image_url: imageUrl,
+          is_damaged: isDamaged,
+          published_at: new Date().toISOString(),
+        });
+      } catch {
+        // Skip individual failing cars
       }
     }
 

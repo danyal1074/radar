@@ -11,6 +11,8 @@ export interface EstimateInput {
   color: string | null;
   title?: string | null;
   description?: string | null;
+  body_status?: string | null;
+  chassis_status?: string | null;
 }
 
 export type EstimateResult =
@@ -33,6 +35,16 @@ export interface PriceEstimationProvider {
 }
 
 export function toEstimateInput(l: Listing): EstimateInput {
+  let body_status: string | null = null;
+  let chassis_status: string | null = null;
+
+  if (l.description) {
+    const bMatch = l.description.match(/بدنه:\s*([^|\n]+)/);
+    if (bMatch) body_status = bMatch[1].trim();
+    const cMatch = l.description.match(/شاسی:\s*([^|\n]+)/);
+    if (cMatch) chassis_status = cMatch[1].trim();
+  }
+
   return {
     make: l.make,
     model: l.model,
@@ -43,6 +55,8 @@ export function toEstimateInput(l: Listing): EstimateInput {
     color: l.color,
     title: l.title,
     description: l.description,
+    body_status,
+    chassis_status,
   };
 }
 

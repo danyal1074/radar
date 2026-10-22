@@ -26,6 +26,9 @@ const SEED_DISCONTINUED: Omit<DailyCarPrice, "id" | "updatedAt">[] = [
   { brand: "سایپا", name: "پراید 111 SE (هاچبک)", year: "مدل 1398", priceToman: 350_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "پراید 111 SX", year: "مدل 1394", priceToman: 295_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "پراید 132 SE", year: "مدل 1398", priceToman: 330_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 141 DLXI/SX", year: "مدل 1394 (آخرین تولید)", priceToman: 270_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 141 DLXI", year: "مدل 1389", priceToman: 215_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "سایپا", name: "پراید 141 DLXI", year: "مدل 1384", priceToman: 185_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "تیبا 1 (صندوقدار SX)", year: "مدل 1400", priceToman: 395_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "تیبا 1 (صندوقدار SX)", year: "مدل 1398", priceToman: 350_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "تیبا 1 (صندوقدار SX)", year: "مدل 1395", priceToman: 295_000_000, isDiscontinued: true, source: "bama.ir" },
@@ -33,6 +36,16 @@ const SEED_DISCONTINUED: Omit<DailyCarPrice, "id" | "updatedAt">[] = [
   { brand: "سایپا", name: "تیبا 2 (هاچبک EX)", year: "مدل 1398", priceToman: 375_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "کیا ریو مونتاژ", year: "مدل 1389", priceToman: 340_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "سایپا", name: "سیتروئن زانتیا 2.0 SX", year: "مدل 1388", priceToman: 430_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو تندر 90 E2", year: "مدل 1398", priceToman: 820_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو تندر 90 E2", year: "مدل 1395", priceToman: 650_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو تندر 90 E2", year: "مدل 1390", priceToman: 480_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو ساندرو اتوماتیک", year: "مدل 1398", priceToman: 980_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "رنو ساندرو دنده‌ای", year: "مدل 1397", priceToman: 810_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "ام وی ام 315 هاچبک", year: "مدل 1398", priceToman: 540_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "مدیران خودرو", name: "ام وی ام X33 دنده‌ای", year: "مدل 1395", priceToman: 590_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "کرمان موتور", name: "جک S5 اتوماتیک", year: "مدل 1398", priceToman: 1_050_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "کرمان موتور", name: "جک J5 اتوماتیک", year: "مدل 1396", priceToman: 640_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "پارس خودرو", name: "برلیانس H330 اتوماتیک", year: "مدل 1397", priceToman: 690_000_000, isDiscontinued: true, source: "bama.ir" },
 
   { brand: "ایران خودرو", name: "پژو پارس سال (موتور XU7P)", year: "مدل 1402", priceToman: 745_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "پژو پارس سال (موتور قدیم)", year: "مدل 1400", priceToman: 680_000_000, isDiscontinued: true, source: "bama.ir" },
@@ -47,7 +60,9 @@ const SEED_DISCONTINUED: Omit<DailyCarPrice, "id" | "updatedAt">[] = [
   { brand: "ایران خودرو", name: "پژو 206 تیپ 2", year: "مدل 1390", priceToman: 320_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "پژو 206 تیپ 5", year: "مدل 1399", priceToman: 645_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "پژو 206 تیپ 5", year: "مدل 1396", priceToman: 495_000_000, isDiscontinued: true, source: "bama.ir" },
-  { brand: "ایران خودرو", name: "پژو 206 صندوقدار V8", year: "مدل 1399", priceToman: 665_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 صندوقدار V8", year: "مدل 1399 (آخرین تولید)", priceToman: 665_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 صندوقدار V8", year: "مدل 1395", priceToman: 490_000_000, isDiscontinued: true, source: "bama.ir" },
+  { brand: "ایران خودرو", name: "پژو 206 صندوقدار V8", year: "مدل 1391", priceToman: 410_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "پژو 405 GLX بنزینی", year: "مدل 1399 (آخرین تولید)", priceToman: 495_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "پژو 405 GLX بنزینی", year: "مدل 1397", priceToman: 425_000_000, isDiscontinued: true, source: "bama.ir" },
   { brand: "ایران خودرو", name: "پژو 405 GLX بنزینی", year: "مدل 1393", priceToman: 330_000_000, isDiscontinued: true, source: "bama.ir" },
@@ -76,8 +91,19 @@ export async function getDailyCarPrices(): Promise<DailyCarPrice[]> {
       const content = fs.readFileSync(PRICES_FILE, "utf-8");
       const parsed: DailyCarPrice[] = JSON.parse(content);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Sanitize any legacy source labels
+        // Sanitize any legacy source labels and merge new seeds
         let modified = false;
+        const existingIds = new Set(parsed.map((p) => p.id));
+        const nowStr = new Date().toISOString();
+
+        for (const seed of SEED_DISCONTINUED) {
+          const id = `seed-${generateId(seed.name, seed.year)}`;
+          if (!existingIds.has(id)) {
+            parsed.unshift({ ...seed, id, updatedAt: nowStr });
+            modified = true;
+          }
+        }
+
         for (const p of parsed) {
           if ((p.source as string) === "market_appraisal") {
             p.source = "bama.ir";
@@ -116,9 +142,14 @@ export async function getDailyCarPrices(): Promise<DailyCarPrice[]> {
     }
   }
 
-  // Otherwise trigger an initial refresh from market
-  const fresh = await refreshCarPricesFromMarket();
-  return fresh.prices;
+  // Return seed immediately and kick off refresh in background
+  const seedsWithId: DailyCarPrice[] = SEED_DISCONTINUED.map((s) => ({
+    ...s,
+    id: `seed-${generateId(s.name, s.year)}`,
+    updatedAt: new Date().toISOString(),
+  }));
+  savePricesToFile(seedsWithId);
+  return seedsWithId;
 }
 
 /**

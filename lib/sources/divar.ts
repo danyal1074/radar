@@ -223,10 +223,14 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
       }
     }
 
-    // Process top 10 newest cars with parallel details extraction
+    // Process top 10 newest cars with fast parallel details extraction
     const carsToProcess = rawCars.slice(0, 10);
     const detailsList = await Promise.all(
-      carsToProcess.map(async (car) => {
+      carsToProcess.map(async (car, idx) => {
+        // Fast path: if schema already has core attributes, skip extra API call after top 2
+        const hasCoreInfo = Boolean(car.productionDate && car.mileageFromOdometer?.value);
+        if (hasCoreInfo && idx >= 2) return null;
+
         const sourceUrl = car.url || null;
         const tokenMatch = sourceUrl?.match(/\/([a-zA-Z0-9_-]+)(?:\/)?$/);
         const token = tokenMatch ? tokenMatch[1] : null;
@@ -260,7 +264,23 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
         let color = details?.color || (car.color ? String(car.color) : null);
         let isDamaged = details?.isDamaged ?? false;
 
-        // اولویت ۲: استخراج از توضیحات آگهی در صورت ناقص بودن
+        // اولویت ۲: استخراج از Schema.org داخلی صفحه آگهی
+        if (!year && car.productionDate) {
+          const yNum = Number(normalizeFaDigits(String(car.productionDate)));
+          if (!isNaN(yNum) && yNum > 1300 && yNum < 1500) year = yNum;
+        }
+        if (mileageKm === null && car.mileageFromOdometer?.value) {
+          const kmNum = Number(normalizeFaDigits(String(car.mileageFromOdometer.value)));
+          if (!isNaN(kmNum)) mileageKm = kmNum;
+        }
+        if (!isDamaged && car.knownVehicleDamages) {
+          const dmgRaw = String(car.knownVehicleDamages).toLowerCase();
+          if (dmgRaw.includes("paint") || dmgRaw.includes("accident") || dmgRaw.includes("crash") || dmgRaw.includes("damage")) {
+            isDamaged = true;
+          }
+        }
+
+        // اولویت ۳: استخراج از توضیحات آگهی در صورت ناقص بودن
         const descText = details?.description || "";
         if (!model && descText) {
           const modelMatch = descText.match(/(پژو\s*پارس|پراید\s*\d+|پژو\s*206|پژو\s*207|کوییک|ساینا|تیبا|تارا|دنا|شاهین|سمند|سورن)/);
@@ -285,19 +305,13 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
           if (dmgCheck) isDamaged = true;
         }
 
-        // اولویت ۳: استخراج از عنوان آگهی در صورت خالی بودن
+        // اولویت ۴: استخراج از عنوان آگهی در صورت خالی بودن
         if (!model) {
           model = title;
         }
         if (!year) {
-          const yearRaw = car.productionDate ? String(car.productionDate) : null;
-          const yFromProd = yearRaw ? Number(normalizeFaDigits(yearRaw)) || null : null;
-          if (yFromProd && yFromProd > 1300 && yFromProd < 1500) {
-            year = yFromProd;
-          } else {
-            const tMatch = normalizeFaDigits(title).match(/\b(13[789]\d|140\d)\b/);
-            if (tMatch) year = parseInt(tMatch[1], 10);
-          }
+          const tMatch = normalizeFaDigits(title).match(/\b(13[789]\d|140\d)\b/);
+          if (tMatch) year = parseInt(tMatch[1], 10);
         }
         if (mileageKm === null) {
           const kmRaw = car.mileageFromOdometer?.value ? String(car.mileageFromOdometer.value) : null;
@@ -345,7 +359,7 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
           year: year && year > 1300 && year < 1500 ? year : null,
           mileage_km: mileageKm,
           color,
-          city: targetFaCity,
+          city: car.web_info?.city_persian?.trim() || targetFaCity,
           price_toman: priceToman,
           description: fullDescription,
           image_url: imageUrl,

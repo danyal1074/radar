@@ -82,10 +82,22 @@ function generateId(name: string, year: string): string {
     .toLowerCase();
 }
 
+let memoryCachedPrices: DailyCarPrice[] | null = null;
+let cacheExpiresAt = 0;
+
+export function invalidateDailyPricesCache() {
+  memoryCachedPrices = null;
+  cacheExpiresAt = 0;
+}
+
 /**
- * Loads the current daily car prices.
+ * Loads the current daily car prices with an in-memory cache for ultra-fast appraisal lookups.
  */
 export async function getDailyCarPrices(): Promise<DailyCarPrice[]> {
+  if (memoryCachedPrices && Date.now() < cacheExpiresAt) {
+    return memoryCachedPrices;
+  }
+
   try {
     if (fs.existsSync(PRICES_FILE)) {
       const content = fs.readFileSync(PRICES_FILE, "utf-8");
@@ -113,6 +125,8 @@ export async function getDailyCarPrices(): Promise<DailyCarPrice[]> {
         if (modified) {
           savePricesToFile(parsed);
         }
+        memoryCachedPrices = parsed;
+        cacheExpiresAt = Date.now() + 10 * 60 * 1000;
         return parsed;
       }
     }
@@ -156,6 +170,8 @@ export async function getDailyCarPrices(): Promise<DailyCarPrice[]> {
  * Saves prices to local file and Supabase system_jobs.
  */
 function savePricesToFile(prices: DailyCarPrice[]): void {
+  memoryCachedPrices = prices;
+  cacheExpiresAt = Date.now() + 10 * 60 * 1000;
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });

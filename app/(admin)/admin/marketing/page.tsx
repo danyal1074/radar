@@ -16,7 +16,7 @@ export default async function AdminMarketingPage() {
 
   const [config, listings, logs, divarSentToday, sheypoorSentToday] = await Promise.all([
     getMarketingConfig(),
-    ctx.store.listListings({ limit: 100 }),
+    ctx.store.listListings({ limit: 500 }),
     getMarketingLogs(50),
     getTodaySentCount("divar"),
     getTodaySentCount("sheypoor"),

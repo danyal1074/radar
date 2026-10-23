@@ -98,10 +98,19 @@ export function MarketingClient({
 
   const alreadyMessagedSet = new Set(logs.filter((l) => l.status === "sent").map((l) => l.postToken));
 
+  // تطبیق نام شهر با در نظر گرفتن نیم‌فاصله و فاصله استاندارد
+  const isCityMatch = (listingCity?: string | null, filter?: string) => {
+    if (!filter || filter === "all") return true;
+    if (!listingCity) return false;
+    const cleanL = listingCity.replace(/[\s\u200c]/g, "");
+    const cleanF = filter.replace(/[\s\u200c]/g, "");
+    return cleanL.includes(cleanF) || cleanF.includes(cleanL);
+  };
+
   // Filter listings
   const filteredListings = listings.filter((l) => {
     if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
-    if (cityFilter !== "all" && !l.city?.includes(cityFilter)) return false;
+    if (!isCityMatch(l.city, cityFilter)) return false;
     return true;
   });
 
@@ -420,7 +429,9 @@ export function MarketingClient({
               >
                 <option value="all">همه شهرها</option>
                 <option value="مشهد">مشهد</option>
-                <option value="تربت حیدریه">تربت حیدریه</option>
+                <option value="تربت">تربت حیدریه و تربت جام</option>
+                <option value="نیشابور">نیشابور</option>
+                <option value="سبزوار">سبزوار</option>
               </select>
             </div>
 

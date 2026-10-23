@@ -1,4 +1,5 @@
-/**
+import crypto from "node:crypto";
+
 /**
  * کلاینت ارتباط با چت و احراز هویت دیوار (Divar Chat & Auth Client)
  */
@@ -79,7 +80,7 @@ export async function verifyDivarOtp(phone: string, code: string): Promise<Divar
 }
 
 /**
- * ارسال پیام مستقیم به فروشنده در چت دیوار با API رسمی
+ * ارسال پیام مستقیم به فروشنده در چت دیوار با وب‌سرویس اصلی چت دیوار
  */
 export async function sendDivarChatMessage(
   token: string,
@@ -93,40 +94,69 @@ export async function sendDivarChatMessage(
   const cleanPostToken = postToken.trim();
   const rawToken = token.replace(/^Basic\s+/i, "").trim();
   const authHeader = `Basic ${rawToken}`;
+  const commonHeaders = {
+    "Content-Type": "application/json",
+    Authorization: authHeader,
+    Cookie: `token=${rawToken}`,
+    "User-Agent": USER_AGENT,
+    Referer: `https://divar.ir/chat/${cleanPostToken}`,
+    Origin: "https://divar.ir",
+    "X-Standard-Divar-Error": "true",
+  };
 
   try {
-    // ارسال مستقیم پیام به شناسه آگهی در وب‌سرویس اصلی چت دیوار
-    const res = await fetch("https://api.divar.ir/chat/api/messages", {
+    // مرحله ۱: راه‌اندازی و واکشی اطلاعات مکالمه با فروشنده
+    const initRes = await fetch("https://api.divar.ir/chat/api/get-or-init-conversation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-        Cookie: `token=${rawToken}`,
-        "User-Agent": USER_AGENT,
-        Referer: "https://divar.ir/chat",
-        Origin: "https://divar.ir",
-      },
+      headers: commonHeaders,
+      body: JSON.stringify({ conversation_id: cleanPostToken }),
+      signal: AbortSignal.timeout(12000),
+    });
+
+    const initData = await initRes.json().catch(() => ({}));
+    if (!initRes.ok) {
+      const errMsg =
+        initData.message ||
+        initData.error ||
+        (initRes.status === 403
+          ? "امکان چت برای این آگهی بسته است یا دسترسی مسدود شده است."
+          : `خطا در باز کردن چت (کد ${initRes.status})`);
+      return { ok: false, error: errMsg };
+    }
+
+    const conversationId = initData.conversation?.id || cleanPostToken;
+    const clientReference = crypto.randomUUID();
+
+    // مرحله ۲: ارسال پیام به شناسه گفتگو با ساختار رسمی دیوار
+    const sendRes = await fetch("https://api.divar.ir/chat/api/send-message", {
+      method: "POST",
+      headers: commonHeaders,
       body: JSON.stringify({
-        post_token: cleanPostToken,
-        text: text,
-        type: "TEXT",
+        conversation_id: conversationId,
+        client_reference: clientReference,
+        text: {
+          text: text,
+        },
       }),
       signal: AbortSignal.timeout(12000),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const sendData = await sendRes.json().catch(() => ({}));
 
-    if (res.ok) {
-      return { ok: true, conversationId: data.conversation_id || cleanPostToken };
+    if (sendRes.ok && sendData.sent_message) {
+      return { ok: true, conversationId: sendData.sent_message.conversation_id || conversationId };
     }
 
-    // اگر دیوار خطای ضد اسپم یا مسدودی داد
+    if (sendRes.ok) {
+      return { ok: true, conversationId };
+    }
+
     const errMsg =
-      data.message ||
-      data.error ||
-      (res.status === 403
-        ? "دسترسی چت توسط دیوار مسدود یا نیازمند تایید پیامکی/کپچا است."
-        : `خطای سرور دیوار (کد ${res.status})`);
+      sendData.message ||
+      sendData.error ||
+      (sendRes.status === 403
+        ? "ارسال پیام توسط دیوار رد شد (محدودیت یا نیاز به تأیید)."
+        : `خطای سرور دیوار در ارسال (کد ${sendRes.status})`);
 
     return {
       ok: false,
@@ -134,7 +164,7 @@ export async function sendDivarChatMessage(
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: `خطای ارتباطی با وب‌سرویس دیوار: ${errorMsg}` };
+    return { ok: false, error: `خطای ارتباطی با وب‌سرویس چت دیوار: ${errorMsg}` };
   }
 }
 
@@ -142,5 +172,5 @@ export async function sendDivarChatMessage(
  * لینک مستقیم چت دیوار برای باز کردن با یک کلیک در مرورگر یا اپ
  */
 export function getDivarDirectChatUrl(postToken: string): string {
-  return `https://divar.ir/v/-/${postToken.trim()}?openChat=true`;
+  return `https://divar.ir/chat/${postToken.trim()}`;
 }

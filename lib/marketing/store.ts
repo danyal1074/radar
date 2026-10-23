@@ -20,7 +20,7 @@ const DEFAULT_CONFIG: MarketingConfig = {
   divarToken: "",
   sheypoorPhone: "",
   sheypoorToken: "",
-  adLink: "https://divar.ir/v/gZ-SampleAd",
+  adLink: "https://divar.ir/v/gab_i-HB",
   sheypoorAdLink: "",
   template: DEFAULT_TEMPLATE,
   dailyLimit: 25,

@@ -16,7 +16,7 @@ export interface DivarSendResult {
 }
 
 const USER_AGENT =
-  "Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36 Divar/11.5.0";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 /**
  * ارسال درخواست کد تایید به شماره همراه
@@ -24,18 +24,20 @@ const USER_AGENT =
 export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
   const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
   try {
-    const res = await fetch("https://api.divar.ir/v1/auth/authenticate", {
+    const res = await fetch("https://api.divar.ir/v5/auth/authenticate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "User-Agent": USER_AGENT,
+        Referer: "https://divar.ir/",
+        Origin: "https://divar.ir",
       },
       body: JSON.stringify({ phone: cleanPhone }),
       signal: AbortSignal.timeout(10000),
     });
 
     const data = await res.json().catch(() => ({}));
-    if (res.ok) {
+    if (res.ok || data.authenticate_response === "AUTHENTICATION_VERIFICATION_CODE_SENT") {
       return { ok: true, message: "کد تایید پیامکی با موفقیت ارسال شد." };
     }
     return { ok: false, message: data.message || "خطا در ارسال کد تایید دیوار." };
@@ -52,19 +54,22 @@ export async function verifyDivarOtp(phone: string, code: string): Promise<Divar
   const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
   const cleanCode = code.trim();
   try {
-    const res = await fetch("https://api.divar.ir/v1/auth/confirm", {
+    const res = await fetch("https://api.divar.ir/v5/auth/confirm", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "User-Agent": USER_AGENT,
+        Referer: "https://divar.ir/",
+        Origin: "https://divar.ir",
       },
       body: JSON.stringify({ phone: cleanPhone, code: cleanCode }),
       signal: AbortSignal.timeout(10000),
     });
 
     const data = await res.json().catch(() => ({}));
-    if (res.ok && data.token) {
-      return { ok: true, token: data.token, message: "ورود به حساب دیوار موفقیت‌آمیز بود." };
+    const token = data.token || data.access_token || data.data?.token || data.user_token;
+    if (res.ok && token) {
+      return { ok: true, token, message: "ورود به حساب دیوار موفقیت‌آمیز بود." };
     }
     return { ok: false, message: data.message || "کد وارد شده صحیح نیست یا منقضی شده است." };
   } catch (err: unknown) {

@@ -18,7 +18,7 @@ import logging
 import re
 import httpx
 
-from config import config
+import config as config_module
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -26,8 +26,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BALE_TOKEN = config.BALE_BOT_TOKEN
 API_BASE = "http://127.0.0.1:3000/api/bot"
+
+
+def current_bale_token() -> str:
+    """توکن جاری بله. هر بار از تنظیمات خوانده می‌شود تا خالی بودن یا تعویض env قابل تشخیص باشد."""
+    return config_module.config.BALE_BOT_TOKEN or ""
+
+
+def bale_method_url(method: str) -> str | None:
+    token = current_bale_token()
+    if not token:
+        return None
+    return f"https://tapi.bale.ai/bot{token}/{method}"
 
 # منوی کاربران متصل‌نشده به سایت
 GUEST_KEYBOARD = {
@@ -120,8 +131,60 @@ def normalize_digits(text: str) -> str:
     return text.translate(trans)
 
 
-def format_toman_persian(amount: int) -> str:
-    return f"{amount:,.0f}".replace(",", "٬") + " تومان"
+def _fa_int(n: int) -> str:
+    return str(n).translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
+
+
+def format_toman_persian(amount: int | float | None) -> str:
+    """قیمت به حروف فارسی، هم‌تراز با formatTomanReadable در وب‌سایت."""
+    if amount is None:
+        return "—"
+    try:
+        toman = int(round(float(amount)))
+    except (TypeError, ValueError):
+        return "—"
+    if toman == 0:
+        return "۰ تومان"
+
+    sign = "منفی " if toman < 0 else ""
+    abs_v = abs(toman)
+    billions, rem = divmod(abs_v, 1_000_000_000)
+    millions, rem = divmod(rem, 1_000_000)
+    thousands, _rest = divmod(rem, 1_000)
+
+    parts: list[str] = []
+    if billions:
+        parts.append(f"{_fa_int(billions)} میلیارد")
+    if millions:
+        parts.append(f"{_fa_int(millions)} میلیون")
+    if thousands and (billions == 0 or millions == 0):
+        parts.append(f"{_fa_int(thousands)} هزار")
+    if not parts:
+        return f"{sign}{_fa_int(abs_v)} تومان"
+    return sign + " و ".join(parts) + " تومان"
+
+
+def extract_link_token(text: str) -> str | None:
+    """فقط وقتی کل پیام یک کد، شماره، ایمیل یا RADAR-… است آن را کد اتصال حساب می‌کند.
+
+    جملهٔ معمولی که سال ساخت یا عدد دیگری داخلش است (مثل «مدل ۱۴۰۲») نباید به‌عنوان کد اتصال بلعیده شود.
+    """
+    norm = normalize_digits(text).strip()
+    if not norm:
+        return None
+    if re.fullmatch(r"09\d{9}|9\d{9}", norm):
+        return norm
+    if re.fullmatch(r"\d{4,6}", norm):
+        return norm
+    radar = re.fullmatch(r"(RADAR-\d+)", norm, re.IGNORECASE)
+    if radar:
+        return radar.group(1)
+    if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", norm):
+        return norm
+    labeled = re.fullmatch(r"(?:کد|code)\s*[:：]?\s*(\d{4,6})", norm, re.IGNORECASE)
+    if labeled:
+        return labeled.group(1)
+    return None
 
 
 async def send_bale_reply(
@@ -129,8 +192,11 @@ async def send_bale_reply(
     chat_id: int | str,
     text: str,
     reply_markup: dict | None = None,
-) -> None:
-    url = f"https://tapi.bale.ai/bot{BALE_TOKEN}/sendMessage"
+) -> bool:
+    url = bale_method_url("sendMessage")
+    if not url:
+        logger.error("توکن بله تنظیم نشده است؛ پیام ارسال نشد.")
+        return False
     payload = {
         "chat_id": str(chat_id),
         "text": text,
@@ -139,35 +205,84 @@ async def send_bale_reply(
         "disable_notification": False,
     }
     try:
-        await client.post(url, json=payload, timeout=8.0)
+        resp = await client.post(url, json=payload, timeout=8.0)
+        if resp.status_code != 200:
+            logger.error("ارسال پیام بله ناموفق بود (وضعیت %s).", resp.status_code)
+            return False
+        try:
+            body = resp.json()
+        except Exception:
+            return True
+        if isinstance(body, dict) and body.get("ok") is False:
+            logger.error("ارسال پیام بله ناموفق بود (پاسخ ok=false).")
+            return False
+        return True
     except Exception as e:
-        logger.error(f"خطا در ارسال پیام به بله: {e}")
+        logger.error("خطا در ارسال پیام به بله (%s).", type(e).__name__)
+        return False
 
 
 ADMIN_BALE_CHATS = ("772511114", "2079437548", "1271663233")
+ADMIN_USER_ID = "97375339-be50-403e-be7b-0aee1b7c2d99"
+
+
+def is_admin_chat(chat_id: int | str) -> bool:
+    return str(chat_id) in ADMIN_BALE_CHATS
+
+
+def admin_access() -> dict:
+    return {
+        "ok": True,
+        "registered": True,
+        "hasAccess": True,
+        "planExpired": False,
+        "error": False,
+        "userId": ADMIN_USER_ID,
+        "userCity": "تربت‌حیدریه",
+        "allowedCitiesCount": 2,
+        "planName": "مدیر کل سامانه (VIP)",
+    }
 
 
 async def check_user_access(client: httpx.AsyncClient, chat_id: int | str) -> dict:
     """بررسی وضعیت عضویت و اشتراک کاربر در سامانه"""
     cid_str = str(chat_id)
-    if cid_str in ADMIN_BALE_CHATS:
-        return {
-            "registered": True,
-            "hasAccess": True,
-            "planExpired": False,
-            "userId": "97375339-be50-403e-be7b-0aee1b7c2d99",
-            "userCity": "تربت‌حیدریه",
-            "allowedCitiesCount": 2,
-            "planName": "مدیر کل سامانه (VIP)",
-        }
+    if is_admin_chat(cid_str):
+        return admin_access()
     try:
         res = await client.get(f"{API_BASE}/rules?chatId={cid_str}&messenger=bale", timeout=6.0)
         if res.status_code == 200:
-            return res.json()
-        return {"registered": False, "hasAccess": False}
+            data = res.json()
+            if isinstance(data, dict):
+                data.setdefault("error", False)
+                return data
+        logger.error("بررسی دسترسی بله ناموفق بود (وضعیت %s).", res.status_code)
+        return {"registered": False, "hasAccess": False, "error": True}
     except Exception as e:
-        logger.error(f"خطا در بررسی دسترسی کاربر: {e}")
-        return {"registered": False, "hasAccess": False}
+        logger.error("خطا در بررسی دسترسی کاربر (%s).", type(e).__name__)
+        return {"registered": False, "hasAccess": False, "error": True}
+
+
+SERVER_DOWN_TEXT = "⚠️ خطا در ارتباط با سرور سایت. لطفاً چند لحظه بعد دوباره تلاش کنید."
+
+
+async def ensure_bot_access(
+    client: httpx.AsyncClient,
+    chat_id: int | str,
+    user_name: str,
+) -> dict | None:
+    """اگر کاربر اجازهٔ ادامه دارد مشخصاتش را برمی‌گرداند؛ وگرنه پاسخ مناسب می‌فرستد."""
+    access = await check_user_access(client, chat_id)
+    if access.get("error"):
+        await send_bale_reply(client, chat_id, SERVER_DOWN_TEXT, GUEST_KEYBOARD)
+        return None
+    if not access.get("registered"):
+        await send_registration_prompt(client, chat_id, user_name)
+        return None
+    if access.get("planExpired"):
+        await send_expired_prompt(client, chat_id, access.get("planName", "آزمایشی"))
+        return None
+    return access
 
 
 def to_latin_digits(text: str) -> str:
@@ -224,14 +339,19 @@ async def answer_bale_callback(
     text: str | None = None,
 ) -> None:
     """پاسخ فوری به کلیک دکمه‌های شیشه‌ای برای جلوگیری از لودینگ بی‌پایان"""
-    url = f"https://tapi.bale.ai/bot{BALE_TOKEN}/answerCallbackQuery"
+    url = bale_method_url("answerCallbackQuery")
+    if not url:
+        logger.error("توکن بله تنظیم نشده است؛ پاسخ دکمه ارسال نشد.")
+        return
     payload = {"callback_query_id": callback_query_id}
     if text:
         payload["text"] = text
     try:
-        await client.post(url, json=payload, timeout=1.5)
+        resp = await client.post(url, json=payload, timeout=1.5)
+        if resp.status_code != 200:
+            logger.error("answerCallbackQuery ناموفق بود (وضعیت %s).", resp.status_code)
     except Exception as e:
-        logger.debug(f"خطا در answerCallbackQuery: {e}")
+        logger.debug("خطا در answerCallbackQuery (%s).", type(e).__name__)
 
 
 async def start_wizard_flow(client: httpx.AsyncClient, chat_id: int | str, user_name: str) -> None:
@@ -239,8 +359,13 @@ async def start_wizard_flow(client: httpx.AsyncClient, chat_id: int | str, user_
     try:
         res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
         user_data = res.json() if res.status_code == 200 else {}
+        if not isinstance(user_data, dict):
+            user_data = {}
     except Exception:
         user_data = {}
+
+    if is_admin_chat(chat_id) and not user_data.get("allowedCitiesCount"):
+        user_data = admin_access()
 
     allowed_cities = user_data.get("allowedCitiesCount", 1)
     user_city = user_data.get("userCity") or "تربت‌حیدریه"
@@ -279,7 +404,13 @@ async def start_wizard_flow(client: httpx.AsyncClient, chat_id: int | str, user_
 async def handle_list_rules(client: httpx.AsyncClient, chat_id: int | str) -> None:
     try:
         res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
+        if res.status_code != 200:
+            await send_bale_reply(client, chat_id, "⚠️ خطا در دریافت لیست فیلترها. لطفاً دوباره تلاش فرمایید.")
+            return
         data = res.json()
+        if not isinstance(data, dict) or not data.get("ok"):
+            await send_bale_reply(client, chat_id, "⚠️ خطا در دریافت لیست فیلترها. لطفاً دوباره تلاش فرمایید.")
+            return
         rules = data.get("rules", [])
         if not rules:
             empty_msg = (
@@ -323,6 +454,10 @@ async def handle_opportunities(
         # دریافت اطلاعات شهر کاربر و پلن
         u_res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
         user_data = u_res.json() if u_res.status_code == 200 else {}
+        if not isinstance(user_data, dict):
+            user_data = {}
+        if is_admin_chat(chat_id) and "allowedCitiesCount" not in user_data:
+            user_data = admin_access()
         allowed_cities = user_data.get("allowedCitiesCount", 1)
         user_city = user_data.get("userCity") or "تربت‌حیدریه"
 
@@ -400,8 +535,13 @@ async def handle_subscription_status(client: httpx.AsyncClient, chat_id: int | s
     try:
         res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
         data = res.json() if res.status_code == 200 else {}
+        if not isinstance(data, dict):
+            data = {}
     except Exception:
         data = {}
+
+    if is_admin_chat(chat_id) and not data.get("planName"):
+        data = admin_access()
 
     plan_name = data.get("planName") or "دوره آزمایشی رایگان (۱۴ روزه)"
     allowed_cities = data.get("allowedCitiesCount", 1)
@@ -517,12 +657,7 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
         return
 
     # بررسی ثبت‌نام و فعال بودن اشتراک قبل از سایر عملیات
-    user_access = await check_user_access(client, chat_id)
-    if not user_access.get("registered"):
-        await send_registration_prompt(client, chat_id, user_name)
-        return
-    if user_access.get("planExpired"):
-        await send_expired_prompt(client, chat_id, user_access.get("planName", "آزمایشی"))
+    if await ensure_bot_access(client, chat_id, user_name) is None:
         return
 
     # فیلتر فرصت‌ها بر اساس شهر
@@ -612,7 +747,11 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
             await send_bale_reply(client, chat_id, "لطفاً مجدداً از منو روی «تعریف فیلتر خودرو» کلیک فرمایید.")
             return
 
-        budget_m = int(data.split(":", 1)[1])
+        try:
+            budget_m = int(data.split(":", 1)[1])
+        except ValueError:
+            await send_bale_reply(client, chat_id, "بودجه نامعتبر است. لطفاً دوباره فیلتر را تعریف کنید.")
+            return
         session["budget_max_toman"] = budget_m * 1_000_000 if budget_m > 0 else None
         session["step"] = "mode"
 
@@ -691,22 +830,10 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
 
     logger.info(f"[BALE MSG] chat={chat_id} user='{user_name}' text='{text}'")
 
-    # ۱. اتصال خودکار با شماره موبایل، ایمیل، یا کد اختصاصی سایت
-    norm_text = normalize_digits(text).strip()
-    is_phone = re.search(r"\b(09\d{9}|9\d{9})\b", norm_text)
-    is_code = re.search(r"\b(\d{4,6})\b", norm_text)
-    is_radar = re.search(r"\b(RADAR-\d+)\b", norm_text, re.IGNORECASE)
-    is_email = "@" in norm_text and "." in norm_text
+    # ۱. اتصال خودکار فقط وقتی خودِ پیام کد، شماره، ایمیل یا RADAR-… باشد
+    target_code = extract_link_token(text)
 
-    is_link_input = is_phone or is_code or is_radar or is_email
-    is_cmd_or_btn = any(text.startswith(prefix) for prefix in ("➕", "📋", "🎯", "💳", "❓", "🔗", "📝", "/"))
-
-    if is_link_input and not is_cmd_or_btn:
-        target_code = (
-            is_phone.group(1)
-            if is_phone
-            else (is_code.group(1) if is_code else (is_radar.group(1) if is_radar else norm_text))
-        ).strip()
+    if target_code:
         try:
             resp = await client.post(
                 f"{API_BASE}/link",
@@ -735,7 +862,7 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
                 await send_bale_reply(client, chat_id, reply)
                 return
         except Exception as e:
-            logger.error(f"خطا در اتصال بله: {e}")
+            logger.error("خطا در اتصال بله (%s).", type(e).__name__)
             reply = "⚠️ خطا در ارتباط با سرور سایت. لطفاً بعداً تلاش فرمایید."
             await send_bale_reply(client, chat_id, reply)
             return
@@ -768,13 +895,7 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
         return
 
     # ۶. بررسی ثبت‌نام و فعال بودن اشتراک برای دسترسی به امکانات ربات
-    user_access = await check_user_access(client, chat_id)
-    if not user_access.get("registered"):
-        await send_registration_prompt(client, chat_id, user_name)
-        return
-
-    if user_access.get("planExpired"):
-        await send_expired_prompt(client, chat_id, user_access.get("planName", "آزمایشی"))
+    if await ensure_bot_access(client, chat_id, user_name) is None:
         return
 
     # ۷. دکمه «➕ تعریف فیلتر خودرو (شکار جدید)»
@@ -806,8 +927,92 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
     await send_bale_reply(client, chat_id, welcome, MAIN_KEYBOARD)
 
 
+def retry_delay_seconds(error: str | None) -> float:
+    if error == "unauthorized":
+        return 30.0
+    if error:
+        return 2.0
+    return 0.5
+
+
+async def fetch_bale_updates(
+    client: httpx.AsyncClient,
+    token: str,
+    last_update_id: int,
+) -> tuple[list[dict], int, str | None]:
+    """یک دور getUpdates.
+
+    برمی‌گرداند: (updates, new_offset, error)
+    error یکی از None، unconfigured، unauthorized، http، api، network، bad_payload است.
+    در خطا offset جلو نمی‌رود تا آپدیت از دست نرود.
+    پاسخ HTTP 200 با ok=false هم خطا است؛ همان شکلی که ارسال پیام آن را شکست می‌داند.
+    """
+    if not token:
+        return [], last_update_id, "unconfigured"
+
+    url = f"https://tapi.bale.ai/bot{token}/getUpdates"
+    params: dict[str, int] = {"timeout": 15}
+    if last_update_id > 0:
+        params["offset"] = last_update_id + 1
+
+    try:
+        resp = await client.get(url, params=params, timeout=20.0)
+    except Exception as e:
+        logger.error("ارتباط با API بله برقرار نشد (%s).", type(e).__name__)
+        return [], last_update_id, "network"
+
+    if resp.status_code in (401, 403, 404):
+        logger.error("توکن بله رد شد یا ربات پیدا نشد (وضعیت %s).", resp.status_code)
+        return [], last_update_id, "unauthorized"
+    if resp.status_code != 200:
+        logger.error("دریافت به‌روزرسانی بله ناموفق بود (وضعیت %s).", resp.status_code)
+        return [], last_update_id, "http"
+
+    try:
+        data = resp.json()
+    except Exception:
+        logger.error("پاسخ getUpdates بله JSON معتبر نبود.")
+        return [], last_update_id, "bad_payload"
+
+    if not isinstance(data, dict):
+        logger.error("ساختار پاسخ getUpdates بله نامعتبر است.")
+        return [], last_update_id, "bad_payload"
+
+    if data.get("ok") is False:
+        error_code = data.get("error_code")
+        if error_code in (401, 403):
+            logger.error("توکن بله در getUpdates رد شد (کد %s).", error_code)
+            return [], last_update_id, "unauthorized"
+        logger.error(
+            "getUpdates بله ناموفق بود (ok=false، کد %s).",
+            error_code if isinstance(error_code, int) else "unknown",
+        )
+        return [], last_update_id, "api"
+
+    updates = data.get("result", [])
+    if not isinstance(updates, list):
+        logger.error("ساختار پاسخ getUpdates بله نامعتبر است.")
+        return [], last_update_id, "bad_payload"
+
+    new_offset = last_update_id
+    for up in updates:
+        if isinstance(up, dict):
+            new_offset = max(new_offset, int(up.get("update_id") or 0))
+    return updates, new_offset, None
+
+
+async def dispatch_bale_update(client: httpx.AsyncClient, update: dict) -> None:
+    cb = update.get("callback_query")
+    if cb:
+        await handle_bale_callback(client, cb)
+        return
+    msg = update.get("message")
+    if msg:
+        await handle_bale_message(client, msg)
+
+
 async def run_bale_polling() -> None:
-    if not BALE_TOKEN:
+    if not current_bale_token():
         logger.warning("توکن بله تنظیم نشده است.")
         return
 
@@ -816,34 +1021,20 @@ async def run_bale_polling() -> None:
 
     async with httpx.AsyncClient() as client:
         while True:
-            try:
-                url = f"https://tapi.bale.ai/bot{BALE_TOKEN}/getUpdates"
-                params = {"timeout": 15}
-                if last_update_id > 0:
-                    params["offset"] = last_update_id + 1
-
-                resp = await client.get(url, params=params, timeout=20.0)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    updates = data.get("result", [])
-                    for up in updates:
-                        last_update_id = max(last_update_id, up.get("update_id", 0))
-
-                        # ۱. پردازش کلیک دکمه‌های شیشه‌ای (Callback Queries)
-                        cb = up.get("callback_query")
-                        if cb:
-                            await handle_bale_callback(client, cb)
-                            continue
-
-                        # ۲. پردازش پیام‌های متنی و دکمه‌های منو
-                        msg = up.get("message")
-                        if msg:
-                            await handle_bale_message(client, msg)
-            except Exception as e:
-                logger.debug(f"خطا در دریافت پیام بله: {e}")
-                await asyncio.sleep(2)
-
-            await asyncio.sleep(0.5)
+            updates, last_update_id, err = await fetch_bale_updates(
+                client, current_bale_token(), last_update_id
+            )
+            if err:
+                await asyncio.sleep(retry_delay_seconds(err))
+                continue
+            for up in updates:
+                if not isinstance(up, dict):
+                    continue
+                try:
+                    await dispatch_bale_update(client, up)
+                except Exception as e:
+                    logger.error("خطا در پردازش آپدیت بله (%s).", type(e).__name__)
+            await asyncio.sleep(retry_delay_seconds(None))
 
 
 if __name__ == "__main__":

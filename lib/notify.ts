@@ -1,5 +1,5 @@
 import { getTargetChatsForUser } from "./bot-linker";
-import { formatTomanReadable } from "./money";
+import { formatKm, formatPercent, formatTomanReadable, formatYear } from "./money";
 
 /**
  * ماژول ارسال پیام‌های هشدار و فرصت‌های خرید به ربات بله و تلگرام
@@ -37,15 +37,38 @@ const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
 const EITAA_BOT_TOKEN = "bot327777:f2d967b9-4d8c-480a-8fcd-16c1dbb59611";
 const EITAA_BROADCAST_CHANNEL = "radarcarr";
 
-function toPersianDigits(n: number | string | null | undefined): string {
-  if (n === null || n === undefined) return "";
-  return String(n)
-    .replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)])
-    .replace(/\B(?=(\d{3})+(?!\d))/g, "٬");
-}
-
 function formatTomanPersian(amount: number): string {
   return formatTomanReadable(amount);
+}
+
+async function callBale(
+  method: "sendMessage" | "sendPhoto",
+  body: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    let payload: { ok?: boolean } | null = null;
+    try {
+      payload = (await res.json()) as { ok?: boolean };
+    } catch {
+      payload = null;
+    }
+    if (!res.ok || payload?.ok === false) {
+      console.error(`[notify] Bale ${method} failed with HTTP ${res.status}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    const name = e instanceof Error ? e.name : "Error";
+    console.error(`[notify] Bale ${method} request failed (${name})`);
+    return false;
+  }
 }
 
 function buildCleanMessageText(p: NotificationPayload, platform: "telegram" | "bale" | "eitaa" = "bale"): string {
@@ -69,7 +92,7 @@ function buildCleanMessageText(p: NotificationPayload, platform: "telegram" | "b
   }
 
   // ۲. مدل خودرو بولد و خوانا
-  const yearStr = p.year ? ` (مدل ${toPersianDigits(p.year)})` : "";
+  const yearStr = p.year ? ` (مدل ${formatYear(p.year)})` : "";
   const modelLine = `🚘 <b>${p.title}${yearStr}</b>`;
 
   // ۳. قیمت‌ها
@@ -88,7 +111,7 @@ function buildCleanMessageText(p: NotificationPayload, platform: "telegram" | "b
   }
 
   if (p.profitToman && p.profitToman > 0) {
-    const profitStr = `${formatTomanPersian(p.profitToman)} (${toPersianDigits(p.discountPercent || 0)}٪ سود)`;
+    const profitStr = `${formatTomanPersian(p.profitToman)} (${formatPercent(p.discountPercent || 0)} سود)`;
     lines.push(`🎁 <b>سود شما:</b> 🔥 <b>${profitStr}</b>`);
   } else if (isPriceDrop && p.priceDropToman) {
     lines.push(`🔻 <b>تخفیف:</b> 🔥 <b>${formatTomanPersian(p.priceDropToman)} کاهش قیمت</b>`);
@@ -97,7 +120,7 @@ function buildCleanMessageText(p: NotificationPayload, platform: "telegram" | "b
   // ۴. مشخصات کوتاه
   const specs: string[] = [];
   if (p.mileageKm !== undefined && p.mileageKm !== null) {
-    specs.push(p.mileageKm === 0 ? "صفر کیلومتر" : `${toPersianDigits(p.mileageKm)} km`);
+    specs.push(p.mileageKm === 0 ? "صفر کیلومتر" : formatKm(p.mileageKm));
   }
   if (p.color) specs.push(p.color);
   if (p.bodyHealth) specs.push(p.bodyHealth);
@@ -138,39 +161,33 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
 
   // ۱. ارسال به پیام‌رسان بله (همراه با عکس خودرو برای کاربران پلن رایگان و ۹۹۰ تومانی)
   for (const chatId of baleChats) {
-    try {
-      if (imageUrl) {
-        const photoRes = await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendPhoto`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            photo: imageUrl,
-            caption: baleText,
-            parse_mode: "HTML",
-            reply_markup: replyMarkup,
-            disable_notification: false,
-          }),
-          signal: AbortSignal.timeout(6000),
-        });
-        if (photoRes.ok) continue;
-      }
-
-      await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    if (imageUrl) {
+      const photoOk = await callBale(
+        "sendPhoto",
+        {
           chat_id: chatId,
-          text: baleText,
+          photo: imageUrl,
+          caption: baleText,
           parse_mode: "HTML",
           reply_markup: replyMarkup,
           disable_notification: false,
-        }),
-        signal: AbortSignal.timeout(4000),
-      });
-    } catch {
-      // ادامه بدون توقف
+        },
+        6000,
+      );
+      if (photoOk) continue;
     }
+
+    await callBale(
+      "sendMessage",
+      {
+        chat_id: chatId,
+        text: baleText,
+        parse_mode: "HTML",
+        reply_markup: replyMarkup,
+        disable_notification: false,
+      },
+      4000,
+    );
   }
 
   // ۲. ارسال به تلگرام (همراه با عکس خودرو)
@@ -306,7 +323,7 @@ export interface NewUserRegistrationPayload {
 /**
  * ارسال اعلان آنی ثبت‌نام کاربر جدید به بله مدیریت
  */
-export async function sendAdminNewUserAlert(user: NewUserRegistrationPayload): Promise<void> {
+export async function sendAdminNewUserAlert(user: NewUserRegistrationPayload): Promise<boolean> {
   const plan = user.planName || "تست رایگان ۱۴ روزه";
   const now = new Intl.DateTimeFormat("fa-IR", {
     dateStyle: "short",
@@ -333,36 +350,15 @@ export async function sendAdminNewUserAlert(user: NewUserRegistrationPayload): P
   const text = lines.join("\n");
   const adminBaleChat = "772511114";
 
-  try {
-    await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: adminBaleChat,
-        text,
-        parse_mode: "HTML",
-      }),
-      signal: AbortSignal.timeout(6000),
-    });
-  } catch (e) {
-    console.error("[notify] failed to send new user alert to Bale:", e);
-  }
-
   // ارسال به روبیکای مدیریت (فعلاً غیرفعال)
-  /*
-  try {
-    const plainText = text.replace(/<[^>]+>/g, "");
-    await fetch(`https://botapi.rubika.ir/v3/${RUBIKA_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: DEFAULT_ADMIN_RUBIKA_CHAT,
-        text: plainText,
-      }),
-      signal: AbortSignal.timeout(6000),
-    });
-  } catch (e) {
-    console.error("[notify] failed to send new user alert to Rubika:", e);
-  }
-  */
+
+  return callBale(
+    "sendMessage",
+    {
+      chat_id: adminBaleChat,
+      text,
+      parse_mode: "HTML",
+    },
+    6000,
+  );
 }

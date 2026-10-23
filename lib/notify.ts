@@ -1,4 +1,5 @@
 import { getTargetChatsForUser } from "./bot-linker";
+import { formatTomanReadable } from "./money";
 
 /**
  * ماژول ارسال پیام‌های هشدار و فرصت‌های خرید به ربات بله و تلگرام
@@ -44,7 +45,7 @@ function toPersianDigits(n: number | string | null | undefined): string {
 }
 
 function formatTomanPersian(amount: number): string {
-  return toPersianDigits(amount) + " تومان";
+  return formatTomanReadable(amount);
 }
 
 function buildCleanMessageText(p: NotificationPayload, platform: "telegram" | "bale" | "eitaa" = "bale"): string {
@@ -129,13 +130,31 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
   const telegramText = buildCleanMessageText(payload, "telegram");
   const baleText = buildCleanMessageText(payload, "bale");
   const replyMarkup = buildReplyMarkup(payload.url, payload.source);
+  const imageUrl = payload.imageUrl?.startsWith("http") ? payload.imageUrl : null;
 
   // دریافت چت‌های متصل به این کاربر
   const { baleChats, telegramChats } = await getTargetChatsForUser(payload.userId || "admin");
 
-  // ۱. ارسال به پیام‌رسان بله (متن کوتاه، بدون عکس به درخواست کاربر)
+  // ۱. ارسال به پیام‌رسان بله (همراه با عکس خودرو برای کاربران پلن رایگان و ۹۹۰ تومانی)
   for (const chatId of baleChats) {
     try {
+      if (imageUrl) {
+        const photoRes = await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendPhoto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imageUrl,
+            caption: baleText,
+            parse_mode: "HTML",
+            reply_markup: replyMarkup,
+            disable_notification: false,
+          }),
+          signal: AbortSignal.timeout(6000),
+        });
+        if (photoRes.ok) continue;
+      }
+
       await fetch(`https://tapi.bale.ai/bot${BALE_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,16 +165,32 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
           reply_markup: replyMarkup,
           disable_notification: false,
         }),
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(4000),
       });
     } catch {
       // ادامه بدون توقف
     }
   }
 
-  // ۲. ارسال به تلگرام (متن کوتاه و جذاب بدون تأخیر عکس)
+  // ۲. ارسال به تلگرام (همراه با عکس خودرو)
   for (const chatId of telegramChats) {
     try {
+      if (imageUrl) {
+        const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imageUrl,
+            caption: telegramText,
+            parse_mode: "HTML",
+            reply_markup: replyMarkup,
+          }),
+          signal: AbortSignal.timeout(6000),
+        });
+        if (photoRes.ok) continue;
+      }
+
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,14 +200,14 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
           parse_mode: "HTML",
           reply_markup: replyMarkup,
         }),
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(4000),
       });
     } catch {
       // ادامه بدون توقف
     }
   }
 
-  // ۳. ارسال به کانال رسمی ایتا (متن زیبا به همراه لینک مستقیم آگهی)
+  // ۳. ارسال به کانال رسمی ایتا (همواره همراه با عکس آگهی)
   const isUrgent =
     payload.tags?.some((t) => t.includes("فوری") || t.includes("پول لازم")) ||
     payload.title.includes("فوری") ||
@@ -182,36 +217,78 @@ export async function sendLiveAlert(payload: NotificationPayload): Promise<void>
     Boolean(payload.discountPercent && payload.discountPercent >= 5);
 
   if (isUrgent || isGoodDrop) {
-    try {
-      const cleanEitaaText = buildCleanMessageText(payload, "eitaa").replace(/<[^>]+>/g, "");
-      const sourceName = payload.source === "divar" ? "دیوار" : "شیپور";
-      const broadcastButtonText = `🚗 مشاهده آگهی در ${sourceName}`;
-      const eitaaCaption = payload.url
-        ? `${cleanEitaaText}\n\n🔗 ${broadcastButtonText}:\n${payload.url}\n📢 کانال شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
-        : `${cleanEitaaText}\n📢 کانال شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
+    const cleanEitaaText = buildCleanMessageText(payload, "eitaa").replace(/<[^>]+>/g, "");
+    const sourceName = payload.source === "divar" ? "دیوار" : "شیپور";
+    const broadcastButtonText = `🚗 مشاهده آگهی در ${sourceName}`;
+    const eitaaCaption = payload.url
+      ? `${cleanEitaaText}\n\n🔗 ${broadcastButtonText}:\n${payload.url}\n📢 کانال شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`
+      : `${cleanEitaaText}\n📢 کانال شکار خودرو: @${EITAA_BROADCAST_CHANNEL}`;
 
-      const bodyParams = new URLSearchParams({
-        chat_id: EITAA_BROADCAST_CHANNEL,
-        text: eitaaCaption,
-      });
+    let sentWithPhoto = false;
 
-      if (payload.url) {
-        bodyParams.append(
-          "reply_markup",
-          JSON.stringify({
-            inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
-          }),
-        );
+    // ارسال مستقیم عکس خودرو به کانال ایتا
+    if (imageUrl) {
+      try {
+        const imgRes = await fetch(imageUrl, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          },
+          signal: AbortSignal.timeout(6000),
+        });
+        if (imgRes.ok) {
+          const buf = await imgRes.arrayBuffer();
+          const formData = new FormData();
+          formData.append("chat_id", EITAA_BROADCAST_CHANNEL);
+          formData.append("file", new Blob([new Uint8Array(buf)], { type: "image/jpeg" }), "car.jpg");
+          formData.append("caption", eitaaCaption);
+          if (payload.url) {
+            formData.append(
+              "reply_markup",
+              JSON.stringify({
+                inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
+              }),
+            );
+          }
+
+          const photoRes = await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendFile`, {
+            method: "POST",
+            body: formData,
+            signal: AbortSignal.timeout(10000),
+          });
+          if (photoRes.ok) sentWithPhoto = true;
+        }
+      } catch {
+        sentWithPhoto = false;
       }
+    }
 
-      await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: bodyParams,
-        signal: AbortSignal.timeout(5000),
-      });
-    } catch {
-      // ادامه بدون توقف
+    // در صورتی که آگهی بدون عکس بود یا ارسال عکس ناموفق شد، با پیام متنی ارسال شود
+    if (!sentWithPhoto) {
+      try {
+        const bodyParams = new URLSearchParams({
+          chat_id: EITAA_BROADCAST_CHANNEL,
+          text: eitaaCaption,
+        });
+
+        if (payload.url) {
+          bodyParams.append(
+            "reply_markup",
+            JSON.stringify({
+              inline_keyboard: [[{ text: broadcastButtonText, url: payload.url }]],
+            }),
+          );
+        }
+
+        await fetch(`https://eitaayar.ir/api/${EITAA_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: bodyParams,
+          signal: AbortSignal.timeout(4000),
+        });
+      } catch {
+        // ادامه بدون توقف
+      }
     }
   }
 }

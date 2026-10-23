@@ -53,6 +53,47 @@ export function formatTomanCompact(n: number | null | undefined): string {
   return formatToman(n);
 }
 
+/**
+ * نمایش کاملاً خوانا به حروف فارسی بدون نیاز به شمارش صفرها:
+ * مثال‌ها:
+ * ۵۸۰_۰۰۰_۰۰۰ -> «۵۸۰ میلیون تومان»
+ * ۱_۴۵۰_۰۰۰_۰۰۰ -> «۱ میلیارد و ۴۵۰ میلیون تومان»
+ * ۲_۰۰۰_۰۰۰_۰۰۰ -> «۲ میلیارد تومان»
+ * ۴۵۰_۵۰۰_۰۰۰ -> «۴۵۰ میلیون و ۵۰۰ هزار تومان»
+ * ۶۵_۰۰۰_۰۰۰ -> «۶۵ میلیون تومان»
+ */
+export function formatTomanReadable(toman: number | null | undefined): string {
+  if (toman === null || toman === undefined || !Number.isFinite(toman)) return "—";
+  if (toman === 0) return "۰ تومان";
+
+  const isNeg = toman < 0;
+  let abs = Math.abs(Math.round(toman));
+
+  const billions = Math.floor(abs / 1_000_000_000);
+  abs %= 1_000_000_000;
+  const millions = Math.floor(abs / 1_000_000);
+  abs %= 1_000_000;
+  const thousands = Math.floor(abs / 1_000);
+
+  const parts: string[] = [];
+  if (billions > 0) {
+    parts.push(`${faNumber.format(billions)} میلیارد`);
+  }
+  if (millions > 0) {
+    parts.push(`${faNumber.format(millions)} میلیون`);
+  }
+  if (thousands > 0 && (billions === 0 || millions === 0)) {
+    parts.push(`${faNumber.format(thousands)} هزار`);
+  }
+
+  if (parts.length === 0) {
+    return `${faNumber.format(toman)} تومان`;
+  }
+
+  const res = parts.join(" و ") + " تومان";
+  return isNeg ? `منفی ${res}` : res;
+}
+
 export function formatPercent(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
   return `${faDecimal.format(n)}٪`;

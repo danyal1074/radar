@@ -4,7 +4,7 @@ import Link from "next/link";
 import { deleteListingAction, toggleFollowAction, toggleSavedAction } from "@/app/actions";
 import { timeAgo } from "@/lib/dates";
 import { FOLLOWUP_LABEL, OPPORTUNITY_LABEL, SOURCE_LABEL } from "@/lib/labels";
-import { formatKm, formatNumber, formatToman, formatYear } from "@/lib/money";
+import { formatKm, formatNumber, formatToman, formatTomanReadable, formatYear } from "@/lib/money";
 import { analyzeListingContent, generateShowroomBanner } from "@/lib/listing-meta";
 import type { ListingView } from "@/lib/types";
 import { isAllowedListingUrl } from "@/lib/validation";
@@ -110,12 +110,12 @@ export function ListingCard({ view, showScore }: { view: ListingView; showScore:
           </p>
         </div>
 
-        {/* قیمت و برچسب سود بازار */}
+        {/* قیمت و برچسب سود بازار (خوانا بدون نیاز به شمارش صفرها) */}
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="text-sm sm:text-base font-extrabold text-ink">{formatToman(l.price_toman)}</span>
+          <span className="text-sm sm:text-base font-extrabold text-ink">{formatTomanReadable(l.price_toman)}</span>
           {c.diffPercent !== null && c.diffPercent > 0 && c.diffToman && c.diffToman > 0 && (
             <span className="inline-flex items-center gap-1 rounded bg-good-500/10 border border-good-300 dark:border-good-800 px-1.5 py-0.5 text-[10px] font-bold text-good-700 dark:text-good-300">
-              🔥 {formatToman(c.diffToman)} زیر فی ({Math.round(c.diffPercent)}٪)
+              🔥 {formatTomanReadable(c.diffToman)} سود ({Math.round(c.diffPercent)}٪)
             </span>
           )}
         </div>

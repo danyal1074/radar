@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { formatPercent, formatToman } from "@/lib/money";
+import { formatPercent, formatToman, formatTomanReadable } from "@/lib/money";
 import type { PriceComparison } from "@/lib/types";
 
 /**
@@ -68,10 +68,10 @@ export function PriceGauge({ price, comparison, sample }: { price: number; compa
       </div>
       <div className="flex items-baseline justify-between text-[11px]">
         <span className={clsx("font-semibold", comparison.label === "opportunity" ? "text-good-700 dark:text-good-400" : cheaper ? "text-brand-700 dark:text-brand-400" : "text-muted")}>
-          {formatPercent(Math.abs(comparison.diffPercent))} {cheaper ? "ارزان‌تر" : "گران‌تر"} ({formatToman(Math.abs(comparison.diffToman ?? 0))})
+          {formatPercent(Math.abs(comparison.diffPercent))} {cheaper ? "ارزان‌تر" : "گران‌تر"} ({formatTomanReadable(Math.abs(comparison.diffToman ?? 0))})
         </span>
         <span className="text-muted text-[10px]">
-          کارشناسی: {formatToman(est)}
+          کارشناسی: {formatTomanReadable(est)}
           {sample ? " (نمونه)" : ""}
         </span>
       </div>

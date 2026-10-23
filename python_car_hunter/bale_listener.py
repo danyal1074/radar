@@ -148,6 +148,33 @@ async def check_user_access(client: httpx.AsyncClient, chat_id: int | str) -> di
         return {"registered": False, "hasAccess": False}
 
 
+def to_latin_digits(text: str) -> str:
+    """تبدیل تمام ارقام فارسی به انگلیسی"""
+    p2e = {"۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4", "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9"}
+    return "".join(p2e.get(c, c) for c in text)
+
+
+async def start_inbot_registration(client: httpx.AsyncClient, chat_id: int | str, user_name: str) -> None:
+    """شروع ثبت‌نام مستقیم در داخل ربات بله بدون نیاز به خروج از ربات"""
+    USER_SESSIONS[str(chat_id)] = {
+        "is_reg": True,
+        "reg_step": "name",
+        "userName": user_name,
+    }
+    prompt = (
+        f"📝 <b>ثبت‌نام مستقیم در سامانه رادار خودرو</b>\n\n"
+        f"👋 سلام {user_name} عزیز! به ربات رادار خوش آمدید 🚗✨\n\n"
+        f"۱️⃣ <b>مرحله اول:</b> لطفاً <b>«نام و نام خانوادگی»</b> یا <b>«نام نمایشگاه اتومبیل»</b> خود را ارسال فرمایید:\n"
+        f"<i>(مثال: نمایشگاه اتومبیل کلاسیک یا رضا رضایی)</i>"
+    )
+    cancel_btn = {
+        "inline_keyboard": [
+            [{"text": "❌ انصراف", "callback_data": "cancel_wizard"}]
+        ]
+    }
+    await send_bale_reply(client, chat_id, prompt, cancel_btn)
+
+
 async def send_registration_prompt(
     client: httpx.AsyncClient, chat_id: int | str, user_name: str
 ) -> None:
@@ -156,18 +183,17 @@ async def send_registration_prompt(
         f"👋 <b>سلام {user_name} عزیز!</b>\n"
         f"به ربات هوشمند شکار خودرو <b>«رادار»</b> خوش آمدید 🚗✨\n\n"
         f"این ربات هوش مصنوعی، تمام آگهی‌های خودرو در دیوار و شیپور تربت‌حیدریه و مشهد را لحظه‌ای رصد کرده و خودروهای <b>زیر قیمت بازار</b> را بلافاصله برای شما شکار می‌کند.\n\n"
-        f"⚠️ <b>برای فعال‌سازی و دریافت هشدارهای شکار، ابتدا باید در سامانه ثبت‌نام کنید:</b>\n"
-        f"🎁 <i>پس از ثبت‌نام، اشتراک رایگان به صورت خودکار برای شما فعال خواهد شد.</i>\n\n"
-        f"👇 لطفاً روی دکمه ثبت‌نام زیر بزنید:"
+        f"🎁 <b>هدیه ویژه:</b> استفاده از تمام امکانات و دریافت هشدارهای شکار به مدت ۱۴ روز برای شما <b>کاملاً رایگان</b> است!\n\n"
+        f"📝 <b>جهت فعال‌سازی آنی، لطفاً ثبت‌نام خود را در ربات انجام دهید:</b>"
     )
     markup = {
         "inline_keyboard": [
-            [{"text": "📝 ثبت‌نام رایگان در سامانه رادار خودرو", "url": f"https://radar.digiral.ir/register?bale_chat_id={chat_id}"}],
+            [{"text": "📝 ثبت‌نام مستقیم در ربات (۱۴ روز رایگان)", "callback_data": "start_inbot_reg"}],
             [{"text": "🔗 قبلاً در سایت ثبت‌نام کرده‌ام (اتصال با کد)", "callback_data": "show_link_guide"}],
         ]
     }
     await send_bale_reply(client, chat_id, text, GUEST_KEYBOARD)
-    await send_bale_reply(client, chat_id, "دکمه ثبت‌نام سریع 👇", markup)
+    await send_bale_reply(client, chat_id, "👇 برای ثبت‌نام روی دکمه زیر بزنید:", markup)
 
 
 async def send_expired_prompt(
@@ -446,19 +472,60 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
         await send_bale_reply(client, chat_id, guide)
         return
 
-    # بررسی ثبت‌نام و فعال بودن اشتراک قبل از عملیات
+    # شروع ثبت‌نام مستقیم در ربات
+    if data == "start_inbot_reg":
+        await start_inbot_registration(client, chat_id, user_name)
+        return
+
+    # تکمیل مرحله شهر در ثبت‌نام مستقیم
+    if data.startswith("reg_city:"):
+        choice_city = data.split(":", 1)[1]
+        session = USER_SESSIONS.pop(str(chat_id), {})
+        full_name = session.get("name") or user_name
+        phone_num = session.get("phone") or ""
+
+        try:
+            payload = {
+                "chatId": str(chat_id),
+                "messenger": "bale",
+                "fullName": full_name,
+                "businessName": full_name,
+                "phone": phone_num,
+                "city": choice_city,
+            }
+            res = await client.post(f"{API_BASE}/register", json=payload, timeout=10.0)
+            res_data = res.json() if res.status_code == 200 else {}
+            if res.status_code == 200 and res_data.get("ok"):
+                success_msg = (
+                    f"🎉 <b>تبریک جناب {full_name} عزیز!</b>\n"
+                    f"حساب کاربری شما با موفقیت در سامانه رادار ایجاد شد ✨\n\n"
+                    f"⭐️ <b>اشتراک آزمایشی ۱۴ روزه رایگان (VIP)</b> برای شما فعال گردید.\n"
+                    f"📱 <b>شماره همراه:</b> <code>{phone_num}</code>\n"
+                    f"🏙️ <b>شهر پایش:</b> {choice_city}\n\n"
+                    f"🔔 اکنون می‌توانید از طریق منوی زیر، خودروهای دلخواهتان را برای شکار ثبت کرده یا آخرین فرصت‌های زیر قیمت را مشاهده کنید 👇"
+                )
+                await send_bale_reply(client, chat_id, success_msg, MAIN_KEYBOARD)
+            else:
+                err_text = res_data.get("message", "خطا در برقراری ارتباط با سامانه")
+                await send_bale_reply(client, chat_id, f"❌ خطا در ثبت‌نام: {err_text}\nلطفاً مجدداً امتحان کنید.")
+        except Exception as e:
+            logger.error(f"خطا در رجیستر بله: {e}")
+            await send_bale_reply(client, chat_id, "⚠️ خطا در ثبت‌نام. لطفاً لحظاتی دیگر تلاش فرمایید.")
+        return
+
+    # لغو فرآیند (چه ثبت‌نام چه ساخت فیلتر)
+    if data == "cancel_wizard":
+        USER_SESSIONS.pop(str(chat_id), None)
+        await send_bale_reply(client, chat_id, "عملیات لغو شد.", MAIN_KEYBOARD)
+        return
+
+    # بررسی ثبت‌نام و فعال بودن اشتراک قبل از سایر عملیات
     user_access = await check_user_access(client, chat_id)
     if not user_access.get("registered"):
         await send_registration_prompt(client, chat_id, user_name)
         return
     if user_access.get("planExpired"):
         await send_expired_prompt(client, chat_id, user_access.get("planName", "آزمایشی"))
-        return
-
-    # لغو فرآیند
-    if data == "cancel_wizard":
-        USER_SESSIONS.pop(str(chat_id), None)
-        await send_bale_reply(client, chat_id, "عملیات لغو شد. منوی اصلی در دسترس شماست.", MAIN_KEYBOARD)
         return
 
     # فیلتر فرصت‌ها بر اساس شهر
@@ -625,6 +692,61 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
     if not chat_id or not text:
         return
 
+    # ۰. بررسی مراحل فعال ثبت‌نام مستقیم در ربات
+    reg_session = USER_SESSIONS.get(str(chat_id))
+    if reg_session and reg_session.get("is_reg"):
+        reg_step = reg_session.get("reg_step")
+        if reg_step == "name":
+            clean_name = text.strip()
+            if len(clean_name) < 2:
+                await send_bale_reply(client, chat_id, "⚠️ لطفاً نام یا نام نمایشگاه را به صورت کامل بنویسید:")
+                return
+            reg_session["name"] = clean_name
+            reg_session["reg_step"] = "phone"
+            prompt = (
+                f"بسیار عالی جناب <b>{clean_name}</b> عزیز 🌹\n\n"
+                f"۲️⃣ <b>مرحله دوم:</b> لطفاً <b>شماره موبایل</b> خود را ارسال فرمایید:\n"
+                f"<i>(جهت ثبت حساب کاربری و فعال‌سازی اشتراک ۱۴ روزه رایگان)</i>\n\n"
+                f"📱 مثال: <code>09151234567</code>"
+            )
+            cancel_btn = {"inline_keyboard": [[{"text": "❌ انصراف", "callback_data": "cancel_wizard"}]]}
+            await send_bale_reply(client, chat_id, prompt, cancel_btn)
+            return
+
+        elif reg_step == "phone":
+            raw_phone = to_latin_digits(text).strip().replace(" ", "").replace("-", "")
+            if raw_phone.startswith("+98"):
+                raw_phone = "0" + raw_phone[3:]
+            elif raw_phone.startswith("98"):
+                raw_phone = "0" + raw_phone[2:]
+            elif not raw_phone.startswith("0") and len(raw_phone) == 10:
+                raw_phone = "0" + raw_phone
+
+            import re
+            if not re.match(r"^09\d{9}$", raw_phone):
+                await send_bale_reply(
+                    client,
+                    chat_id,
+                    "⚠️ شماره موبایل وارد شده معتبر نیست.\nلطفاً یک شماره ۱۱ رقمی معتبر (مانند <code>09151234567</code>) وارد نمایید:",
+                )
+                return
+
+            reg_session["phone"] = raw_phone
+            reg_session["reg_step"] = "city"
+            prompt = (
+                f"✅ شماره <code>{raw_phone}</code> ثبت شد.\n\n"
+                f"۳️⃣ <b>مرحله سوم:</b> لطفاً شهر یا محدوده فعالیت خود را برای دریافت هشدارهای شکار انتخاب فرمایید:"
+            )
+            city_markup = {
+                "inline_keyboard": [
+                    [{"text": "🏢 مشهد", "callback_data": "reg_city:مشهد"}, {"text": "🏢 تربت‌حیدریه", "callback_data": "reg_city:تربت‌حیدریه"}],
+                    [{"text": "🌐 هر دو شهر (مشهد و تربت)", "callback_data": "reg_city:مشهد و تربت‌حیدریه"}],
+                    [{"text": "❌ انصراف", "callback_data": "cancel_wizard"}],
+                ]
+            }
+            await send_bale_reply(client, chat_id, prompt, city_markup)
+            return
+
     # ۱. اتصال با کد عددی اختصاصی سایت
     norm_text = normalize_digits(text)
     link_match = re.search(r"\b(\d{4,6})\b", norm_text)
@@ -664,7 +786,7 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
 
     # ۲. دکمه «📝 ثبت‌نام در سامانه»
     if text in ("📝 ثبت‌نام در سامانه", "ثبت نام", "/register"):
-        await send_registration_prompt(client, chat_id, user_name)
+        await start_inbot_registration(client, chat_id, user_name)
         return
 
     # ۳. دکمه «💳 تمدید اشتراک در سایت»

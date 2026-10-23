@@ -100,39 +100,21 @@ export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
 export async function verifyDivarOtp(
   phone: string,
   code: string,
-  session?: { deviceId?: string; preAuthSessionId?: string }
+  session?: { deviceId?: string; preAuthSessionId?: string; phone?: string }
 ): Promise<DivarAuthResult> {
   const cleanCode = code.trim();
   const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
 
   try {
-    // ۱. ابتدا تلاش با روش رسمی v5 که مستقیماً توکن JWT برمی‌گرداند
-    try {
-      const fbRes = await fetch("https://api.divar.ir/v5/auth/confirm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": USER_AGENT,
-          Referer: "https://divar.ir/",
-          Origin: "https://divar.ir",
-        },
-        body: JSON.stringify({ phone: cleanPhone, code: cleanCode }),
-        signal: AbortSignal.timeout(10000),
+    // ۱. در صورت وجود نشست v8، حتماً ابتدا با v8 تایید انجام شود (چون کد برای این نشست صادر شده است)
+    if (session?.deviceId && session?.preAuthSessionId) {
+      console.log("[Divar Auth] Verifying OTP via v8 endpoint...", {
+        phone: cleanPhone,
+        sessionPhone: session.phone,
+        hasDeviceId: !!session.deviceId,
+        hasPreAuth: !!session.preAuthSessionId,
       });
 
-      const fbData = await fbRes.json().catch(() => ({}));
-      const candidateToken =
-        fbData.token || fbData.access_token || fbData.data?.token || fbData.user_token;
-
-      if (fbRes.ok && candidateToken && isJwtToken(candidateToken)) {
-        return { ok: true, token: candidateToken, message: "ورود به حساب دیوار با موفقیت انجام شد." };
-      }
-    } catch {
-      // ادامه به متد v8 در صورت عدم پاسخ v5
-    }
-
-    // ۲. بررسی با نشست v8
-    if (session?.deviceId && session?.preAuthSessionId) {
       const res = await fetch("https://api.divar.ir/v8/authenticate/signinup/code/consume", {
         method: "POST",
         headers: {
@@ -149,28 +131,89 @@ export async function verifyDivarOtp(
         signal: AbortSignal.timeout(10000),
       });
 
-      const setCookie = res.headers.get("set-cookie") || "";
-      const cookieMatch = setCookie.match(/token=([^;]+)/);
       const data = await res.json().catch(() => ({}));
+      console.log(`[Divar Auth] v8 response status: ${res.status}`, data);
 
-      const candidates = [
-        cookieMatch ? cookieMatch[1] : null,
-        data.token,
-        data.access_token,
-        data.data?.token,
-      ].filter(Boolean) as string[];
+      if (res.ok) {
+        // استخراج کوکی‌ها به روش استاندارد و سازگار با انوع ران‌تایم‌های Node
+        const cookieList: string[] =
+          typeof (res.headers as any).getSetCookie === "function"
+            ? (res.headers as any).getSetCookie()
+            : (res.headers.get("set-cookie") ? [res.headers.get("set-cookie")!] : []);
 
-      for (const cand of candidates) {
-        if (isJwtToken(cand)) {
-          return { ok: true, token: cand, message: "ورود به حساب دیوار با موفقیت انجام شد." };
+        let cookieToken: string | null = null;
+        for (const cookieItem of cookieList) {
+          const m = cookieItem.match(/(?:^|;\s*)token=([^;]+)/i);
+          if (m && m[1]) {
+            cookieToken = decodeURIComponent(m[1]).replace(/^["']|["']$/g, "").trim();
+            break;
+          }
+        }
+
+        const candidates = [
+          cookieToken,
+          data.token,
+          data.access_token,
+          data.data?.token,
+          data.user_token,
+          data.credentials?.token,
+        ].filter(Boolean) as string[];
+
+        for (const rawCand of candidates) {
+          const cand = rawCand.replace(/^Basic\s+/i, "").replace(/^Bearer\s+/i, "").replace(/^["']|["']$/g, "").trim();
+          if (isJwtToken(cand)) {
+            console.log("[Divar Auth] Successfully acquired JWT token from v8 flow.");
+            return { ok: true, token: cand, message: "ورود به حساب دیوار با موفقیت انجام شد." };
+          }
+        }
+
+        // اگر توکن با قالب خاصی آمد اما ریسپانس ۲۰۰ بود
+        if (cookieToken) {
+          return { ok: true, token: cookieToken, message: "ورود به حساب دیوار انجام شد." };
+        }
+      } else {
+        // سرور دیوار خطا داده است (کد اشتباه، نشست منقضی و غیره)
+        const errMsg = data.message || "کد وارد شده برای دیوار اشتباه است یا منقضی شده است.";
+        // اگر نشست منقضی شده بود، اجازه بدهید فال‌بک v5 هم در ادامه تست شود
+        if (res.status !== 410) {
+          return { ok: false, message: errMsg };
         }
       }
     }
 
-    return { ok: false, message: "کد وارد شده نامعتبر است یا توکن معتبر دریافت نشد." };
+    // ۲. فال‌بک یا ورود با روش رسمی v5 در صورتی که سشن v8 وجود نداشت
+    console.log("[Divar Auth] Attempting fallback v5 auth/confirm...", { phone: cleanPhone });
+    const fbRes = await fetch("https://api.divar.ir/v5/auth/confirm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
+        Referer: "https://divar.ir/",
+        Origin: "https://divar.ir",
+      },
+      body: JSON.stringify({ phone: cleanPhone, code: cleanCode }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const fbData = await fbRes.json().catch(() => ({}));
+    console.log(`[Divar Auth] v5 response status: ${fbRes.status}`, fbData);
+
+    const candidateToken =
+      fbData.token || fbData.access_token || fbData.data?.token || fbData.user_token;
+
+    if (fbRes.ok && candidateToken && isJwtToken(candidateToken)) {
+      return { ok: true, token: candidateToken, message: "ورود به حساب دیوار با موفقیت انجام شد." };
+    }
+
+    return {
+      ok: false,
+      message:
+        fbData.message ||
+        "کد تایید وارد شده نامعتبر است یا نشست منقضی شده است. لطفاً شماره را مجدداً وارد کرده و کد جدید دریافت نمایید.",
+    };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return { ok: false, message: `خطا در تایید کد: ${errorMsg}` };
+    return { ok: false, message: `خطا در تایید کد دیوار: ${errorMsg}` };
   }
 }
 

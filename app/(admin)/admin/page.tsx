@@ -129,8 +129,25 @@ export default async function AdminPage() {
                   return (
                     <tr key={profile.id}>
                       <td className="py-2.5">
-                        <span className="font-medium">{profile.business_name || profile.full_name || "بدون نام"}</span>
-                        <span className="block text-xs text-muted">{profile.email}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-ink">{profile.business_name || profile.full_name || "بدون نام"}</span>
+                          {profile.full_name && profile.business_name && profile.full_name !== profile.business_name && (
+                            <span className="text-xs text-muted font-normal">({profile.full_name})</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted mt-0.5">
+                          <span className="font-mono">{profile.email}</span>
+                          {(profile as any).bale_chat_id && (
+                            <span className="rounded bg-sky-50 text-sky-700 px-1.5 py-0.5 text-[10px] font-bold border border-sky-200">
+                              بله: {(profile as any).bale_chat_id}
+                            </span>
+                          )}
+                          {(profile as any).rubika_chat_id && (
+                            <span className="rounded bg-purple-50 text-purple-700 px-1.5 py-0.5 text-[10px] font-bold border border-purple-200">
+                              روبیکا
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>{profile.city || "—"}</td>
                       <td>

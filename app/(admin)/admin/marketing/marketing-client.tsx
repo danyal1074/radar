@@ -827,22 +827,27 @@ export function MarketingClient({
                   {/* الصاق دستی توکن در صورت تمایل */}
                   <div className="pt-2 border-t border-line/60">
                     <details className="text-xs text-muted cursor-pointer">
-                      <summary className="font-semibold hover:text-ink">ورود دستی با Token دیوار (اختیاری)</summary>
-                      <div className="flex gap-2 pt-2">
-                        <input
-                          type="text"
-                          placeholder="ey..."
-                          value={manualDivarToken}
-                          onChange={(e) => setManualDivarToken(e.target.value)}
-                          className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveManualDivarToken}
-                          className="px-3 py-1.5 rounded-lg bg-surface border border-line text-ink text-xs font-bold"
-                        >
-                          ثبت
-                        </button>
+                      <summary className="font-semibold hover:text-ink">ورود دستی با Token دیوار (سریع و بدون پیامک)</summary>
+                      <div className="pt-2 space-y-2">
+                        <p className="text-[11px] text-muted leading-relaxed">
+                          💡 <b>استخراج سریع توکن:</b> وارد سایت دیوار (divar.ir) شوید، کلید <kbd className="px-1 py-0.5 bg-line rounded font-mono text-[10px]">F12</kbd> را بزنید، به تب <b>Application</b> سپس <b>Cookies</b> بروید و مقدار کوکی <code className="text-brand-600 font-mono font-bold">token</code> را اینجا پیست کنید.
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="ey..."
+                            value={manualDivarToken}
+                            onChange={(e) => setManualDivarToken(e.target.value)}
+                            className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveManualDivarToken}
+                            className="px-3 py-1.5 rounded-lg bg-surface border border-line text-ink text-xs font-bold hover:bg-line/40 transition-colors"
+                          >
+                            ثبت
+                          </button>
+                        </div>
                       </div>
                     </details>
                   </div>

@@ -57,7 +57,7 @@ export async function requestDivarOtpAction(formData: FormData) {
       divarPhone: phone,
       divarSession:
         res.deviceId && res.preAuthSessionId
-          ? { deviceId: res.deviceId, preAuthSessionId: res.preAuthSessionId }
+          ? { deviceId: res.deviceId, preAuthSessionId: res.preAuthSessionId, phone }
           : undefined,
     });
   }
@@ -84,12 +84,18 @@ export async function verifyDivarOtpAction(formData: FormData) {
 
 export async function saveManualDivarTokenAction(formData: FormData) {
   await requireContext({ admin: true });
-  const token = String(formData.get("token") || "").trim();
+  const raw = String(formData.get("token") || "").trim();
+  const token = raw.replace(/^Basic\s+/i, "").replace(/^Bearer\s+/i, "").replace(/^["']|["']$/g, "").trim();
   const phone = String(formData.get("phone") || "").trim();
+
+  const { isJwtToken } = await import("@/lib/marketing/divar");
+  if (!isJwtToken(token)) {
+    return { ok: false, message: "فرمت توکن وارد شده نامعتبر است (باید توکن JWT ۳ بخشی دیوار باشد)." };
+  }
 
   await updateMarketingConfig({ divarToken: token, divarPhone: phone });
   revalidatePath("/admin/marketing");
-  return { ok: true, message: "توکن دیوار با موفقیت ثبت شد." };
+  return { ok: true, message: "توکن دیوار با موفقیت ثبت و فعال شد." };
 }
 
 export async function requestSheypoorOtpAction(formData: FormData) {

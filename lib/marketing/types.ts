@@ -4,6 +4,7 @@ export interface MarketingConfig {
   divarSession?: {
     deviceId: string;
     preAuthSessionId: string;
+    phone?: string;
   };
   sheypoorPhone: string;
   sheypoorToken: string;

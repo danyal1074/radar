@@ -47,6 +47,7 @@ export async function Shell({ ctx, unread, locked, children }: { ctx: AppContext
   if (ctx.profile.role === "admin") {
     items.push({ href: "/admin", label: "مدیریت", icon: "admin", quiet: true });
     items.push({ href: "/admin/prices", label: "قیمت روز", icon: "prices", quiet: true });
+    items.push({ href: "/admin/marketing", label: "تبلیغ و چت", icon: "marketing", quiet: true });
   }
 
   const { access } = ctx;

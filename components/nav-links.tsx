@@ -8,6 +8,7 @@ import {
   Coins,
   CreditCard,
   LayoutDashboard,
+  MessageSquareShare,
   Radar,
   Settings2,
   ShieldCheck,
@@ -27,6 +28,7 @@ const ICONS = {
   billing: CreditCard,
   admin: ShieldCheck,
   prices: Coins,
+  marketing: MessageSquareShare,
 };
 
 export interface NavItem {

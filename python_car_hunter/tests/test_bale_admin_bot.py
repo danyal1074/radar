@@ -181,6 +181,23 @@ class BaleAdminBotTest(unittest.TestCase):
                 self.assertEqual(err, "bad_payload")
                 self.assertEqual(offset, 3)
 
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={"ok": False, "error_code": 401}))
+            ) as client:
+                updates, offset, err = await bale_listener.fetch_bale_updates(client, "test-token", 9)
+                self.assertEqual(updates, [])
+                self.assertEqual(offset, 9)
+                self.assertEqual(err, "unauthorized")
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(lambda _r: httpx.Response(200, json={"ok": False}))
+            ) as client:
+                updates, offset, err = await bale_listener.fetch_bale_updates(client, "test-token", 9)
+                self.assertEqual(updates, [])
+                self.assertEqual(offset, 9)
+                self.assertEqual(err, "api")
+            self.assertEqual(bale_listener.retry_delay_seconds("api"), 2.0)
+
         asyncio.run(run())
 
     def test_receive_update_advances_offset_and_dispatches_admin_command(self) -> None:

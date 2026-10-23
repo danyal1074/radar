@@ -943,8 +943,9 @@ async def fetch_bale_updates(
     """یک دور getUpdates.
 
     برمی‌گرداند: (updates, new_offset, error)
-    error یکی از None، unconfigured، unauthorized، http، network، bad_payload است.
+    error یکی از None، unconfigured، unauthorized، http، api، network، bad_payload است.
     در خطا offset جلو نمی‌رود تا آپدیت از دست نرود.
+    پاسخ HTTP 200 با ok=false هم خطا است؛ همان شکلی که ارسال پیام آن را شکست می‌داند.
     """
     if not token:
         return [], last_update_id, "unconfigured"
@@ -973,7 +974,22 @@ async def fetch_bale_updates(
         logger.error("پاسخ getUpdates بله JSON معتبر نبود.")
         return [], last_update_id, "bad_payload"
 
-    updates = data.get("result", []) if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        logger.error("ساختار پاسخ getUpdates بله نامعتبر است.")
+        return [], last_update_id, "bad_payload"
+
+    if data.get("ok") is False:
+        error_code = data.get("error_code")
+        if error_code in (401, 403):
+            logger.error("توکن بله در getUpdates رد شد (کد %s).", error_code)
+            return [], last_update_id, "unauthorized"
+        logger.error(
+            "getUpdates بله ناموفق بود (ok=false، کد %s).",
+            error_code if isinstance(error_code, int) else "unknown",
+        )
+        return [], last_update_id, "api"
+
+    updates = data.get("result", [])
     if not isinstance(updates, list):
         logger.error("ساختار پاسخ getUpdates بله نامعتبر است.")
         return [], last_update_id, "bad_payload"

@@ -15,6 +15,14 @@ import type { loginSchema, registerSchema } from "../validation";
 import { hashPassword, verifyPassword } from "./password";
 import { signSession, verifySession } from "./session-token";
 import { sendAdminNewUserAlert } from "../notify";
+import {
+  canonicalPhone,
+  loginAuthEmails,
+  normalizeLoginIdentifier,
+  usernameMatchesProfile,
+  usernameProfileOrFilter,
+  type LoginProfileHint,
+} from "./login-identifier";
 
 export const DEV_COOKIE = "cr_session";
 const SESSION_DAYS = 14;
@@ -161,48 +169,81 @@ export async function signUp(input: RegisterInput): Promise<AuthResult> {
   return { ok: true };
 }
 
+async function lookupLoginProfiles(identifier: string): Promise<LoginProfileHint[]> {
+  const clean = normalizeLoginIdentifier(identifier);
+  if (!clean || canonicalPhone(clean)) return [];
+  try {
+    const { createServiceClient } = await import("../supabase/server");
+    const sb = createServiceClient();
+    let query = sb
+      .from("profiles")
+      .select("id, email, full_name, business_name, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(20);
+    if (clean.includes("@")) {
+      query = query.ilike("email", clean);
+    } else {
+      const orFilter = usernameProfileOrFilter(identifier);
+      if (!orFilter) return [];
+      query = query.or(orFilter);
+    }
+    const { data, error } = await query;
+    if (error || !data?.length) return [];
+
+    const hints: LoginProfileHint[] = [];
+    for (const row of data) {
+      const preliminary: LoginProfileHint = {
+        id: row.id,
+        email: row.email ?? "",
+        fullName: row.full_name,
+        businessName: row.business_name,
+      };
+      if (!clean.includes("@") && !usernameMatchesProfile(identifier, preliminary)) continue;
+      let authEmail: string | null = null;
+      const { data: authUser, error: authError } = await sb.auth.admin.getUserById(row.id);
+      if (!authError && authUser.user?.email) authEmail = authUser.user.email;
+      else if (/@radar\.(digiral\.ir|local)$/i.test(row.email ?? "")) authEmail = row.email;
+      hints.push({
+        id: row.id,
+        email: row.email ?? "",
+        authEmail,
+        fullName: row.full_name,
+        businessName: row.business_name,
+      });
+    }
+    return hints;
+  } catch {
+    return [];
+  }
+}
+
 export async function signIn(input: LoginInput): Promise<AuthResult> {
   const generic = "شماره موبایل، ایمیل یا رمز عبور نادرست است";
-
-  let target = input.identifier.trim();
-  const clean = target.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/\s+/g, "");
-  const lower = clean.toLowerCase();
-
-  if (lower === "admin") {
-    target = "admin@radar.ir";
-  } else if (lower === "danyal1074" || lower === "danyal" || lower === "danyal.haghdady" || clean === "09999212209") {
-    target = "danyal.haghdady@gmail.com";
-  } else if (/^09\d{9}$/.test(clean)) {
-    target = `${clean}@radar.digiral.ir`;
-  } else if (/^\d{10,11}$/.test(clean)) {
-    const p = clean.startsWith("0") ? clean : "0" + clean;
-    target = `${p}@radar.digiral.ir`;
-  }
+  const clean = normalizeLoginIdentifier(input.identifier);
 
   if (dataMode() === "supabase") {
+    const hints = await lookupLoginProfiles(input.identifier);
+    const emails = loginAuthEmails(clean, hints);
+    if (emails.length === 0) return { ok: false, error: generic };
     const { createUserClient } = await import("../supabase/server");
     const supabase = await createUserClient();
-    let { error } = await supabase.auth.signInWithPassword({
-      email: target,
-      password: input.password,
-    });
-
-    // در صورتی که کاربر با ایمیل اختیاری خود وارد شده باشد
-    if (error && target !== input.identifier && input.identifier.includes("@")) {
-      const retry = await supabase.auth.signInWithPassword({
-        email: input.identifier,
+    for (const email of emails) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
         password: input.password,
       });
-      if (!retry.error) error = null;
+      if (!error) return { ok: true };
     }
-
-    if (error) return { ok: false, error: generic };
-    return { ok: true };
+    return { ok: false, error: generic };
   }
+
   const store = await getDevStore();
-  let user = await store.findUserByEmail(target);
-  if (!user && target !== input.identifier) {
-    user = await store.findUserByEmail(input.identifier);
+  const hints = canonicalPhone(clean) ? [] : await store.listLoginProfiles();
+  const emails = loginAuthEmails(clean, hints);
+  let user = null;
+  for (const email of emails) {
+    user = await store.findUserByEmail(email);
+    if (user) break;
   }
   const ok = await verifyPassword(input.password, user?.passwordHash ?? "scrypt$00$00");
   if (!user || !ok) return { ok: false, error: generic };

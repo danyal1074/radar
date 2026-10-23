@@ -134,8 +134,7 @@ export async function verifyDivarOtp(
       });
 
       const data = await res.json().catch(() => ({}));
-      console.log(`[Divar Auth] v8 response status: ${res.status}`, data);
-      console.log(`[Divar Auth] v8 headers:`, Object.fromEntries(res.headers.entries()));
+      console.log(`[Divar Auth] v8 response status: ${res.status}`);
 
       if (res.ok) {
         // ۱. جمع‌آوری تمام کوکی‌های ارسالی توسط سرور دیوار (پشتیبانی از SuperTokens و v8)
@@ -221,7 +220,7 @@ export async function verifyDivarOtp(
     });
 
     const fbData = await fbRes.json().catch(() => ({}));
-    console.log(`[Divar Auth] v5 response status: ${fbRes.status}`, fbData);
+    console.log(`[Divar Auth] v5 response status: ${fbRes.status}`);
 
     const candidateToken =
       fbData.token || fbData.access_token || fbData.data?.token || fbData.user_token;

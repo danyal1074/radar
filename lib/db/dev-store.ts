@@ -120,6 +120,21 @@ export class DevStore implements Store {
     return this.read((db) => db.users.find((u) => u.profile.email === e) ?? null);
   }
 
+  /** Profile rows used to resolve a typed email or username to the auth email. */
+  async listLoginProfiles(): Promise<
+    { id: string; email: string; authEmail: string; fullName: string; businessName: string }[]
+  > {
+    return this.read((db) =>
+      db.users.map((u) => ({
+        id: u.profile.id,
+        email: u.profile.email,
+        authEmail: u.profile.email,
+        fullName: u.profile.full_name,
+        businessName: u.profile.business_name,
+      })),
+    );
+  }
+
   async createUser(input: {
     email: string;
     passwordHash: string;

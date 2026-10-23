@@ -22,6 +22,7 @@ import type {
 import { safeListingUrl, type ListingImportItem } from "../validation";
 import { isJunkOrUnrealisticListing } from "../junk-filter";
 import { sendLiveAlert } from "../notify";
+import { decodeRuleFlags, encodeRuleForLiveSchema, type RuleRow } from "./rule-columns";
 import type { AdminUserRow, NewEstimate, NewNotification, PlatformStats, Store, UpsertResult } from "./store";
 
 /**
@@ -313,55 +314,22 @@ export class SupabaseStore implements Store {
   async listRules(userId: string) {
     const { data, error } = await this.db.from("watch_rules").select("*").eq("user_id", userId).order("created_at", { ascending: false });
     if (error) fail("listRules", error);
-    return ((data ?? []) as any[]).map((r) => ({
-      ...r,
-      urgent_only: r.name?.includes("[فوری]") || r.urgent_only === true,
-      paint_free_only: r.name?.includes("[بی‌رنگ]") || r.paint_free_only === true,
-    })) as WatchRule[];
+    return ((data ?? []) as RuleRow[]).map((r) => decodeRuleFlags(r)) as WatchRule[];
   }
 
   async createRule(userId: string, input: WatchRuleInput) {
-    const { urgent_only, paint_free_only, ...cleanInput } = input;
-    let finalName = cleanInput.name;
-    if (urgent_only && !finalName.includes("[فوری]")) finalName = `${finalName} [فوری]`;
-    if (paint_free_only && !finalName.includes("[بی‌رنگ]")) finalName = `${finalName} [بی‌رنگ]`;
-    cleanInput.name = finalName;
-
-    // رفع محدودیت پایگاه داده: حداقل درصد تخفیف یا مبلغ تخفیف نباید هر دو null باشند
-    if (cleanInput.min_discount_percent === null && cleanInput.min_discount_toman === null) {
-      cleanInput.min_discount_percent = 0;
-    }
-
-    const { data, error } = await this.db.from("watch_rules").insert({ ...cleanInput, user_id: userId }).select().single();
+    const row = encodeRuleForLiveSchema(input);
+    const { data, error } = await this.db.from("watch_rules").insert({ ...row, user_id: userId }).select().single();
     if (error) fail("createRule", error);
-    const r = data as any;
-    return {
-      ...r,
-      urgent_only: urgent_only ?? (r.name?.includes("[فوری]") || r.urgent_only === true),
-      paint_free_only: paint_free_only ?? (r.name?.includes("[بی‌رنگ]") || r.paint_free_only === true),
-    } as WatchRule;
+    return decodeRuleFlags(data as RuleRow) as WatchRule;
   }
 
   async updateRule(userId: string, id: string, input: WatchRuleInput) {
-    const { urgent_only, paint_free_only, ...cleanInput } = input;
-    let finalName = cleanInput.name;
-    if (urgent_only && !finalName.includes("[فوری]")) finalName = `${finalName} [فوری]`;
-    if (paint_free_only && !finalName.includes("[بی‌رنگ]")) finalName = `${finalName} [بی‌رنگ]`;
-    cleanInput.name = finalName;
-
-    if (cleanInput.min_discount_percent === null && cleanInput.min_discount_toman === null) {
-      cleanInput.min_discount_percent = 0;
-    }
-
-    const { data, error } = await this.db.from("watch_rules").update(cleanInput).eq("id", id).eq("user_id", userId).select().maybeSingle();
+    const row = encodeRuleForLiveSchema(input);
+    const { data, error } = await this.db.from("watch_rules").update(row).eq("id", id).eq("user_id", userId).select().maybeSingle();
     if (error) fail("updateRule", error);
     if (!data) return null;
-    const r = data as any;
-    return {
-      ...r,
-      urgent_only: urgent_only ?? (r.name?.includes("[فوری]") || r.urgent_only === true),
-      paint_free_only: paint_free_only ?? (r.name?.includes("[بی‌رنگ]") || r.paint_free_only === true),
-    } as WatchRule;
+    return decodeRuleFlags(data as RuleRow) as WatchRule;
   }
 
   async setRuleActive(userId: string, id: string, active: boolean) {
@@ -379,11 +347,7 @@ export class SupabaseStore implements Store {
   async listAllActiveRules() {
     const { data, error } = await this.db.from("watch_rules").select("*").eq("is_active", true);
     if (error) fail("listAllActiveRules", error);
-    return ((data ?? []) as any[]).map((r) => ({
-      ...r,
-      urgent_only: r.name?.includes("[فوری]") || r.urgent_only === true,
-      paint_free_only: r.name?.includes("[بی‌رنگ]") || r.paint_free_only === true,
-    })) as WatchRule[];
+    return ((data ?? []) as RuleRow[]).map((r) => decodeRuleFlags(r)) as WatchRule[];
   }
 
   // ---------- saved & followups ----------

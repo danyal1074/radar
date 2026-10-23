@@ -1,0 +1,68 @@
+# ==============================================================================
+# CURSOR AGENT RULES & SYSTEM INSTRUCTIONS - CAR RADAR (رادار خودرو)
+# ==============================================================================
+
+You are an expert AI software engineer assisting in the development and maintenance
+of "رادار خودرو" (Car Radar) — a high-frequency real-time Iranian automotive radar,
+market price evaluation, and instant opportunity hunter platform.
+
+## 1. PROJECT OVERVIEW & ARCHITECTURE
+- **Framework**: Next.js 16.4.2 (App Router, Turbopack, React 19, TypeScript 5, Tailwind CSS v4).
+- **Database**: Supabase PostgreSQL (Managed cloud at `https://mhjktkkzjgatyacmlnxx.supabase.co`).
+- **Deployment**: Ubuntu VPS (`89.46.217.44`), reverse-proxied with Nginx (`https://radar.digiral.ir`).
+- **Process Manager**: PM2 managing 4 application processes (Processes 0, 1, 2, 3).
+- **Pricing Engine**: Multi-tiered appraisal engine:
+  1. `Baravard.com` daily scraping (seeds + daily cron at 15:00 Tehran time).
+  2. Live Divar cluster estimation for real-time market calibration.
+  3. Strict junk/unrealistic listing filters.
+- **Bot Alerting Channels**:
+  - Telegram Bot: `@radarcarr_bot`
+  - Bale Bot: Chat alerts with photo & keyboard
+  - Eitaa Channel: Broadcasts to `@radarcarr` via bot API
+  - Rubika Bot: Integrated listener and notifier
+
+---
+
+## 2. PRODUCTION SERVER & DEPLOYMENT INSTRUCTIONS
+Whenever changes are made:
+1. Verify locally with tests:
+   `npm test`
+2. Check build:
+   `npm run build`
+3. Commit and push to GitHub `main`:
+   `git add .`
+   `git commit -m "feat/fix: <clear description>"`
+   `git push origin main`
+4. Deploy to VPS immediately:
+   Run: `python scripts/update_vps.py`
+   (This script SSHs into `89.46.217.44`, runs `git pull`, builds Next.js, and restarts PM2 processes 0, 1, 2, 3).
+
+### Server Credentials (DO NOT LEAK EXTERNALLY):
+- **Host**: `89.46.217.44`
+- **Port**: `22`
+- **User**: `root`
+- **Password**: `c6khenbR98FpxqnM`
+- **Web App Directory**: `/var/www/radar`
+- **Domain**: `https://radar.digiral.ir`
+
+### PM2 Process Map:
+- `0`: `radar-web` (Next.js 16 Web Application)
+- `1`: `radar-scheduler` (Auto-radar crawler daemon - runs every 60s)
+- `2`: `bale-bot` (Bale messenger bot listener)
+- `3`: `rubika-bot` (Rubika messenger bot listener)
+- `4`: `honar` (⚠️ ANOTHER INDEPENDENT PROJECT ON THE VPS — NEVER TOUCH, RESTART, OR KILL THIS PROCESS!)
+
+---
+
+## 3. STRICT CODING & SYSTEM RULES
+1. **Never Touch PM2 ID 4 (`honar`)**: Always use `pm2 restart 0 1 2 3` or specific names.
+2. **Current Active City Testing**: During the test phase, the radar scheduler is actively restricted to **مشهد (Mashhad)** and **تربت حیدریه (Torbat Heydarieh)**. Do NOT expand to all cities unless explicitly instructed by the user.
+3. **Readable Pricing Format**: Car prices must NEVER be shown as raw strings of zeroes (e.g. `580000000`). Always use `formatTomanReadable(toman)` from `lib/money.ts` to output Persian word units like `۵۸۰ میلیون تومان` or `۱ میلیارد و ۴۵۰ میلیون تومان`.
+4. **Photo Alerts**:
+   - For Telegram & Bale: Send real car photos (`sendPhoto`) to users on Free/Trial and 990,000-Toman plans. Fallback gracefully to text if image fetch fails or times out (use 6s timeout).
+   - For Eitaa (`@radarcarr`): Always send with car photo using multipart `sendFile`.
+5. **Real-time Webhook & Revalidation**:
+   - Web pages (`/listings`, `/opportunities`, `/dashboard`) MUST have `export const dynamic = "force-dynamic";` and `export const revalidate = 0;`.
+   - Never remove `<AutoRefresher />` or break the live 30-second polling.
+6. **Next.js 16 Breaking Changes**: Heed App Router server/client component boundaries. Do not import `server-only` code into client components.
+7. **Persian / RTL**: All UI text and user-facing messages must be standard Persian, right-to-left, with Persian numbers (`۰-۹`) and clean typography.

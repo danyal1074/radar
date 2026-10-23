@@ -7,7 +7,6 @@ import {
   Camera,
   Car,
   Check,
-  CheckCircle2,
   Clock,
   Compass,
   Eye,
@@ -70,16 +69,6 @@ export default async function Home() {
                   <Eye className="size-4 text-slate-500" />
                   <span>دیدن قیمت‌ها</span>
                 </a>
-              </div>
-              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-semibold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="size-4 text-emerald-600" />
-                  بدون کارت بانکی
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="size-4 text-emerald-600" />
-                  قیمت‌ها به تومانِ خوانا
-                </span>
               </div>
             </div>
             <div className="rise-in lg:col-span-5" style={{ animationDelay: "120ms" }}>

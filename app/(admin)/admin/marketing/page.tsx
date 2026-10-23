@@ -14,13 +14,19 @@ export const revalidate = 0;
 export default async function AdminMarketingPage() {
   const ctx = await requireContext({ admin: true });
 
-  const [config, listings, logs, divarSentToday, sheypoorSentToday] = await Promise.all([
+  const [config, rawListings, logs, divarSentToday, sheypoorSentToday] = await Promise.all([
     getMarketingConfig(),
-    ctx.store.listListings({ limit: 500 }),
-    getMarketingLogs(50),
+    ctx.store.listListings(),
+    getMarketingLogs(100),
     getTodaySentCount("divar"),
     getTodaySentCount("sheypoor"),
   ]);
+
+  // دقیقاً همان آگهی‌های پایش‌شده رادار (محدود به مشهد و تربت حیدریه)
+  const listings = rawListings.filter((l) => {
+    const c = l.city || "";
+    return c.includes("مشهد") || c.includes("تربت");
+  });
 
   return (
     <MarketingClient

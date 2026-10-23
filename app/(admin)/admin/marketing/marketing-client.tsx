@@ -78,6 +78,7 @@ export function MarketingClient({
   // Filter state for listings
   const [sourceFilter, setSourceFilter] = useState<"all" | "divar" | "sheypoor">("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
+  const [visibleListingsCount, setVisibleListingsCount] = useState(50);
 
   // Notifications / feedback
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -97,6 +98,9 @@ export function MarketingClient({
   };
 
   const alreadyMessagedSet = new Set(logs.filter((l) => l.status === "sent").map((l) => l.postToken));
+
+  const torbatCount = listings.filter((l) => (l.city || "").includes("تربت")).length;
+  const mashhadCount = listings.filter((l) => (l.city || "").includes("مشهد")).length;
 
   // تطبیق نام شهر با در نظر گرفتن نیم‌فاصله و فاصله استاندارد
   const isCityMatch = (listingCity?: string | null, filter?: string) => {
@@ -473,9 +477,46 @@ export function MarketingClient({
             </div>
           )}
 
+          {/* دکمه‌های انتخاب سریع شهر */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => setCityFilter("all")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                cityFilter === "all"
+                  ? "bg-brand-600 text-white shadow-2xs"
+                  : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
+              }`}
+            >
+              همه آگهی‌های رادار ({listings.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCityFilter("تربت")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                cityFilter === "تربت"
+                  ? "bg-brand-600 text-white shadow-2xs"
+                  : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
+              }`}
+            >
+              📍 فقط تربت حیدریه ({torbatCount} آگهی)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCityFilter("مشهد")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                cityFilter === "مشهد"
+                  ? "bg-brand-600 text-white shadow-2xs"
+                  : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
+              }`}
+            >
+              📍 فقط مشهد ({mashhadCount} آگهی)
+            </button>
+          </div>
+
           {/* جدول یا لیست آگهی‌ها */}
           <div className="space-y-2.5">
-            {filteredListings.slice(0, 50).map((listing) => {
+            {filteredListings.slice(0, visibleListingsCount).map((listing) => {
               const isSent = alreadyMessagedSet.has(listing.source_post_id);
               const isCurrentlySending = sendingId === listing.id;
 
@@ -554,6 +595,20 @@ export function MarketingClient({
               );
             })}
           </div>
+
+          {/* دکمه بارگذاری آگهی‌های بیشتر */}
+          {visibleListingsCount < filteredListings.length && (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setVisibleListingsCount((p) => p + 50)}
+                className="text-xs"
+              >
+                نمایش ۵۰ آگهی بیشتر (در حال نمایش {Math.min(visibleListingsCount, filteredListings.length)} از {filteredListings.length})
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,21 +1,13 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { DANIAL_ADMIN_UUID, DEFAULT_ADMIN_BALE_CHATS, getTargetChatsForUser, getUserIdByChatId, setBotSubscriberStorageForTests } from "@/lib/bot-linker";
 
 describe("manager Bale chat access", () => {
-  let dir = "";
-
-  afterEach(async () => {
+  afterEach(() => {
     setBotSubscriberStorageForTests(null);
-    if (dir) await rm(dir, { recursive: true, force: true });
-    dir = "";
   });
 
   it("treats unlinked configured admin Bale chats as the manager account", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "radar-admin-"));
-    setBotSubscriberStorageForTests(path.join(dir, "empty.json"));
+    setBotSubscriberStorageForTests("missing");
     expect(DEFAULT_ADMIN_BALE_CHATS.length).toBeGreaterThan(0);
     expect(DEFAULT_ADMIN_BALE_CHATS).not.toContain("2079437548");
     for (const chatId of DEFAULT_ADMIN_BALE_CHATS) {

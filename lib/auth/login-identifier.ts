@@ -98,7 +98,9 @@ function pushEmail(out: string[], value: string | null | undefined) {
 }
 
 function compact(value: string | null | undefined): string {
-  return normalizeLoginIdentifier(value ?? "").replace(/[.\-_]/g, "");
+  return normalizeLoginIdentifier(value ?? "")
+    .replace(/[‌‏‎]/g, "")
+    .replace(/[.\-_]/g, "");
 }
 
 export function usernameMatchesProfile(username: string, hint: LoginProfileHint): boolean {

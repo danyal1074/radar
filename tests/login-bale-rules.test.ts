@@ -1,16 +1,15 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { evaluateRule, ruleMatchesListing } from "@/lib/alerts/engine";
-import { loginAuthEmails, usernameProfileOrFilter } from "@/lib/auth/login-identifier";
+import { loginAuthEmails, usernameMatchesProfile, usernameProfileOrFilter } from "@/lib/auth/login-identifier";
 import {
   DANIAL_ADMIN_UUID,
   DEFAULT_ADMIN_BALE_CHATS,
+  getBotSubscriberStorageForTests,
   getUserIdByChatId,
   linkChatWithCode,
   registerDirectChat,
   setBotSubscriberStorageForTests,
+  type BotSubscriberFile,
 } from "@/lib/bot-linker";
 import { decodeRuleFlags, encodeRuleForLiveSchema } from "@/lib/db/rule-columns";
 import type { Listing, WatchRule, WatchRuleInput } from "@/lib/types";
@@ -54,6 +53,14 @@ describe("login identifier resolution", () => {
     expect(spaced).not.toContain("%دانیال%حقدادی%");
     expect(usernameProfileOrFilter("علی")).not.toContain("%علی%");
     expect(usernameProfileOrFilter("09120000991")).toBeNull();
+  });
+
+  it("treats a spaced Persian name as the same as one stored with ZWNJ", () => {
+    expect(usernameMatchesProfile("دانیال حقدادی", {
+      id: "u",
+      email: "x@example.com",
+      fullName: "دانیال‌حقدادی",
+    })).toBe(true);
   });
 
   it("signs an inbox address in with the auth email stored for that profile", () => {
@@ -180,26 +187,18 @@ describe("live watch_rules payload", () => {
 });
 
 describe("chat link ownership", () => {
-  let dir = "";
-
-  afterEach(async () => {
+  afterEach(() => {
     setBotSubscriberStorageForTests(null);
-    if (dir) await rm(dir, { recursive: true, force: true });
-    dir = "";
   });
 
-  async function useFile(data: unknown) {
-    dir = await mkdtemp(path.join(tmpdir(), "radar-bots-"));
-    const file = path.join(dir, "bot_subscribers.json");
-    await writeFile(file, JSON.stringify(data));
-    setBotSubscriberStorageForTests(file);
-    return file;
+  function useMemory(data: BotSubscriberFile) {
+    setBotSubscriberStorageForTests(structuredClone(data));
   }
 
   it("uses the newer account when the owner's Bale chat is on two rows", async () => {
     const oldId = "d5272512-cced-4a71-84db-c3f0100e8a15";
     const newId = "e8da9d5d-6f5a-44eb-99c2-377179fc0572";
-    await useFile({
+    useMemory({
       codes: {},
       subscribers: {
         [oldId]: { userId: oldId, baleChatId: "555001", linkedAt: "2026-10-20T09:30:00.000Z" },
@@ -210,7 +209,7 @@ describe("chat link ownership", () => {
   });
 
   it("prefers the newest link when two accounts share a chat id", async () => {
-    await useFile({
+    useMemory({
       codes: {},
       subscribers: {
         "user-old": { userId: "user-old", baleChatId: "555001", linkedAt: "2026-10-20T00:00:00.000Z" },
@@ -221,7 +220,7 @@ describe("chat link ownership", () => {
   });
 
   it("removes the chat id from every other account when linking", async () => {
-    const file = await useFile({
+    useMemory({
       codes: { "654321": "user-new" },
       subscribers: {
         "user-old": { userId: "user-old", baleChatId: "555001", linkedAt: "2026-10-20T00:00:00.000Z", userName: "old" },
@@ -231,13 +230,13 @@ describe("chat link ownership", () => {
     expect(linked.success).toBe(true);
     expect(linked.userId).toBe("user-new");
     expect(await getUserIdByChatId("555001", "bale")).toBe("user-new");
-    const saved = JSON.parse(await readFile(file, "utf8"));
-    expect(saved.subscribers["user-old"].baleChatId).toBeUndefined();
-    expect(saved.subscribers["user-new"].baleChatId).toBe("555001");
+    const saved = getBotSubscriberStorageForTests();
+    expect(saved?.subscribers["user-old"].baleChatId).toBeUndefined();
+    expect(saved?.subscribers["user-new"].baleChatId).toBe("555001");
   });
 
   it("does not treat the typo admin chat id as the manager", async () => {
-    await useFile({ codes: {}, subscribers: {} });
+    useMemory({ codes: {}, subscribers: {} });
     expect(DEFAULT_ADMIN_BALE_CHATS).not.toContain("2079437548");
     expect(await getUserIdByChatId("2079437548", "bale")).toBeNull();
     expect(await getUserIdByChatId("772511114", "bale")).toBe(DANIAL_ADMIN_UUID);

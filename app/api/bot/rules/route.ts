@@ -17,19 +17,19 @@ function getServiceClient() {
 const DANIAL_ADMIN_UUID = "97375339-be50-403e-be7b-0aee1b7c2d99";
 const DANIAL_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
 
-/** یافتن یا ساخت خودکار حساب کاربری برای کاربر پیام‌رسان‌ها با ۱۴ روز اشتراک رایگان */
-async function resolveOrCreateUserId(
+/** یافتن حساب کاربری ثبت‌شده متصل به کاربر پیام‌رسان */
+async function findExistingUserId(
   chatId: string,
   messenger: "bale" | "telegram" | "rubika" | "eitaa",
   userName?: string,
-): Promise<string> {
+): Promise<string | null> {
   // مدیر کل سامانه (دانیال)
   if (String(chatId) === "772511114" || String(chatId) === DANIAL_RUBIKA_CHAT) {
     await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
     return DANIAL_ADMIN_UUID;
   }
 
-  // ۱. بررسی اشتراک‌های قبلی
+  // ۱. بررسی چت‌آیدی‌های متصل
   const existingUserId = await getUserIdByChatId(chatId, messenger);
   if (existingUserId && existingUserId !== "admin") {
     return existingUserId;
@@ -37,63 +37,27 @@ async function resolveOrCreateUserId(
 
   const sb = getServiceClient();
   if (sb) {
-    // ۲. بررسی در پروفایل‌های Supabase
+    // ۲. بررسی در پروفایل‌های دیتابیس
+    const colName =
+      messenger === "rubika"
+        ? "rubika_chat_id"
+        : messenger === "telegram"
+        ? "telegram_chat_id"
+        : "bale_chat_id";
+
     const { data: profile } = await sb
       .from("profiles")
       .select("id")
-      .eq("bale_chat_id", String(chatId))
+      .eq(colName, String(chatId))
       .maybeSingle();
 
     if (profile?.id) {
       await registerDirectChat(profile.id, chatId, messenger, userName);
       return profile.id;
     }
-
-    // ۳. ایجاد خودکار کاربر جدید در سیستم با دوره آزمایشی ۱۴ روزه
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const mockEmail = `bale_${chatId}_${randomSuffix}@radar.local`;
-    const mockPassword = `BaleRadar_${chatId}_${Date.now()}`;
-
-    const { data: newUser, error: createErr } = await sb.auth.admin.createUser({
-      email: mockEmail,
-      password: mockPassword,
-      email_confirm: true,
-      user_metadata: {
-        display_name: userName || `کاربر بله (${chatId})`,
-        messenger,
-        chat_id: String(chatId),
-      },
-    });
-
-    if (newUser?.user?.id) {
-      const uid = newUser.user.id;
-      // ایجاد پروفایل
-      await sb.from("profiles").upsert({
-        id: uid,
-        email: mockEmail,
-        display_name: userName || `کاربر بله (${chatId})`,
-        bale_chat_id: String(chatId),
-        role: "user",
-      });
-
-      // فعال‌سازی اشتراک ۱۴ روزه رایگان
-      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-      await sb.from("subscriptions").upsert({
-        user_id: uid,
-        plan_tier: "trial",
-        status: "active",
-        current_period_end: expiresAt,
-      });
-
-      await registerDirectChat(uid, chatId, messenger, userName);
-      return uid;
-    }
   }
 
-  // Fallback برای حالت توسعه بدون سوپابیس
-  const fallbackId = `user_${messenger}_${chatId}`;
-  await registerDirectChat(fallbackId, chatId, messenger, userName);
-  return fallbackId;
+  return null;
 }
 
 export async function GET(req: Request) {
@@ -106,18 +70,43 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, message: "شناسه چت الزامی است" }, { status: 400 });
     }
 
-    const userId = await resolveOrCreateUserId(chatId, messenger);
+    const userId = await findExistingUserId(chatId, messenger);
+    if (!userId) {
+      return NextResponse.json({
+        ok: true,
+        registered: false,
+        hasAccess: false,
+        message: "حساب کاربری یافت نشد. لطفاً ابتدا در سامانه ثبت‌نام کنید.",
+      });
+    }
+
     const store = await getServiceStore();
-    const rules = await store.listRules(userId);
     const profile = await store.getProfile(userId);
     const sub = await store.getSubscription(userId);
     const access = resolveAccess(sub);
     const plan = PLANS[access.plan];
+
+    const isPlanExpired = !access.hasAccess && profile?.role !== "admin" && userId !== DANIAL_ADMIN_UUID;
+    if (isPlanExpired) {
+      return NextResponse.json({
+        ok: true,
+        registered: true,
+        hasAccess: false,
+        planExpired: true,
+        planName: plan.name,
+        message: "اشتراک شما به پایان رسیده است. برای ادامه، لطفاً پلن خود را تمدید فرمایید.",
+      });
+    }
+
+    const rules = await store.listRules(userId);
     const allowedCitiesCount = (profile?.role === "admin" || userId === DANIAL_ADMIN_UUID) ? 2 : plan.allowedCitiesCount;
     const userCity = profile?.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
 
     return NextResponse.json({
       ok: true,
+      registered: true,
+      hasAccess: true,
+      planExpired: false,
       userId,
       userCity,
       allowedCitiesCount,
@@ -139,12 +128,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "اطلاعات فیلتر ناقص است" }, { status: 400 });
     }
 
-    const userId = await resolveOrCreateUserId(String(chatId), messenger || "bale", userName);
+    const userId = await findExistingUserId(String(chatId), messenger || "bale", userName);
+    if (!userId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          needsRegistration: true,
+          message: "برای استفاده از ربات و تعریف فیلتر، ابتدا باید در سامانه ثبت‌نام فرمایید.",
+        },
+        { status: 403 }
+      );
+    }
+
     const store = await getServiceStore();
     const profile = await store.getProfile(userId);
     const sub = await store.getSubscription(userId);
     const access = resolveAccess(sub);
     const plan = PLANS[access.plan];
+
+    if (!access.hasAccess && profile?.role !== "admin" && userId !== DANIAL_ADMIN_UUID) {
+      return NextResponse.json(
+        {
+          ok: false,
+          planExpired: true,
+          message: "اشتراک شما به پایان رسیده است. لطفاً برای تمدید اشتراک به سایت مراجعه کنید.",
+        },
+        { status: 403 }
+      );
+    }
+
     const allowedCitiesCount = (profile?.role === "admin" || userId === DANIAL_ADMIN_UUID) ? 2 : plan.allowedCitiesCount;
     const userCity = profile?.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
 
@@ -192,7 +204,11 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ ok: false, message: "شناسه فیلتر الزامی است" }, { status: 400 });
     }
 
-    const userId = await resolveOrCreateUserId(String(chatId), messenger || "bale");
+    const userId = await findExistingUserId(String(chatId), messenger || "bale");
+    if (!userId) {
+      return NextResponse.json({ ok: false, message: "کاربر یافت نشد" }, { status: 403 });
+    }
+
     const store = await getServiceStore();
     await store.deleteRule(userId, ruleId);
 

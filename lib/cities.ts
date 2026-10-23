@@ -56,9 +56,11 @@ export function getCityBySlug(slug: string): KhorasanCity | undefined {
 
 export function getCityByNameFa(name: string): KhorasanCity | undefined {
   if (!name) return undefined;
-  return ALL_KHORASAN_CITIES.find(
-    (c) => name.includes(c.nameFa) || c.nameFa.includes(name),
-  );
+  const clean = name.replace(/[\s\u200c]/g, "");
+  return ALL_KHORASAN_CITIES.find((c) => {
+    const cleanC = c.nameFa.replace(/[\s\u200c]/g, "");
+    return clean.includes(cleanC) || cleanC.includes(clean);
+  });
 }
 
 export function normalizeCityNameFa(input?: string | null): string {

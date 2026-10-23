@@ -29,7 +29,25 @@ logger = logging.getLogger(__name__)
 BALE_TOKEN = config.BALE_BOT_TOKEN
 API_BASE = "http://127.0.0.1:3000/api/bot"
 
-# منوی اصلی و ثابت پایین صفحه
+# منوی کاربران مهمان (ثبت‌نام‌نشده)
+GUEST_KEYBOARD = {
+    "keyboard": [
+        [{"text": "📝 ثبت‌نام در سامانه"}, {"text": "🔗 اتصال به حساب سایت"}],
+        [{"text": "❓ راهنما و معرفی سامانه"}],
+    ],
+    "resize_keyboard": True,
+}
+
+# منوی کاربران با اشتراک منقضی‌شده
+EXPIRED_KEYBOARD = {
+    "keyboard": [
+        [{"text": "💳 تمدید اشتراک در سایت"}, {"text": "🔗 اتصال مجدد"}],
+        [{"text": "❓ راهنما و پشتیبانی"}],
+    ],
+    "resize_keyboard": True,
+}
+
+# منوی اصلی و ثابت پایین صفحه برای کاربران فعال
 MAIN_KEYBOARD = {
     "keyboard": [
         [{"text": "➕ تعریف فیلتر خودرو (شکار جدید)"}, {"text": "📋 فیلترهای فعال من"}],
@@ -116,6 +134,60 @@ async def send_bale_reply(
         await client.post(url, json=payload, timeout=8.0)
     except Exception as e:
         logger.error(f"خطا در ارسال پیام به بله: {e}")
+
+
+async def check_user_access(client: httpx.AsyncClient, chat_id: int | str) -> dict:
+    """بررسی وضعیت عضویت و اشتراک کاربر در سامانه"""
+    try:
+        res = await client.get(f"{API_BASE}/rules?chatId={chat_id}&messenger=bale", timeout=8.0)
+        if res.status_code == 200:
+            return res.json()
+        return {"registered": False, "hasAccess": False}
+    except Exception as e:
+        logger.error(f"خطا در بررسی دسترسی کاربر: {e}")
+        return {"registered": False, "hasAccess": False}
+
+
+async def send_registration_prompt(
+    client: httpx.AsyncClient, chat_id: int | str, user_name: str
+) -> None:
+    """ارسال پیام دعوت به ثبت‌نام برای کاربران جدید یا متصل‌نشده"""
+    text = (
+        f"👋 <b>سلام {user_name} عزیز!</b>\n"
+        f"به ربات هوشمند شکار خودرو <b>«رادار»</b> خوش آمدید 🚗✨\n\n"
+        f"این ربات هوش مصنوعی، تمام آگهی‌های خودرو در دیوار و شیپور تربت‌حیدریه و مشهد را لحظه‌ای رصد کرده و خودروهای <b>زیر قیمت بازار</b> را بلافاصله برای شما شکار می‌کند.\n\n"
+        f"⚠️ <b>برای فعال‌سازی و دریافت هشدارهای شکار، ابتدا باید در سامانه ثبت‌نام کنید:</b>\n"
+        f"🎁 <i>پس از ثبت‌نام، اشتراک رایگان به صورت خودکار برای شما فعال خواهد شد.</i>\n\n"
+        f"👇 لطفاً روی دکمه ثبت‌نام زیر بزنید:"
+    )
+    markup = {
+        "inline_keyboard": [
+            [{"text": "📝 ثبت‌نام رایگان در سامانه رادار خودرو", "url": f"https://radar.digiral.ir/register?bale_chat_id={chat_id}"}],
+            [{"text": "🔗 قبلاً در سایت ثبت‌نام کرده‌ام (اتصال با کد)", "callback_data": "show_link_guide"}],
+        ]
+    }
+    await send_bale_reply(client, chat_id, text, GUEST_KEYBOARD)
+    await send_bale_reply(client, chat_id, "دکمه ثبت‌نام سریع 👇", markup)
+
+
+async def send_expired_prompt(
+    client: httpx.AsyncClient, chat_id: int | str, plan_name: str = "آزمایشی"
+) -> None:
+    """ارسال اخطار اتمام اشتراک و درخواست تمدید"""
+    text = (
+        f"⚠️ <b>اشتراک سامانه رادار شما به پایان رسیده است!</b>\n\n"
+        f"نوع پلن قبلی: <b>{plan_name}</b>\n\n"
+        f"برای ادامه دریافت هشدارهای لحظه‌ای خودروهای زیر قیمت و استفاده از ربات، لطفاً اشتراک خود را تمدید فرمایید:\n\n"
+        f"💳 <b>تمدید آنلاین در سایت:</b>\n"
+        f"https://radar.digiral.ir/settings/billing"
+    )
+    markup = {
+        "inline_keyboard": [
+            [{"text": "💳 تمدید یا ارتقای اشتراک در سایت", "url": "https://radar.digiral.ir/settings/billing"}],
+        ]
+    }
+    await send_bale_reply(client, chat_id, text, EXPIRED_KEYBOARD)
+    await send_bale_reply(client, chat_id, "برای تمدید اشتراک روی دکمه زیر بزنید 👇", markup)
 
 
 async def answer_bale_callback(
@@ -362,6 +434,27 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
     # پاسخ فوری برای رفع حالت لودینگ
     await answer_bale_callback(client, cb_id)
 
+    # نمایش راهنمای اتصال حساب
+    if data == "show_link_guide":
+        guide = (
+            "🔗 <b>راهنمای اتصال حساب سایت:</b>\n\n"
+            "۱. ابتدا وارد سایت <b>https://radar.digiral.ir</b> شوید و وارد حسابتان شوید.\n"
+            "۲. به صفحه <b>«تنظیمات هشدار»</b> بروید.\n"
+            "۳. در کادر اتصال ربات، <b>کد ۶ رقمی اختصاصی</b> خود را کپی کنید.\n"
+            "۴. فقط همان کد را در همین صفحه چت ارسال کنید تا حسابتان متصل شود."
+        )
+        await send_bale_reply(client, chat_id, guide)
+        return
+
+    # بررسی ثبت‌نام و فعال بودن اشتراک قبل از عملیات
+    user_access = await check_user_access(client, chat_id)
+    if not user_access.get("registered"):
+        await send_registration_prompt(client, chat_id, user_name)
+        return
+    if user_access.get("planExpired"):
+        await send_expired_prompt(client, chat_id, user_access.get("planName", "آزمایشی"))
+        return
+
     # لغو فرآیند
     if data == "cancel_wizard":
         USER_SESSIONS.pop(str(chat_id), None)
@@ -557,61 +650,82 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
                     f"🎉 <b>تبریک! حساب کاربری شما با موفقیت متصل شد.</b>\n\n"
                     f"👤 نام کاربر: <b>{user_name}</b>\n"
                     f"📍 پایش آنی آگهی‌های خودروی دیوار و شیپور\n\n"
-                    f"🔔 تمام هشدارهای اختصاصی و فیلترهای تعریف‌شده در سایت فوراً به این چت ارسال می‌شوند."
+                    f"🔔 از این پس تمام آگهی‌های شکار مطابق فیلترهای شما فوراً در این چت ارسال می‌شوند."
                 )
+                await send_bale_reply(client, chat_id, reply, MAIN_KEYBOARD)
             else:
                 reply = f"❌ {data.get('message', 'کد اتصال نامعتبر است.')}"
+                await send_bale_reply(client, chat_id, reply)
         except Exception as e:
             logger.error(f"خطا در اتصال بله: {e}")
             reply = "⚠️ خطا در ارتباط با سرور سایت. لطفاً بعداً تلاش فرمایید."
-
-        await send_bale_reply(client, chat_id, reply)
+            await send_bale_reply(client, chat_id, reply)
         return
 
-    # ۲. دکمه «➕ تعریف فیلتر خودرو (شکار جدید)»
-    if text in ("➕ تعریف فیلتر خودرو (شکار جدید)", "/new", "تعریف فیلتر"):
-        await start_wizard_flow(client, chat_id, user_name)
+    # ۲. دکمه «📝 ثبت‌نام در سامانه»
+    if text in ("📝 ثبت‌نام در سامانه", "ثبت نام", "/register"):
+        await send_registration_prompt(client, chat_id, user_name)
         return
 
-    # ۳. دکمه «📋 فیلترهای فعال من»
-    if text in ("📋 فیلترهای فعال من", "/rules", "فیلترها"):
-        await handle_list_rules(client, chat_id)
+    # ۳. دکمه «💳 تمدید اشتراک در سایت»
+    if text in ("💳 تمدید اشتراک در سایت", "تمدید اشتراک", "تمدید"):
+        await send_expired_prompt(client, chat_id)
         return
 
-    # ۴. دکمه «🎯 آخرین فرصت‌های شکار»
-    if text in ("🎯 آخرین فرصت‌های شکار", "/hunt", "فرصت ها"):
-        await handle_opportunities(client, chat_id)
-        return
-
-    # ۵. دکمه «💳 وضعیت اشتراک من»
-    if text in ("💳 وضعیت اشتراک من", "/plan", "اشتراک"):
-        await handle_subscription_status(client, chat_id)
-        return
-
-    # ۶. دکمه «❓ راهنما و تنظیم صدا»
-    if text in ("❓ راهنما و تنظیم صدا", "/help", "راهنما"):
+    # ۴. دکمه «❓ راهنما و معرفی سامانه» یا تنظیم صدا
+    if text in ("❓ راهنما و معرفی سامانه", "❓ راهنما و تنظیم صدا", "/help", "راهنما"):
         await handle_sound_and_help(client, chat_id)
         return
 
-    # ۷. دکمه «🔗 اتصال به حساب سایت»
-    if text in ("🔗 اتصال به حساب سایت", "/link", "اتصال"):
+    # ۵. دکمه «🔗 اتصال به حساب سایت»
+    if text in ("🔗 اتصال به حساب سایت", "/link", "اتصال", "🔗 اتصال مجدد"):
         help_link = (
-            "🔗 <b>اتصال ربات به حساب سایت:</b>\n\n"
-            "۱. وارد سایت `radar.digiral.ir` شوید.\n"
-            "۲. در بخش هشدارهای من، <b>کد عددی اختصاصی</b> خود را کپی کنید.\n"
-            "۳. فقط همان عدد را اینجا بفرستید تا حساب کاربری شما متصل شود.\n\n"
-            "💡 اگر بدون ثبت‌نام در سایت هم از دکمه «تعریف فیلتر» استفاده کنید، به صورت خودکار یک اشتراک ۱۴ روزه رایگان برای شما فعال خواهد شد!"
+            "🔗 <b>اتصال ربات به حساب کاربری سایت:</b>\n\n"
+            "۱. ابتدا وارد سایت <b>https://radar.digiral.ir</b> شوید.\n"
+            "۲. از منو به بخش <b>«تنظیمات هشدار»</b> بروید.\n"
+            "۳. در کارت اتصال ربات، <b>کد ۶ رقمی</b> اختصاصی خود را بردارید.\n"
+            "۴. فقط همان عدد را اینجا بفرستید تا حسابتان فوراً متصل شود."
         )
         await send_bale_reply(client, chat_id, help_link)
         return
 
-    # پیام پیش‌فرض شروع یا متفرقه
+    # ۶. بررسی ثبت‌نام و فعال بودن اشتراک برای دسترسی به امکانات ربات
+    user_access = await check_user_access(client, chat_id)
+    if not user_access.get("registered"):
+        await send_registration_prompt(client, chat_id, user_name)
+        return
+
+    if user_access.get("planExpired"):
+        await send_expired_prompt(client, chat_id, user_access.get("planName", "آزمایشی"))
+        return
+
+    # ۷. دکمه «➕ تعریف فیلتر خودرو (شکار جدید)»
+    if text in ("➕ تعریف فیلتر خودرو (شکار جدید)", "/new", "تعریف فیلتر"):
+        await start_wizard_flow(client, chat_id, user_name)
+        return
+
+    # ۸. دکمه «📋 فیلترهای فعال من»
+    if text in ("📋 فیلترهای فعال من", "/rules", "فیلترها"):
+        await handle_list_rules(client, chat_id)
+        return
+
+    # ۹. دکمه «🎯 آخرین فرصت‌های شکار»
+    if text in ("🎯 آخرین فرصت‌های شکار", "/hunt", "فرصت ها"):
+        await handle_opportunities(client, chat_id)
+        return
+
+    # ۱۰. دکمه «💳 وضعیت اشتراک من»
+    if text in ("💳 وضعیت اشتراک من", "/plan", "اشتراک"):
+        await handle_subscription_status(client, chat_id)
+        return
+
+    # پیام پیش‌فرض شروع یا متفرقه برای کاربر فعال و ثبت‌نام‌شده
     welcome = (
         f"👋 <b>سلام {user_name} عزیز! به سامانه رادار هوشمند خودرو خوش آمدید.</b>\n\n"
-        "این سامانه آگهی‌های خودرو دیوار و شیپور تربت‌حیدریه و مشهد را لحظه‌به‌لحظه رصد کرده و آگهی‌های زیر قیمت و شکار را فوراً به شما می‌رساند.\n\n"
-        "👇 <b>برای شروع از دکمه‌های زیر استفاده کنید:</b>"
+        f"این سامانه آگهی‌های خودرو دیوار و شیپور تربت‌حیدریه و مشهد را لحظه‌به‌لحظه رصد کرده و آگهی‌های زیر قیمت و شکار را فوراً به شما می‌رساند.\n\n"
+        f"👇 <b>برای شروع از دکمه‌های منوی زیر استفاده کنید:</b>"
     )
-    await send_bale_reply(client, chat_id, welcome)
+    await send_bale_reply(client, chat_id, welcome, MAIN_KEYBOARD)
 
 
 async def run_bale_polling() -> None:

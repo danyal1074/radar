@@ -12,8 +12,14 @@ export async function GET(req: Request) {
     const listings = await store.listListings();
     let active = listings.filter((l) => l.source_status === "active");
 
-    if (requestedCity) {
-      active = active.filter((l) => (l.city || "").includes(requestedCity));
+    if (requestedCity && requestedCity !== "all") {
+      const cleanReq = requestedCity.replace(/[\s\u200c]/g, "").toLowerCase();
+      active = active.filter((l) => {
+        const c = (l.city || "").replace(/[\s\u200c]/g, "").toLowerCase();
+        if (cleanReq === "torbat" || cleanReq.includes("تربت")) return c.includes("تربت");
+        if (cleanReq === "mashhad" || cleanReq.includes("مشهد")) return c.includes("مشهد");
+        return c.includes(cleanReq) || cleanReq.includes(c);
+      });
     }
 
     const estimates = await store.latestEstimates(active.map((l) => l.id));

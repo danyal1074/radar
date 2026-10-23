@@ -11,22 +11,28 @@ export interface BotSubscriber {
   linkedAt: string;
 }
 
-interface StorageData {
+export interface BotSubscriberFile {
   codes: Record<string, string>; // code -> userId
   subscribers: Record<string, BotSubscriber>; // userId -> subscriber
 }
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const DEFAULT_FILE_PATH = path.join(DATA_DIR, "bot_subscribers.json");
-let filePathOverride: string | null = null;
+/**
+ * Static path only. A runtime path (temp file, path.dirname of a variable) makes
+ * Turbopack trace the project root and panic on venv/bin/python symlinks.
+ */
+const DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), ".data");
+const SUBSCRIBERS_FILE = path.join(DATA_DIR, "bot_subscribers.json");
 
-/** Tests point the subscriber file at a temp path so they never touch the live JSON. */
-export function setBotSubscriberStorageForTests(file: string | null): void {
-  filePathOverride = file;
+/** null = the real .data file. "missing" = file does not exist. Otherwise an in-memory copy for tests. */
+let testStorage: BotSubscriberFile | "missing" | null = null;
+
+/** Tests keep subscriber data in memory so they never point fs at an arbitrary path. */
+export function setBotSubscriberStorageForTests(data: BotSubscriberFile | "missing" | null): void {
+  testStorage = data;
 }
 
-function storageFile(): string {
-  return filePathOverride ?? DEFAULT_FILE_PATH;
+export function getBotSubscriberStorageForTests(): BotSubscriberFile | null {
+  return testStorage && testStorage !== "missing" ? testStorage : null;
 }
 
 /**
@@ -40,33 +46,38 @@ const DEFAULT_ADMIN_TELEGRAM_CHAT = "772511114";
 const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
 export const DANIAL_ADMIN_UUID = "97375339-be50-403e-be7b-0aee1b7c2d99";
 
-async function readStorage(): Promise<StorageData> {
+function emptySubscribers(): BotSubscriberFile["subscribers"] {
+  return {
+    admin: {
+      userId: "admin",
+      baleChatId: DEFAULT_ADMIN_BALE_CHAT,
+      rubikaChatId: DEFAULT_ADMIN_RUBIKA_CHAT,
+      userName: "دانیال حقدادی (مدیر)",
+      linkedAt: new Date().toISOString(),
+    },
+  };
+}
+
+async function readStorage(): Promise<BotSubscriberFile> {
+  if (testStorage === "missing") return { codes: {}, subscribers: emptySubscribers() };
+  if (testStorage) return testStorage;
   try {
-    const file = storageFile();
-    await fs.mkdir(path.dirname(file), { recursive: true });
-    const content = await fs.readFile(file, "utf-8");
-    return JSON.parse(content) as StorageData;
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    const content = await fs.readFile(SUBSCRIBERS_FILE, "utf-8");
+    return JSON.parse(content) as BotSubscriberFile;
   } catch {
-    return {
-      codes: {},
-      subscribers: {
-        admin: {
-          userId: "admin",
-          baleChatId: DEFAULT_ADMIN_BALE_CHAT,
-          rubikaChatId: DEFAULT_ADMIN_RUBIKA_CHAT,
-          userName: "دانیال حقدادی (مدیر)",
-          linkedAt: new Date().toISOString(),
-        },
-      },
-    };
+    return { codes: {}, subscribers: emptySubscribers() };
   }
 }
 
-async function writeStorage(data: StorageData): Promise<void> {
+async function writeStorage(data: BotSubscriberFile): Promise<void> {
+  if (testStorage !== null) {
+    testStorage = data;
+    return;
+  }
   try {
-    const file = storageFile();
-    await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, JSON.stringify(data, null, 2), "utf-8");
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     console.error("خطا در ذخیره داده‌های اتصال ربات:", err);
   }
@@ -121,7 +132,7 @@ export function findSubscriberByChatId(
 }
 
 function assignChat(
-  store: StorageData,
+  store: BotSubscriberFile,
   userId: string,
   chatId: string,
   messenger: BotMessenger,

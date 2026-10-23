@@ -122,6 +122,8 @@ export async function verifyDivarOtp(
           "User-Agent": USER_AGENT,
           Referer: "https://divar.ir/",
           Origin: "https://divar.ir",
+          rid: "passwordless",
+          "st-auth-mode": "header",
         },
         body: JSON.stringify({
           deviceId: session.deviceId,
@@ -133,31 +135,53 @@ export async function verifyDivarOtp(
 
       const data = await res.json().catch(() => ({}));
       console.log(`[Divar Auth] v8 response status: ${res.status}`, data);
+      console.log(`[Divar Auth] v8 headers:`, Object.fromEntries(res.headers.entries()));
 
       if (res.ok) {
-        // استخراج کوکی‌ها به روش استاندارد و سازگار با انوع ران‌تایم‌های Node
+        // ۱. جمع‌آوری تمام کوکی‌های ارسالی توسط سرور دیوار (پشتیبانی از SuperTokens و v8)
         const cookieList: string[] =
           typeof (res.headers as any).getSetCookie === "function"
             ? (res.headers as any).getSetCookie()
             : (res.headers.get("set-cookie") ? [res.headers.get("set-cookie")!] : []);
 
-        let cookieToken: string | null = null;
+        const candidates: string[] = [];
+
+        // الف) بررسی هدرهای مستقیم SuperTokens
+        const headerCandidates = [
+          res.headers.get("st-access-token"),
+          res.headers.get("sAccessToken"),
+          res.headers.get("authorization"),
+          res.headers.get("x-jwt"),
+        ];
+        for (const hc of headerCandidates) {
+          if (hc) candidates.push(hc);
+        }
+
+        // ب) پیمایش تمام کوکی‌ها برای یافتن توکن (token یا sAccessToken یا هر مقدار JWT دیگر)
         for (const cookieItem of cookieList) {
-          const m = cookieItem.match(/(?:^|;\s*)token=([^;]+)/i);
-          if (m && m[1]) {
-            cookieToken = decodeURIComponent(m[1]).replace(/^["']|["']$/g, "").trim();
-            break;
+          const parts = cookieItem.split(";");
+          for (const part of parts) {
+            const eqIdx = part.indexOf("=");
+            if (eqIdx !== -1) {
+              const k = part.substring(0, eqIdx).trim().toLowerCase();
+              const rawVal = part.substring(eqIdx + 1).trim();
+              const val = decodeURIComponent(rawVal).replace(/^["']|["']$/g, "").trim();
+              if (k === "token" || k === "saccesstoken" || k === "access_token") {
+                candidates.unshift(val);
+              } else if (isJwtToken(val)) {
+                candidates.push(val);
+              }
+            }
           }
         }
 
-        const candidates = [
-          cookieToken,
-          data.token,
-          data.access_token,
-          data.data?.token,
-          data.user_token,
-          data.credentials?.token,
-        ].filter(Boolean) as string[];
+        // ج) فیلدهای بدنه جیسون
+        if (data.token) candidates.push(data.token);
+        if (data.access_token) candidates.push(data.access_token);
+        if (data.data?.token) candidates.push(data.data.token);
+        if (data.credentials?.token) candidates.push(data.credentials.token);
+
+        console.log(`[Divar Auth] Found ${candidates.length} token candidates.`);
 
         for (const rawCand of candidates) {
           const cand = rawCand.replace(/^Basic\s+/i, "").replace(/^Bearer\s+/i, "").replace(/^["']|["']$/g, "").trim();
@@ -167,9 +191,10 @@ export async function verifyDivarOtp(
           }
         }
 
-        // اگر توکن با قالب خاصی آمد اما ریسپانس ۲۰۰ بود
-        if (cookieToken) {
-          return { ok: true, token: cookieToken, message: "ورود به حساب دیوار انجام شد." };
+        // در صورتی که توکن فرمت غیر JWT داشت اما ریسپانس ۲۰۰ بود و توکن پیدا شد
+        if (candidates.length > 0 && candidates[0].length >= 30) {
+          const firstCand = candidates[0].replace(/^Basic\s+/i, "").replace(/^Bearer\s+/i, "").replace(/^["']|["']$/g, "").trim();
+          return { ok: true, token: firstCand, message: "ورود به حساب دیوار انجام شد." };
         }
       } else {
         // سرور دیوار خطا داده است (کد اشتباه، نشست منقضی و غیره)
@@ -243,7 +268,7 @@ export async function sendDivarChatMessage(
   const commonHeaders = {
     "Content-Type": "application/json",
     Authorization: authHeader,
-    Cookie: `token=${rawToken}`,
+    Cookie: `token=${rawToken}; sAccessToken=${rawToken}`,
     "User-Agent": USER_AGENT,
     Referer: `https://divar.ir/chat/${cleanPostToken}`,
     Origin: "https://divar.ir",

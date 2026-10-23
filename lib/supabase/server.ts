@@ -18,6 +18,9 @@ export async function createUserClient() {
         }
       },
     },
+    global: {
+      fetch: (url, options) => fetch(url, { ...options, cache: "no-store" }),
+    },
   });
 }
 
@@ -25,5 +28,8 @@ export async function createUserClient() {
 export function createServiceClient() {
   return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (url, options) => fetch(url, { ...options, cache: "no-store" }),
+    },
   });
 }

@@ -11,6 +11,7 @@ interface InfiniteListingListProps {
   showScore: boolean;
   initialCount?: number;
   batchSize?: number;
+  filterKey?: string;
 }
 
 export function InfiniteListingList({
@@ -18,15 +19,23 @@ export function InfiniteListingList({
   showScore,
   initialCount = 15,
   batchSize = 15,
+  filterKey,
 }: InfiniteListingListProps) {
   const [visibleCount, setVisibleCount] = useState(initialCount);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const prevFilterKeyRef = useRef<string | undefined>(filterKey);
 
-  // اگر فیلترها تغییر کردند و لیست جدیدی پاس داده شد، مقدار نمایشی به اندازه اولیه بازگردد
+  // اگر فیلترها واقعاً تغییر کردند، اسکرول و تعداد نمایشی به مقدار اولیه بازگردد
+  // اما در صورت بروزرسانی زنده آگهی‌ها در پس‌زمینه، موقعیت کاربر حفظ می‌شود تا صفحه نپرد
   useEffect(() => {
-    setVisibleCount(initialCount);
-  }, [items, initialCount]);
+    if (prevFilterKeyRef.current !== filterKey) {
+      prevFilterKeyRef.current = filterKey;
+      setVisibleCount(initialCount);
+    } else {
+      setVisibleCount((prev) => Math.min(Math.max(prev, initialCount), items.length || initialCount));
+    }
+  }, [filterKey, items.length, initialCount]);
 
   const hasMore = visibleCount < items.length;
 

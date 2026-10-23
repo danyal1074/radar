@@ -34,8 +34,8 @@ import type { AdminUserRow, NewEstimate, NewNotification, PlatformStats, Store, 
 const CHUNK = 150;
 
 // High-performance in-memory cache for shared public data (listings & estimates)
-// Slashes database calls by 99% under high user concurrency
-const CACHE_TTL_MS = 15_000;
+// Slashes database calls by 99% under high user concurrency while keeping radar real-time
+const CACHE_TTL_MS = 5_000;
 let listingsCache: { data: Listing[]; expiresAt: number } | null = null;
 let estimatesCache: { data: Map<string, PriceEstimate>; expiresAt: number; idsHash: string } | null = null;
 

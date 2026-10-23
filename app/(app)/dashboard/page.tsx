@@ -11,6 +11,7 @@ import { opportunitiesFor } from "@/lib/views";
 
 export const metadata: Metadata = { title: "داشبورد" };
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const hoursAgoMs = (h: number) => Date.now() - h * 3_600_000;
 

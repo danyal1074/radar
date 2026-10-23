@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Radio } from "lucide-react";
 import { syncLiveDivarAction } from "@/app/actions";
+import { AutoRefresher } from "@/components/auto-refresher";
 import { FilterBar } from "@/components/filter-bar";
 import { InfiniteListingList } from "@/components/infinite-listing-list";
 import { Button, EmptyState, LinkButton, PageHeader } from "@/components/ui";
@@ -14,6 +15,7 @@ import { applyFilters, applySort, facets } from "@/lib/views";
 
 export const metadata: Metadata = { title: "رادار آگهی‌ها" };
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ListingsPage({ searchParams }: PageProps<"/listings">) {
   const sp = await searchParams;
@@ -25,6 +27,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
   const { filters, sort } = parseListingQuery(sp, plan.opportunityScore);
   const all = await loadViews(ctx);
   const filtered = applySort(applyFilters(all, filters), sort);
+  const filterKey = `${filters.city ?? ""}-${filters.make ?? ""}-${filters.model ?? ""}-${filters.q ?? ""}-${sort}`;
 
   return (
     <>
@@ -38,6 +41,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
           </Button>
         </form>
       </div>
+      <AutoRefresher intervalSeconds={30} totalCount={filtered.length} className="my-2" />
       <FilterBar
         filters={filters}
         sort={sort}
@@ -53,7 +57,13 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
           action={<LinkButton href="/listings" variant="secondary">پاک‌کردن فیلترها</LinkButton>}
         />
       ) : (
-        <InfiniteListingList items={filtered} showScore={plan.opportunityScore} initialCount={15} batchSize={15} />
+        <InfiniteListingList
+          items={filtered}
+          showScore={plan.opportunityScore}
+          initialCount={15}
+          batchSize={15}
+          filterKey={filterKey}
+        />
       )}
     </>
   );

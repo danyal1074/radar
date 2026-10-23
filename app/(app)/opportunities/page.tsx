@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
+import { AutoRefresher } from "@/components/auto-refresher";
 import { ListingCard } from "@/components/listing-card";
 import { InfiniteListingList } from "@/components/infinite-listing-list";
 import { Badge, EmptyState, LinkButton, PageHeader } from "@/components/ui";
@@ -12,6 +13,7 @@ import { opportunitiesFor } from "@/lib/views";
 
 export const metadata: Metadata = { title: "فرصت‌های خرید" };
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function OpportunitiesPage() {
   const ctx = await requireContext({ access: true });
@@ -52,6 +54,8 @@ export default async function OpportunitiesPage() {
           </LinkButton>
         }
       />
+
+      <AutoRefresher intervalSeconds={30} totalCount={totalOpps} className="my-2" />
 
       {totalOpps === 0 ? (
         <EmptyState
@@ -96,7 +100,13 @@ export default async function OpportunitiesPage() {
                 </h2>
                 <span className="text-xs text-muted">مرتب‌شده بر اساس بیشترین سود</span>
               </div>
-              <InfiniteListingList items={marketOpps} showScore={plan.opportunityScore} initialCount={15} batchSize={15} />
+              <InfiniteListingList
+                items={marketOpps}
+                showScore={plan.opportunityScore}
+                initialCount={15}
+                batchSize={15}
+                filterKey="opportunities"
+              />
             </div>
           )}
         </div>

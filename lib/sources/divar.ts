@@ -391,6 +391,7 @@ export class DivarListingSourceProvider implements ListingSourceProvider {
         "Accept-Language": "fa,en;q=0.9",
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {

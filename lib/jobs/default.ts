@@ -34,10 +34,14 @@ export function activeEstimator(): PriceEstimationProvider {
   return new BaravardPriceEstimationProvider();
 }
 
-export async function runDefaultPipeline(targetCity?: string) {
-  return runPipeline(await getServiceStore(), {
-    sources: activeSources(targetCity),
-    estimator: activeEstimator(),
-    estimationConfig: estimationConfig(),
-  });
+export async function runDefaultPipeline(targetCity?: string, options?: { force?: boolean }) {
+  return runPipeline(
+    await getServiceStore(),
+    {
+      sources: activeSources(targetCity),
+      estimator: activeEstimator(),
+      estimationConfig: estimationConfig(),
+    },
+    options,
+  );
 }

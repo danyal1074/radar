@@ -14,13 +14,13 @@ import { CopyBannerButton } from "./copy-banner-button";
 
 export function OpenOriginal({ url, size = "sm" }: { url: string | null; size?: "sm" | "lg" }) {
   const cls = clsx(
-    "inline-flex items-center justify-center gap-1.5 rounded-lg text-sm font-medium",
-    size === "lg" ? "min-h-11 px-5" : "min-h-10 px-3",
+    "inline-flex items-center justify-center gap-1 rounded-md text-xs font-semibold transition-colors",
+    size === "lg" ? "h-9 px-4" : "h-7 sm:h-8 px-2.5",
   );
   if (url && isAllowedListingUrl(url)) {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer nofollow" className={clsx(cls, "bg-brand-600 text-white hover:bg-brand-700")}>
-        <ExternalLink className="size-4" aria-hidden /> باز کردن آگهی اصلی
+        <ExternalLink className="size-3.5" aria-hidden /> باز کردن آگهی
       </a>
     );
   }
@@ -30,7 +30,7 @@ export function OpenOriginal({ url, size = "sm" }: { url: string | null; size?: 
       aria-disabled="true"
       title="برای این آگهی لینک اصلی ثبت نشده است"
     >
-      <ExternalLink className="size-4" aria-hidden /> لینک آگهی موجود نیست
+      <ExternalLink className="size-3.5" aria-hidden /> بدون لینک
     </span>
   );
 }
@@ -54,90 +54,79 @@ export function ListingCard({ view, showScore }: { view: ListingView; showScore:
   return (
     <article
       className={clsx(
-        "flex flex-col gap-4 rounded-xl border bg-surface p-4 sm:flex-row transition-all",
+        "flex flex-row items-stretch gap-2.5 sm:gap-3.5 rounded-xl border bg-surface p-2 sm:p-3 transition-all hover:border-line-strong hover:shadow-xs",
         isDivar
-          ? "border-s-4 border-s-red-500 border-line hover:border-red-400"
+          ? "border-s-[3px] border-s-red-500 border-line"
           : isSheypoor
-          ? "border-s-4 border-s-blue-500 border-line hover:border-blue-400"
+          ? "border-s-[3px] border-s-blue-500 border-line"
           : "border-line",
       )}
     >
-      <div className="flex h-44 w-full shrink-0 items-center justify-center rounded-xl bg-paper text-muted sm:h-auto sm:w-44 relative overflow-hidden shadow-xs">
+      {/* تصویر بندانگشتی فشرده */}
+      <div className="relative flex size-24 sm:size-28 md:w-32 md:h-28 shrink-0 items-center justify-center rounded-lg bg-paper text-muted overflow-hidden shadow-xs">
         {l.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={l.image_url} alt={l.title} className="size-full rounded-xl object-cover" loading="lazy" />
+          <img src={l.image_url} alt={l.title} className="size-full rounded-lg object-cover" loading="lazy" />
         ) : (
-          <span className="flex flex-col items-center gap-1.5 text-xs">
-            <ImageOff className="size-7" aria-hidden />
-            بدون تصویر
+          <span className="flex flex-col items-center gap-1 text-[10px] text-muted">
+            <ImageOff className="size-5" aria-hidden />
+            بدون عکس
           </span>
         )}
-        <div className="absolute top-2 start-2">
+        <div className="absolute top-1 start-1">
           {isDivar && (
-            <span className="inline-flex items-center rounded-md bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+            <span className="inline-flex items-center rounded bg-red-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
               دیوار
             </span>
           )}
           {isSheypoor && (
-            <span className="inline-flex items-center rounded-md bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+            <span className="inline-flex items-center rounded bg-blue-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
               شیپور
             </span>
           )}
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold">
+      {/* ستون محتوا و مشخصات فشرده */}
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-1.5">
+        <div>
+          {/* ردیف عنوان و برچسب‌ها */}
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <h3 className="truncate text-xs sm:text-sm font-bold text-ink">
               <Link href={`/listings/${l.id}`} className="hover:text-brand-700">
                 {l.title}
               </Link>
             </h3>
-            <p className="mt-0.5 text-xs text-muted">
-              {l.year ? `مدل ${formatYear(l.year)}` : "سال نامشخص"} · {formatKm(l.mileage_km)} · {l.city ?? "تربت‌حیدریه"}
-            </p>
+            <div className="flex flex-wrap items-center gap-1">
+              <Badge tone={labelTone} className="text-[10px] py-0 px-1.5">{OPPORTUNITY_LABEL[c.label]}</Badge>
+              {showScore && view.score !== null && <Badge tone="brand" className="text-[10px] py-0 px-1.5">امتیاز {formatNumber(view.score)}</Badge>}
+              {l.is_sample && <SampleBadge />}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {isDivar && (
-              <span className="inline-flex items-center rounded-md border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-600">
-                دیوار
-              </span>
-            )}
-            {isSheypoor && (
-              <span className="inline-flex items-center rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-600">
-                شیپور
-              </span>
-            )}
-            <Badge tone={labelTone}>{OPPORTUNITY_LABEL[c.label]}</Badge>
-            {showScore && view.score !== null && <Badge tone="brand">امتیاز {formatNumber(view.score)}</Badge>}
-            {analysis.tags.map((tag) => (
-              <span
-                key={tag}
-                className={clsx(
-                  "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
-                  tag.includes("🔥")
-                    ? "bg-amber-500/15 text-amber-700 border border-amber-300 dark:text-amber-300"
-                    : "bg-emerald-500/10 text-emerald-700 border border-emerald-300 dark:text-emerald-300",
-                )}
-              >
-                {tag}
-              </span>
-            ))}
-            {l.is_sample && <SampleBadge />}
-          </div>
+
+          {/* ردیف جزئیات خودرو: سال، کارکرد، شهر، زمان */}
+          <p className="mt-0.5 text-[11px] text-muted truncate">
+            {l.year ? `مدل ${formatYear(l.year)}` : "سال نامشخص"} · {formatKm(l.mileage_km)} · {l.city ?? "مشهد"} · {timeAgo(l.published_at ?? l.first_seen_at)}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <span className="text-lg font-bold">{formatToman(l.price_toman)}</span>
-          <span className="text-xs text-muted">
-            {SOURCE_LABEL[l.source]} · {timeAgo(l.published_at ?? l.first_seen_at)}
-          </span>
+        {/* قیمت و برچسب سود بازار */}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-sm sm:text-base font-extrabold text-ink">{formatToman(l.price_toman)}</span>
+          {c.diffPercent !== null && c.diffPercent > 0 && c.diffToman && c.diffToman > 0 && (
+            <span className="inline-flex items-center gap-1 rounded bg-good-500/10 border border-good-300 dark:border-good-800 px-1.5 py-0.5 text-[10px] font-bold text-good-700 dark:text-good-300">
+              🔥 {formatToman(c.diffToman)} زیر فی ({Math.round(c.diffPercent)}٪)
+            </span>
+          )}
         </div>
 
-        <PriceGauge price={l.price_toman} comparison={c} sample={estimate?.is_sample} />
+        {/* ارزیابی قیمت فشرده */}
+        <div className="w-full">
+          <PriceGauge price={l.price_toman} comparison={c} sample={estimate?.is_sample} />
+        </div>
 
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+        {/* دکمه‌های اقدام فشرده در یک ردیف */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           <OpenOriginal url={l.source_url} />
           <CopyBannerButton text={generateShowroomBanner(l)} />
           <form action={toggleSavedAction}>
@@ -145,36 +134,37 @@ export function ListingCard({ view, showScore }: { view: ListingView; showScore:
             <input type="hidden" name="save" value={saved ? "0" : "1"} />
             <button
               type="submit"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 text-sm hover:bg-paper"
+              className="inline-flex h-7 sm:h-8 items-center gap-1 rounded-md border border-line-strong bg-surface px-2 text-xs hover:bg-paper transition-colors"
               aria-pressed={saved}
+              title={saved ? "حذف از ذخیره‌ها" : "ذخیره آگهی"}
             >
-              {saved ? <BookmarkCheck className="size-4 text-brand-600" aria-hidden /> : <Bookmark className="size-4" aria-hidden />}
-              {saved ? "ذخیره شد" : "ذخیره"}
+              {saved ? <BookmarkCheck className="size-3.5 text-brand-600" aria-hidden /> : <Bookmark className="size-3.5" aria-hidden />}
+              <span className="hidden sm:inline">{saved ? "ذخیره" : "ذخیره"}</span>
             </button>
           </form>
           <form action={toggleFollowAction}>
             <input type="hidden" name="listingId" value={l.id} />
             <button
               type="submit"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 text-sm hover:bg-paper"
+              className="inline-flex h-7 sm:h-8 items-center gap-1 rounded-md border border-line-strong bg-surface px-2 text-xs hover:bg-paper transition-colors"
               aria-pressed={!!following}
+              title={following ? "توقف پیگیری" : "پیگیری آگهی"}
             >
-              {following ? <EyeOff className="size-4 text-brand-600" aria-hidden /> : <Eye className="size-4" aria-hidden />}
-              {following ? "توقف پیگیری" : "پیگیری"}
+              {following ? <EyeOff className="size-3.5 text-brand-600" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
+              <span className="hidden sm:inline">{following ? "توقف" : "پیگیری"}</span>
             </button>
           </form>
           <form action={deleteListingAction}>
             <input type="hidden" name="listingId" value={l.id} />
             <button
               type="submit"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-bad-600 hover:bg-bad-50"
+              className="inline-flex h-7 sm:h-8 items-center gap-1 rounded-md border border-line bg-surface px-2 text-xs text-bad-600 hover:bg-bad-50 transition-colors"
               title="حذف این آگهی"
             >
-              <Trash2 className="size-4" aria-hidden />
-              حذف
+              <Trash2 className="size-3.5" aria-hidden />
             </button>
           </form>
-          {followup && followup.status !== "none" && <Badge tone="brand">{FOLLOWUP_LABEL[followup.status]}</Badge>}
+          {followup && followup.status !== "none" && <Badge tone="brand" className="text-[10px] py-0 px-1.5">{FOLLOWUP_LABEL[followup.status]}</Badge>}
         </div>
       </div>
     </article>

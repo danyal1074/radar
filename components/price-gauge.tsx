@@ -48,30 +48,30 @@ export function PriceGauge({ price, comparison, sample }: { price: number; compa
   const tone = comparison.label === "opportunity" ? "bg-good-600" : cheaper ? "bg-brand-600" : "bg-muted";
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <div
-        className="relative h-6"
+        className="relative h-3.5"
         role="img"
         aria-label={`قیمت آگهی ${formatPercent(Math.abs(comparison.diffPercent))} ${cheaper ? "پایین‌تر" : "بالاتر"} از قیمت تخمینی است`}
       >
-        <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-line" />
+        <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line" />
         {/* span between listing price and estimate */}
         <div
-          className={clsx("absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full opacity-35", tone)}
+          className={clsx("absolute top-1/2 h-1 -translate-y-1/2 rounded-full opacity-40", tone)}
           style={{ insetInlineStart: `${Math.min(pos, 50)}%`, width: `${Math.abs(50 - pos)}%` }}
         />
         <div className="absolute inset-y-0 w-px bg-ink/60" style={{ insetInlineStart: "50%" }} />
         <div
-          className={clsx("absolute top-1/2 size-3.5 -translate-y-1/2 rounded-full border-2 border-surface shadow-[0_0_0_1px_var(--color-line-strong)]", tone)}
-          style={{ insetInlineStart: `calc(${pos}% - 7px)` }}
+          className={clsx("absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full border border-surface shadow-[0_0_0_1px_var(--color-line-strong)]", tone)}
+          style={{ insetInlineStart: `calc(${pos}% - 5px)` }}
         />
       </div>
-      <div className="flex items-baseline justify-between text-xs">
-        <span className={clsx("font-semibold", comparison.label === "opportunity" ? "text-good-700" : cheaper ? "text-brand-700" : "text-muted")}>
+      <div className="flex items-baseline justify-between text-[11px]">
+        <span className={clsx("font-semibold", comparison.label === "opportunity" ? "text-good-700 dark:text-good-400" : cheaper ? "text-brand-700 dark:text-brand-400" : "text-muted")}>
           {formatPercent(Math.abs(comparison.diffPercent))} {cheaper ? "ارزان‌تر" : "گران‌تر"} ({formatToman(Math.abs(comparison.diffToman ?? 0))})
         </span>
-        <span className="text-muted">
-          تخمین: {formatToman(est)}
+        <span className="text-muted text-[10px]">
+          کارشناسی: {formatToman(est)}
           {sample ? " (نمونه)" : ""}
         </span>
       </div>

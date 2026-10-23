@@ -65,7 +65,8 @@ export class SheypoorListingSourceProvider implements ListingSourceProvider {
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "fa,en;q=0.9",
         },
-        next: { revalidate: 60 },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
       });
 
       if (!res.ok) {

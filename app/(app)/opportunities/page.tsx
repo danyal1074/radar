@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
+import { InfiniteListingList } from "@/components/infinite-listing-list";
 import { Badge, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { requireContext } from "@/lib/auth";
 import { normalizeCityNameFa } from "@/lib/cities";
@@ -86,20 +87,16 @@ export default async function OpportunitiesPage() {
             </div>
           )}
 
-          {/* بخش ۲: سایر فرصت‌های شکار بازار تربت‌حیدریه */}
+          {/* بخش ۲: سایر فرصت‌های شکار بازار */}
           {marketOpps.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-bold text-ink">
-                  سایر فرصت‌های زیر قیمت بازار در تربت‌حیدریه ({formatNumber(marketOpps.length)} خودرو)
+                  سایر فرصت‌های زیر قیمت بازار ({formatNumber(marketOpps.length)} خودرو)
                 </h2>
                 <span className="text-xs text-muted">مرتب‌شده بر اساس بیشترین سود</span>
               </div>
-              <div className="space-y-3">
-                {marketOpps.map((view) => (
-                  <ListingCard key={view.listing.id} view={view} showScore={plan.opportunityScore} />
-                ))}
-              </div>
+              <InfiniteListingList items={marketOpps} showScore={plan.opportunityScore} initialCount={15} batchSize={15} />
             </div>
           )}
         </div>

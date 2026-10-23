@@ -35,9 +35,9 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
         <PageHeader title="رادار آگهی‌ها" description={`${formatNumber(filtered.length)} آگهی زنده از دیوار و شیپور`} />
         <form action={syncLiveDivarAction}>
           <input type="hidden" name="city" value={filters.city ?? ""} />
-          <Button type="submit" className="min-h-10 gap-2 bg-brand-600 text-white hover:bg-brand-700 text-xs sm:text-sm">
-            <Radio className="size-4 animate-pulse" />
-            شکار فوری جدیدترین آگهی‌ها
+          <Button type="submit" variant="secondary" className="text-xs sm:text-sm">
+            <Radio className="size-4" />
+            بروزرسانی آگهی‌ها
           </Button>
         </form>
       </div>

@@ -5,7 +5,7 @@ import { deleteListingAction, toggleFollowAction, toggleSavedAction } from "@/ap
 import { timeAgo } from "@/lib/dates";
 import { FOLLOWUP_LABEL, OPPORTUNITY_LABEL, SOURCE_LABEL } from "@/lib/labels";
 import { formatKm, formatNumber, formatToman, formatTomanReadable, formatYear } from "@/lib/money";
-import { analyzeListingContent, generateShowroomBanner } from "@/lib/listing-meta";
+import { generateShowroomBanner } from "@/lib/listing-meta";
 import type { ListingView } from "@/lib/types";
 import { isAllowedListingUrl } from "@/lib/validation";
 import { Badge, SampleBadge } from "./ui";
@@ -46,10 +46,29 @@ export function ListingCard({ view, showScore }: { view: ListingView; showScore:
       : c.label === "needs_review"
       ? "warn"
       : "neutral";
-  const analysis = analyzeListingContent(l.title, l.description || "");
 
   const isDivar = l.source === "divar";
   const isSheypoor = l.source === "sheypoor";
+  const market = c.fresh && c.estimatedToman ? c.estimatedToman : null;
+  const showProfit =
+    c.label !== "missing_zero" &&
+    market !== null &&
+    c.diffToman !== null &&
+    c.diffToman > 0 &&
+    c.diffPercent !== null &&
+    c.diffPercent > 0;
+
+  const priceBlock = (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-base font-black text-ink sm:text-lg">{formatTomanReadable(l.price_toman)}</span>
+      {market !== null && <span className="text-[11px] text-muted">ارزش بازار {formatTomanReadable(market)}</span>}
+      {showProfit && (
+        <span className="text-[11px] font-bold text-good-700">
+          سود {formatTomanReadable(c.diffToman)} · {Math.round(c.diffPercent ?? 0)}٪
+        </span>
+      )}
+    </div>
+  );
 
   return (
     <article
@@ -110,20 +129,12 @@ export function ListingCard({ view, showScore }: { view: ListingView; showScore:
           </p>
         </div>
 
-        {/* قیمت و برچسب سود بازار (خوانا بدون نیاز به شمارش صفرها) */}
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="text-sm sm:text-base font-extrabold text-ink">{formatTomanReadable(l.price_toman)}</span>
-          {c.diffPercent !== null && c.diffPercent > 0 && c.diffToman && c.diffToman > 0 && (
-            <span className="inline-flex items-center gap-1 rounded bg-good-500/10 border border-good-300 dark:border-good-800 px-1.5 py-0.5 text-[10px] font-bold text-good-700 dark:text-good-300">
-              🔥 {formatTomanReadable(c.diffToman)} سود ({Math.round(c.diffPercent)}٪)
-            </span>
-          )}
-        </div>
-
-        {/* ارزیابی قیمت فشرده */}
-        <div className="w-full">
-          <PriceGauge price={l.price_toman} comparison={c} sample={estimate?.is_sample} />
-        </div>
+        <div className="sm:hidden">{priceBlock}</div>
+        {!showProfit && (
+          <div className="w-full">
+            <PriceGauge price={l.price_toman} comparison={c} sample={estimate?.is_sample} />
+          </div>
+        )}
 
         {/* دکمه‌های اقدام فشرده در یک ردیف */}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -167,6 +178,7 @@ export function ListingCard({ view, showScore }: { view: ListingView; showScore:
           {followup && followup.status !== "none" && <Badge tone="brand" className="text-[10px] py-0 px-1.5">{FOLLOWUP_LABEL[followup.status]}</Badge>}
         </div>
       </div>
+      <div className="hidden w-40 shrink-0 flex-col justify-center border-s border-line ps-3 text-right sm:flex">{priceBlock}</div>
     </article>
   );
 }

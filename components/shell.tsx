@@ -33,20 +33,20 @@ export function Logo() {
 
 export async function Shell({ ctx, unread, locked, children }: { ctx: AppContext; unread: number; locked?: boolean; children: React.ReactNode }) {
   const items: NavItem[] = locked
-    ? [{ href: "/settings/billing", label: "اشتراک و پرداخت", icon: "billing" }]
+    ? [{ href: "/settings/billing", label: "اشتراک", icon: "billing" }]
     : [
         { href: "/dashboard", label: "داشبورد", icon: "dashboard" },
         { href: "/listings", label: "رادار آگهی‌ها", icon: "listings" },
         { href: "/opportunities", label: "فرصت‌های خرید", icon: "opportunities" },
-        { href: "/calculator", label: "ماشین‌حساب کارشناسی و سود", icon: "calculator" },
         { href: "/saved", label: "ذخیره‌شده‌ها", icon: "saved" },
         { href: "/notifications", label: "اعلان‌ها", icon: "notifications", badge: unread },
-        { href: "/settings/alerts", label: "هشدارهای من", icon: "alerts" },
-        { href: "/settings/billing", label: "اشتراک و پرداخت", icon: "billing" },
+        { href: "/settings/alerts", label: "هشدارها", icon: "alerts" },
+        { href: "/calculator", label: "ماشین‌حساب", icon: "calculator", quiet: true },
+        { href: "/settings/billing", label: "اشتراک", icon: "billing", quiet: true },
       ];
   if (ctx.profile.role === "admin") {
-    items.push({ href: "/admin", label: "پنل مدیریت", icon: "admin" });
-    items.push({ href: "/admin/prices", label: "قیمت روز خودروها", icon: "prices" });
+    items.push({ href: "/admin", label: "مدیریت", icon: "admin", quiet: true });
+    items.push({ href: "/admin/prices", label: "قیمت روز", icon: "prices", quiet: true });
   }
 
   const { access } = ctx;
@@ -58,9 +58,9 @@ export async function Shell({ ctx, unread, locked, children }: { ctx: AppContext
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur-md lg:hidden shadow-xs">
         <Logo />
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            تربت‌حیدریه زنده
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            مشهد · تربت
           </span>
           <Link
             href="/notifications"

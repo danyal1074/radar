@@ -23,8 +23,7 @@ export function PriceGauge({ price, comparison, sample }: { price: number; compa
     return (
       <div className="rounded-lg border border-amber-300/80 bg-amber-50/70 p-2.5 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
         <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
-          <span className="text-sm">⚠️</span>
-          <span>احتمال خطای ثبت قیمت: فروشنده یک یا دو صفر کم گذاشته است!</span>
+          <span>احتمال خطای ثبت قیمت: فروشنده یک یا دو صفر کم گذاشته است.</span>
         </div>
         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-amber-800/80 dark:text-amber-300/80">
           <span>مبلغ درج‌شده: <strong className="line-through">{formatToman(price)}</strong></span>

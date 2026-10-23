@@ -19,6 +19,7 @@ import {
   canonicalPhone,
   loginAuthEmails,
   normalizeLoginIdentifier,
+  usernameProfileOrFilter,
   type LoginProfileHint,
 } from "./login-identifier";
 
@@ -181,9 +182,9 @@ async function lookupLoginProfiles(identifier: string): Promise<LoginProfileHint
     if (clean.includes("@")) {
       query = query.ilike("email", clean);
     } else {
-      const safe = clean.replace(/[%_,()]/g, "");
-      if (!safe) return [];
-      query = query.or(`email.ilike.${safe}@%,full_name.ilike.${safe},business_name.ilike.${safe}`);
+      const orFilter = usernameProfileOrFilter(identifier);
+      if (!orFilter) return [];
+      query = query.or(orFilter);
     }
     const { data, error } = await query;
     if (error || !data?.length) return [];
@@ -213,7 +214,7 @@ export async function signIn(input: LoginInput): Promise<AuthResult> {
   const clean = normalizeLoginIdentifier(input.identifier);
 
   if (dataMode() === "supabase") {
-    const hints = await lookupLoginProfiles(clean);
+    const hints = await lookupLoginProfiles(input.identifier);
     const emails = loginAuthEmails(clean, hints);
     if (emails.length === 0) return { ok: false, error: generic };
     const { createUserClient } = await import("../supabase/server");

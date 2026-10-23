@@ -2,8 +2,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { ruleMatchesListing } from "@/lib/alerts/engine";
-import { loginAuthEmails } from "@/lib/auth/login-identifier";
+import { evaluateRule, ruleMatchesListing } from "@/lib/alerts/engine";
+import { loginAuthEmails, usernameProfileOrFilter } from "@/lib/auth/login-identifier";
 import {
   DANIAL_ADMIN_UUID,
   DEFAULT_ADMIN_BALE_CHATS,
@@ -18,14 +18,38 @@ import type { Listing, WatchRule, WatchRuleInput } from "@/lib/types";
 const OLD_GMAIL = "danyal.haghdady@gmail.com";
 
 describe("login identifier resolution", () => {
-  it("maps a phone to the synthetic auth email and ignores hardcoded accounts", () => {
-    expect(loginAuthEmails("09999212209")).toEqual(["09999212209@radar.digiral.ir"]);
-    expect(loginAuthEmails("۰۹۹۹۹۲۱۲۲۰۹")).toEqual(["09999212209@radar.digiral.ir"]);
-    expect(loginAuthEmails("9999212209")).toEqual(["09999212209@radar.digiral.ir"]);
-    expect(loginAuthEmails("0999 921 2209")).toEqual(["09999212209@radar.digiral.ir"]);
-    for (const id of ["09999212209", "danyal", "danyal1074", "danyal.haghdady", "admin"]) {
-      expect(loginAuthEmails(id).join(" ")).not.toContain(OLD_GMAIL);
-    }
+  it("tries the phone account first and the older inbox only as a fallback", () => {
+    const owner = ["09999212209@radar.digiral.ir", OLD_GMAIL];
+    expect(loginAuthEmails("09999212209")).toEqual(owner);
+    expect(loginAuthEmails("۰۹۹۹۹۲۱۲۲۰۹")).toEqual(owner);
+    expect(loginAuthEmails("9999212209")).toEqual(owner);
+    expect(loginAuthEmails("0999 921 2209")).toEqual(owner);
+    expect(loginAuthEmails("09120000991")).toEqual(["09120000991@radar.digiral.ir"]);
+  });
+
+  it("keeps the usernames that used to reach the older account", () => {
+    expect(loginAuthEmails("danyal")).toEqual([OLD_GMAIL]);
+    expect(loginAuthEmails("danyal1074")).toEqual([OLD_GMAIL]);
+    expect(loginAuthEmails("danyal.haghdady")).toEqual([OLD_GMAIL]);
+    expect(loginAuthEmails("admin")).toEqual(["admin@radar.ir"]);
+    expect(loginAuthEmails("danyal", [
+      {
+        id: "new-account",
+        email: "09999212209@radar.digiral.ir",
+        authEmail: "09999212209@radar.digiral.ir",
+        fullName: "danyal",
+      },
+    ])).toEqual(["09999212209@radar.digiral.ir", OLD_GMAIL]);
+  });
+
+  it("quotes dotted usernames in the profile filter and keeps spaces as wildcards", () => {
+    const dotted = usernameProfileOrFilter("danyal.haghdady");
+    expect(dotted).toBe(
+      'email.ilike."danyal.haghdady@%",full_name.ilike."%danyal.haghdady%",business_name.ilike."%danyal.haghdady%"',
+    );
+    expect(dotted).not.toContain("email.ilike.danyal.haghdady@%");
+    expect(usernameProfileOrFilter("دانیال حقدادی")).toContain('full_name.ilike."%دانیال%حقدادی%"');
+    expect(usernameProfileOrFilter("09120000991")).toBeNull();
   });
 
   it("signs an inbox address in with the auth email stored for that profile", () => {
@@ -46,7 +70,7 @@ describe("login identifier resolution", () => {
     expect(emails).not.toContain(OLD_GMAIL);
   });
 
-  it("resolves a username only from profile hints", () => {
+  it("resolves a username from profile hints before any legacy alias", () => {
     expect(loginAuthEmails("showroom", [
       {
         id: "u1",
@@ -55,7 +79,6 @@ describe("login identifier resolution", () => {
         businessName: "showroom",
       },
     ])).toEqual(["09120000000@radar.digiral.ir"]);
-    expect(loginAuthEmails("danyal")).toEqual([]);
   });
 });
 
@@ -79,6 +102,29 @@ describe("brand alias matching", () => {
     expect(ruleMatchesListing(rule({}), listing())).toBe(true);
     expect(ruleMatchesListing(rule({}), listing({ price_toman: 900_000_000 }))).toBe(true);
     expect(ruleMatchesListing(rule({}), listing({ price_toman: 900_000_001 }))).toBe(false);
+  });
+
+  it("matches the saved Bale rules named پراید تا 900 میلیون", () => {
+    const saved = rule({
+      name: "پراید تا 900 میلیون (همه آگهی‌ها)",
+      make: "سایپا",
+      model: "پراید",
+      price_max_toman: 900_000_000,
+      min_discount_percent: 0,
+      city: null,
+    });
+    const pride = listing({
+      make: "پراید",
+      model: "پراید 111 ساده",
+      title: "پراید۱۱۱",
+      price_toman: 850_000_000,
+      city: "مشهد",
+    });
+    expect(ruleMatchesListing(saved, pride)).toBe(true);
+    expect(evaluateRule(saved, pride, null).hit).toBe(true);
+    const cityRule = rule({ ...saved, city: "تربت‌حیدریه" });
+    expect(ruleMatchesListing(cityRule, listing({ city: "تربت حیدریه", price_toman: 850_000_000 }))).toBe(true);
+    expect(ruleMatchesListing(cityRule, pride)).toBe(false);
   });
 
   it("does not let a Pride model match a Tiba, and does not let Saipa match Peugeot", () => {
@@ -145,6 +191,19 @@ describe("chat link ownership", () => {
     setBotSubscriberStorageForTests(file);
     return file;
   }
+
+  it("uses the newer account when the owner's Bale chat is on two rows", async () => {
+    const oldId = "d5272512-cced-4a71-84db-c3f0100e8a15";
+    const newId = "e8da9d5d-6f5a-44eb-99c2-377179fc0572";
+    await useFile({
+      codes: {},
+      subscribers: {
+        [oldId]: { userId: oldId, baleChatId: "555001", linkedAt: "2026-10-20T09:30:00.000Z" },
+        [newId]: { userId: newId, baleChatId: "555001", linkedAt: "2026-10-23T19:25:56.000Z" },
+      },
+    });
+    expect(await getUserIdByChatId("555001", "bale")).toBe(newId);
+  });
 
   it("prefers the newest link when two accounts share a chat id", async () => {
     await useFile({

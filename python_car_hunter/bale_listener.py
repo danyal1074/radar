@@ -69,10 +69,13 @@ CITY_GRID = [
 CARS_GRID = [
     [{"text": "🚗 پراید", "callback_data": "car:pride"}, {"text": "🚗 پژو ۲۰۶", "callback_data": "car:206"}],
     [{"text": "🚗 پژو پارس", "callback_data": "car:pars"}, {"text": "🚗 پژو ۲۰۷", "callback_data": "car:207"}],
+    [{"text": "🚗 پژو ۴۰۵", "callback_data": "car:405"}, {"text": "🚗 سمند / سورن", "callback_data": "car:samand"}],
     [{"text": "🚗 دنا", "callback_data": "car:dena"}, {"text": "🚗 تارا", "callback_data": "car:tara"}],
     [{"text": "🚗 کوییک", "callback_data": "car:quick"}, {"text": "🚗 ساینا", "callback_data": "car:saina"}],
-    [{"text": "🚗 سمند / سورن", "callback_data": "car:samand"}, {"text": "🚗 شاهین", "callback_data": "car:shahin"}],
-    [{"text": "🚗 تیبا", "callback_data": "car:tiba"}, {"text": "🚘 تمام خودروها", "callback_data": "car:all"}],
+    [{"text": "🚗 تیبا", "callback_data": "car:tiba"}, {"text": "🚗 رانا", "callback_data": "car:ranah"}],
+    [{"text": "🚗 شاهین", "callback_data": "car:shahin"}, {"text": "🚗 هایما", "callback_data": "car:haima"}],
+    [{"text": "🚗 جک (JAC)", "callback_data": "car:jac"}, {"text": "🚗 ام‌وی‌ام / فونیکس", "callback_data": "car:mvm"}],
+    [{"text": "🚘 تمام خودروها (همه مدل‌ها)", "callback_data": "car:all"}],
     [{"text": "❌ انصراف", "callback_data": "cancel_wizard"}],
 ]
 
@@ -94,6 +97,7 @@ CAR_NAMES = {
     "206": ("ایران خودرو", "206", "پژو ۲۰۶"),
     "pars": ("ایران خودرو", "پارس", "پژو پارس"),
     "207": ("ایران خودرو", "207", "پژو ۲۰۷"),
+    "405": ("ایران خودرو", "405", "پژو ۴۰۵"),
     "dena": ("ایران خودرو", "دنا", "دنا"),
     "tara": ("ایران خودرو", "تارا", "تارا"),
     "quick": ("سایپا", "کوییک", "کوییک"),
@@ -101,6 +105,10 @@ CAR_NAMES = {
     "samand": ("ایران خودرو", "سمند", "سمند و سورن"),
     "shahin": ("سایپا", "شاهین", "شاهین"),
     "tiba": ("سایپا", "تیبا", "تیبا"),
+    "ranah": ("ایران خودرو", "رانا", "رانا"),
+    "haima": ("ایران خودرو", "هایما", "هایما"),
+    "jac": ("کرمان موتور", "جک", "جک (JAC)"),
+    "mvm": ("مدیران خودرو", "ام وی ام", "ام‌وی‌ام / فونیکس"),
     "all": ("", "", "تمام خودروها"),
 }
 
@@ -423,9 +431,23 @@ async def handle_subscription_status(client: httpx.AsyncClient, chat_id: int | s
         f"{city_status}\n"
         f"🚀 <b>سرعت دریافت پیام:</b> کمتر از ۶۰ ثانیه پس از تایید در دیوار و شیپور\n"
         f"🎯 <b>تعداد مجاز فیلترها:</b> نامحدود\n\n"
-        "برای تمدید یا ارتقای اشتراک می‌توانید از سایت `radar.digiral.ir` اقدام فرمایید."
+        "👇 برای تغییر شهر پایش یا اتصال حساب کاربری از کلیدهای زیر استفاده کنید:"
     )
-    await send_bale_reply(client, chat_id, status_text)
+    markup = {
+        "inline_keyboard": [
+            [
+                {"text": "🏢 تغییر شهر به مشهد", "callback_data": "set_city:مشهد"},
+                {"text": "🏢 تغییر شهر به تربت‌حیدریه", "callback_data": "set_city:تربت‌حیدریه"},
+            ],
+            [
+                {"text": "🌐 تغییر به هر دو شهر (مشهد + تربت)", "callback_data": "set_city:مشهد و تربت‌حیدریه"}
+            ],
+            [
+                {"text": "🔗 اتصال به حساب سایت با شماره همراه", "callback_data": "show_link_guide"}
+            ]
+        ]
+    }
+    await send_bale_reply(client, chat_id, status_text, markup)
 
 
 async def handle_sound_and_help(client: httpx.AsyncClient, chat_id: int | str) -> None:
@@ -460,14 +482,34 @@ async def handle_bale_callback(client: httpx.AsyncClient, cb: dict) -> None:
     # پاسخ فوری برای رفع حالت لودینگ
     await answer_bale_callback(client, cb_id)
 
+    # تغییر شهر پایش کاربر
+    if data.startswith("set_city:"):
+        new_city = data.split(":", 1)[1]
+        try:
+            res = await client.patch(
+                f"{API_BASE}/rules",
+                json={"chatId": str(chat_id), "messenger": "bale", "city": new_city},
+                timeout=8.0,
+            )
+            r_data = res.json()
+            if r_data.get("ok"):
+                await send_bale_reply(client, chat_id, f"✅ شهر پایش حساب شما با موفقیت به <b>«{new_city}»</b> تغییر یافت.", MAIN_KEYBOARD)
+            else:
+                await send_bale_reply(client, chat_id, f"❌ خطا: {r_data.get('message', 'خطا در تغییر شهر')}")
+        except Exception as e:
+            logger.error(f"خطا در تغییر شهر: {e}")
+            await send_bale_reply(client, chat_id, "⚠️ خطا در تغییر شهر.")
+        return
+
     # نمایش راهنمای اتصال حساب
     if data == "show_link_guide":
         guide = (
-            "🔗 <b>راهنمای اتصال حساب سایت:</b>\n\n"
-            "۱. ابتدا وارد سایت <b>https://radar.digiral.ir</b> شوید و وارد حسابتان شوید.\n"
-            "۲. به صفحه <b>«تنظیمات هشدار»</b> بروید.\n"
-            "۳. در کادر اتصال ربات، <b>کد ۶ رقمی اختصاصی</b> خود را کپی کنید.\n"
-            "۴. فقط همان کد را در همین صفحه چت ارسال کنید تا حسابتان متصل شود."
+            "🔗 <b>اتصال آنی ربات به حساب کاربری سایت:</b>\n\n"
+            "برای اینکه ربات به حساب شما در سایت متصل شود، کافی است یکی از موارد زیر را در همین صفحه چت ارسال فرمایید:\n\n"
+            "۱️⃣ <b>شماره موبایلی</b> که با آن در سایت ثبت‌نام کرده‌اید (مثال: <code>09151234567</code>)\n"
+            "۲️⃣ یا <b>ایمیل</b> ثبت‌نامی شما در سایت\n"
+            "۳️⃣ یا <b>کد ۶ رقمی</b> اختصاصی صفحه «تنظیمات هشدار» سایت\n\n"
+            "👇 کافی است شماره همراه خود را بفرستید تا حسابتان فوراً متصل شود:"
         )
         await send_bale_reply(client, chat_id, guide)
         return
@@ -747,42 +789,51 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
             await send_bale_reply(client, chat_id, prompt, city_markup)
             return
 
-    # ۱. اتصال با کد عددی اختصاصی سایت
-    norm_text = normalize_digits(text)
-    link_match = re.search(r"\b(\d{4,6})\b", norm_text)
-    if not link_match:
-        link_match = re.search(r"\b(RADAR-\d+)\b", norm_text, re.IGNORECASE)
+    # ۱. اتصال خودکار با شماره موبایل، ایمیل، یا کد اختصاصی سایت
+    norm_text = normalize_digits(text).strip()
+    is_phone = re.search(r"\b(09\d{9}|9\d{9})\b", norm_text)
+    is_code = re.search(r"\b(\d{4,6})\b", norm_text)
+    is_radar = re.search(r"\b(RADAR-\d+)\b", norm_text, re.IGNORECASE)
+    is_email = "@" in norm_text and "." in norm_text
 
-    if link_match and not text.startswith("➕") and not text.startswith("📋") and not text.startswith("💰"):
-        code = link_match.group(1).upper()
+    is_link_input = is_phone or is_code or is_radar or is_email
+    is_cmd_or_btn = any(text.startswith(prefix) for prefix in ("➕", "📋", "🎯", "💳", "❓", "🔗", "📝", "/"))
+
+    if is_link_input and not is_cmd_or_btn:
+        target_code = (
+            is_phone.group(1)
+            if is_phone
+            else (is_code.group(1) if is_code else (is_radar.group(1) if is_radar else norm_text))
+        ).strip()
         try:
             resp = await client.post(
                 f"{API_BASE}/link",
                 json={
-                    "code": code,
+                    "code": target_code,
                     "chatId": str(chat_id),
                     "messenger": "bale",
                     "userName": user_name,
                 },
-                timeout=6.0,
+                timeout=8.0,
             )
             data = resp.json()
             if data.get("success"):
                 reply = (
-                    f"🎉 <b>تبریک! حساب کاربری شما با موفقیت متصل شد.</b>\n\n"
+                    f"🎉 <b>{data.get('message', 'حساب شما با موفقیت متصل شد!')}</b>\n\n"
                     f"👤 نام کاربر: <b>{user_name}</b>\n"
-                    f"📍 پایش آنی آگهی‌های خودروی دیوار و شیپور\n\n"
-                    f"🔔 از این پس تمام آگهی‌های شکار مطابق فیلترهای شما فوراً در این چت ارسال می‌شوند."
+                    f"🔔 تمام امکانات رادار و هشدارهای شکار لحظه‌ای در این چت برای شما فعال گردید."
                 )
                 await send_bale_reply(client, chat_id, reply, MAIN_KEYBOARD)
+                return
             else:
-                reply = f"❌ {data.get('message', 'کد اتصال نامعتبر است.')}"
+                reply = f"❌ {data.get('message', 'کد اتصال یا شماره نامعتبر است.')}"
                 await send_bale_reply(client, chat_id, reply)
+                return
         except Exception as e:
             logger.error(f"خطا در اتصال بله: {e}")
             reply = "⚠️ خطا در ارتباط با سرور سایت. لطفاً بعداً تلاش فرمایید."
             await send_bale_reply(client, chat_id, reply)
-        return
+            return
 
     # ۲. دکمه «📝 ثبت‌نام در سامانه»
     if text in ("📝 ثبت‌نام در سامانه", "ثبت نام", "/register"):
@@ -802,11 +853,12 @@ async def handle_bale_message(client: httpx.AsyncClient, message: dict) -> None:
     # ۵. دکمه «🔗 اتصال به حساب سایت»
     if text in ("🔗 اتصال به حساب سایت", "/link", "اتصال", "🔗 اتصال مجدد"):
         help_link = (
-            "🔗 <b>اتصال ربات به حساب کاربری سایت:</b>\n\n"
-            "۱. ابتدا وارد سایت <b>https://radar.digiral.ir</b> شوید.\n"
-            "۲. از منو به بخش <b>«تنظیمات هشدار»</b> بروید.\n"
-            "۳. در کارت اتصال ربات، <b>کد ۶ رقمی</b> اختصاصی خود را بردارید.\n"
-            "۴. فقط همان عدد را اینجا بفرستید تا حسابتان فوراً متصل شود."
+            "🔗 <b>اتصال آنی ربات به حساب کاربری سایت:</b>\n\n"
+            "برای اینکه ربات به حساب شما در سایت متصل شود، کافی است یکی از موارد زیر را در همین صفحه چت ارسال فرمایید:\n\n"
+            "۱️⃣ <b>شماره موبایلی</b> که با آن در سایت ثبت‌نام کرده‌اید (مثال: <code>09151234567</code>)\n"
+            "۲️⃣ یا <b>ایمیل</b> ثبت‌نامی شما در سایت\n"
+            "۳️⃣ یا <b>کد ۶ رقمی</b> اختصاصی صفحه «تنظیمات هشدار» سایت\n\n"
+            "👇 کافی است شماره همراه خود را بفرستید تا حسابتان فوراً متصل شود:"
         )
         await send_bale_reply(client, chat_id, help_link)
         return

@@ -99,6 +99,16 @@ class SheypoorScraper:
                 currency = match.group(5)
                 location = match.group(6)
 
+                # حذف بنرها و تبلیغات اسپانسری شیپور (banners.sheypoor.com)
+                if (
+                    not raw_url
+                    or "banners.sheypoor.com" in raw_url
+                    or "/banner/" in raw_url
+                    or "external/link" in raw_url
+                    or not raw_url.endswith(".html")
+                ):
+                    continue
+
                 id_match = re.search(r"-(\d+)\.html", raw_url)
                 token = f"sheypoor-{id_match.group(1) if id_match else match.group(1)}"
 

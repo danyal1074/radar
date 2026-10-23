@@ -104,6 +104,17 @@ export class SheypoorListingSourceProvider implements ListingSourceProvider {
       const currency = match[5];
       const location = match[6];
 
+      // حذف بنرها و تبلیغات اسپانسری شیپور (مانند banners.sheypoor.com)
+      if (
+        !rawUrl ||
+        rawUrl.includes("banners.sheypoor.com") ||
+        rawUrl.includes("/banner/") ||
+        rawUrl.includes("external/link") ||
+        !rawUrl.includes(".html")
+      ) {
+        continue;
+      }
+
       const targetFaCity = fallbackCity === "mashhad" ? "مشهد" : "تربت‌حیدریه";
 
       // Strict city filtering

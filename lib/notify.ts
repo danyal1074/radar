@@ -116,8 +116,9 @@ function buildReplyMarkup(url?: string | null, source?: string) {
   const buttonText = isDivar ? "🚗 مشاهده آگهی در دیوار" : "🚗 مشاهده آگهی در شیپور";
 
   const rows = [];
-  if (url) {
-    rows.push([{ text: buttonText, url: url }]);
+  const cleanUrl = url && !url.includes("banners.sheypoor.com") && !url.includes("/banner/") ? url : null;
+  if (cleanUrl) {
+    rows.push([{ text: buttonText, url: cleanUrl }]);
   }
   rows.push([{ text: "⚙️ مدیریت فیلترهای من در بله", callback_data: "menu_rules" }]);
 

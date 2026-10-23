@@ -24,7 +24,8 @@ async function findExistingUserId(
   userName?: string,
 ): Promise<string | null> {
   // مدیر کل سامانه (دانیال)
-  if (String(chatId) === "772511114" || String(chatId) === DANIAL_RUBIKA_CHAT) {
+  const ADMIN_BALE_CHATS = ["772511114", "2079437548", "1271663233"];
+  if (ADMIN_BALE_CHATS.includes(String(chatId)) || String(chatId) === DANIAL_RUBIKA_CHAT) {
     await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
     return DANIAL_ADMIN_UUID;
   }
@@ -99,8 +100,10 @@ export async function GET(req: Request) {
     }
 
     const rules = await store.listRules(userId);
-    const allowedCitiesCount = (profile?.role === "admin" || userId === DANIAL_ADMIN_UUID) ? 2 : plan.allowedCitiesCount;
+    const isAdmin = profile?.role === "admin" || userId === DANIAL_ADMIN_UUID;
+    const allowedCitiesCount = isAdmin ? 2 : plan.allowedCitiesCount;
     const userCity = profile?.city?.includes("مشهد") ? "مشهد" : "تربت‌حیدریه";
+    const planName = isAdmin ? "مدیر کل سامانه (VIP)" : plan.name;
 
     return NextResponse.json({
       ok: true,
@@ -110,7 +113,7 @@ export async function GET(req: Request) {
       userId,
       userCity,
       allowedCitiesCount,
-      planName: plan.name,
+      planName,
       rules,
     });
   } catch (err: unknown) {
@@ -218,6 +221,38 @@ export async function DELETE(req: Request) {
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "خطا در حذف فیلتر";
+    return NextResponse.json({ ok: false, message: msg }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { chatId, messenger, city } = body;
+
+    if (!chatId || !city) {
+      return NextResponse.json({ ok: false, message: "اطلاعات ناقص است" }, { status: 400 });
+    }
+
+    const userId = await findExistingUserId(String(chatId), messenger || "bale");
+    if (!userId) {
+      return NextResponse.json({ ok: false, message: "کاربر یافت نشد" }, { status: 403 });
+    }
+
+    const sb = getServiceClient();
+    if (sb) {
+      await sb.from("profiles").update({ city }).eq("id", userId);
+    }
+    const store = await getServiceStore();
+    await store.updateProfile(userId, { city });
+
+    return NextResponse.json({
+      ok: true,
+      city,
+      message: `شهر پایش حساب شما با موفقیت به «${city}» تغییر یافت.`,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "خطا در تغییر شهر";
     return NextResponse.json({ ok: false, message: msg }, { status: 500 });
   }
 }

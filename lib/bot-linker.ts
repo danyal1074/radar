@@ -20,9 +20,11 @@ const DATA_DIR = path.join(process.cwd(), ".data");
 const FILE_PATH = path.join(DATA_DIR, "bot_subscribers.json");
 
 // Default Danial's Bale, Telegram & Rubika chat IDs for admin notifications
+export const DEFAULT_ADMIN_BALE_CHATS = ["772511114", "2079437548", "1271663233"];
 const DEFAULT_ADMIN_BALE_CHAT = "772511114";
 const DEFAULT_ADMIN_TELEGRAM_CHAT = "772511114";
 const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
+export const DANIAL_ADMIN_UUID = "97375339-be50-403e-be7b-0aee1b7c2d99";
 
 async function readStorage(): Promise<StorageData> {
   try {
@@ -85,7 +87,59 @@ export async function linkChatWithCode(
   const store = await readStorage();
   const normalized = normalizeDigits(inputCode).trim();
 
-  // استخراج کد عددی ۴ تا ۶ رقمی یا فرمت قبلی RADAR-1234
+  // اتصال مستقیم چت‌آیدی‌های پیش‌فرض مدیر به حساب مدیریت
+  if (messenger === "bale" && DEFAULT_ADMIN_BALE_CHATS.includes(String(chatId))) {
+    const reg = await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
+    return {
+      success: true,
+      message: "حساب کاربری مدیریت سامانه با موفقیت به ربات متصل شد.",
+      userId: DANIAL_ADMIN_UUID,
+    };
+  }
+
+  // ۱. بررسی امکان اتصال مستقیم با شماره موبایل یا ایمیل حساب کاربری در سایت
+  const isPhoneOrEmail =
+    normalized.includes("@") ||
+    (normalized.startsWith("09") && normalized.length === 11) ||
+    (normalized.startsWith("9") && normalized.length === 10);
+
+  if (isPhoneOrEmail) {
+    const { env } = await import("./env");
+    if (env.hasSupabase && env.supabaseServiceRoleKey) {
+      try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const sb = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, { auth: { persistSession: false } });
+        const cleanPhone = normalized.startsWith("9") && normalized.length === 10 ? "0" + normalized : normalized;
+
+        const { data: matchedProfile } = await sb
+          .from("profiles")
+          .select("id, full_name, business_name, email, role")
+          .or(`email.ilike.%${cleanPhone}%,email.eq.${normalized}`)
+          .maybeSingle();
+
+        if (matchedProfile?.id) {
+          const colName =
+            messenger === "rubika" ? "rubika_chat_id" : (messenger === "telegram" ? "telegram_chat_id" : "bale_chat_id");
+          await sb.from("profiles").update({ [colName]: String(chatId) }).eq("id", matchedProfile.id);
+          await registerDirectChat(
+            matchedProfile.id,
+            chatId,
+            messenger,
+            matchedProfile.business_name || matchedProfile.full_name,
+          );
+          return {
+            success: true,
+            message: `حساب کاربری شما در سایت با عنوان «${matchedProfile.business_name || matchedProfile.full_name || matchedProfile.email}» شناسایی و فوراً متصل شد.`,
+            userId: matchedProfile.id,
+          };
+        }
+      } catch (e) {
+        console.error("خطا در جستجوی پروفایل سایت:", e);
+      }
+    }
+  }
+
+  // ۲. استخراج کد عددی ۴ تا ۶ رقمی یا فرمت قبلی RADAR-1234
   const numMatch = normalized.match(/\b\d{4,6}\b/);
   const radarMatch = normalized.match(/\bRADAR-\d+\b/i);
   const cleanCode = numMatch ? numMatch[0] : (radarMatch ? radarMatch[0].toUpperCase() : normalized);
@@ -105,7 +159,7 @@ export async function linkChatWithCode(
   if (!userId) {
     return {
       success: false,
-      message: "کد اتصال نامعتبر یا منقضی شده است. لطفاً کد عددی صحیح را از بخش «هشدارهای من» دریافت کنید.",
+      message: "کد اتصال، شماره موبایل یا ایمیل وارد شده در سامانه یافت نشد. لطفاً کد ۶ رقمی را از بخش «هشدارهای من» در سایت وارد کرده یا شماره ثبت‌نامی خود را بفرستید.",
     };
   }
 
@@ -180,9 +234,11 @@ export async function getTargetChatsForUser(userId: string): Promise<{
   const eitaaChats: string[] = [];
 
   // فقط اگر کاربر مدیر (دانیال) باشد، چت‌های پیش‌فرض مدیر اضافه می‌شوند
-  if (userId === "admin" || userId === "97375339-be50-403e-be7b-0aee1b7c2d99" || userId.includes("danyal")) {
-    if (!baleChats.includes(DEFAULT_ADMIN_BALE_CHAT)) {
-      baleChats.push(DEFAULT_ADMIN_BALE_CHAT);
+  if (userId === "admin" || userId === DANIAL_ADMIN_UUID || userId.includes("danyal")) {
+    for (const c of DEFAULT_ADMIN_BALE_CHATS) {
+      if (!baleChats.includes(c)) {
+        baleChats.push(c);
+      }
     }
     if (!telegramChats.includes(DEFAULT_ADMIN_TELEGRAM_CHAT)) {
       telegramChats.push(DEFAULT_ADMIN_TELEGRAM_CHAT);
@@ -214,8 +270,11 @@ export async function getUserIdByChatId(
   chatId: string,
   messenger: "bale" | "telegram" | "rubika" | "eitaa",
 ): Promise<string | null> {
-  const store = await readStorage();
   const cid = String(chatId);
+  if (messenger === "bale" && DEFAULT_ADMIN_BALE_CHATS.includes(cid)) {
+    return DANIAL_ADMIN_UUID;
+  }
+  const store = await readStorage();
   for (const [uid, sub] of Object.entries(store.subscribers)) {
     if (messenger === "bale" && sub.baleChatId === cid) return uid;
     if (messenger === "telegram" && sub.telegramChatId === cid) return uid;

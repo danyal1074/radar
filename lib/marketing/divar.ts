@@ -22,6 +22,15 @@ const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 /**
+ * اعتبارسنجی فرمت رسمی توکن دسترسی دیوار (باید ساختار ۳ بخشی JWT داشته باشد)
+ */
+export function isJwtToken(token: string): boolean {
+  if (!token) return false;
+  const clean = token.replace(/^Basic\s+/i, "").trim();
+  return /^[A-Za-z0-9_-]{2,}(?:\.[A-Za-z0-9_-]{2,}){2}$/.test(clean);
+}
+
+/**
  * ارسال درخواست کد تایید به شماره همراه با وب‌سرویس جدید دیوار (v8)
  */
 export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
@@ -86,7 +95,7 @@ export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
 }
 
 /**
- * تایید کد پیامکی و دریافت توکن دسترسی
+ * تایید کد پیامکی و دریافت توکن دسترسی معتبر
  */
 export async function verifyDivarOtp(
   phone: string,
@@ -97,7 +106,32 @@ export async function verifyDivarOtp(
   const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
 
   try {
-    // بررسی با جلسه مدرن v8 در صورت وجود نشست
+    // ۱. ابتدا تلاش با روش رسمی v5 که مستقیماً توکن JWT برمی‌گرداند
+    try {
+      const fbRes = await fetch("https://api.divar.ir/v5/auth/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": USER_AGENT,
+          Referer: "https://divar.ir/",
+          Origin: "https://divar.ir",
+        },
+        body: JSON.stringify({ phone: cleanPhone, code: cleanCode }),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      const fbData = await fbRes.json().catch(() => ({}));
+      const candidateToken =
+        fbData.token || fbData.access_token || fbData.data?.token || fbData.user_token;
+
+      if (fbRes.ok && candidateToken && isJwtToken(candidateToken)) {
+        return { ok: true, token: candidateToken, message: "ورود به حساب دیوار با موفقیت انجام شد." };
+      }
+    } catch {
+      // ادامه به متد v8 در صورت عدم پاسخ v5
+    }
+
+    // ۲. بررسی با نشست v8
     if (session?.deviceId && session?.preAuthSessionId) {
       const res = await fetch("https://api.divar.ir/v8/authenticate/signinup/code/consume", {
         method: "POST",
@@ -115,43 +149,25 @@ export async function verifyDivarOtp(
         signal: AbortSignal.timeout(10000),
       });
 
-      const frontToken = res.headers.get("front-token") || res.headers.get("x-token");
       const setCookie = res.headers.get("set-cookie") || "";
       const cookieMatch = setCookie.match(/token=([^;]+)/);
       const data = await res.json().catch(() => ({}));
 
-      const token =
-        frontToken ||
-        (cookieMatch ? cookieMatch[1] : null) ||
-        data.token ||
-        data.access_token ||
-        data.data?.token;
+      const candidates = [
+        cookieMatch ? cookieMatch[1] : null,
+        data.token,
+        data.access_token,
+        data.data?.token,
+      ].filter(Boolean) as string[];
 
-      if (token) {
-        return { ok: true, token, message: "ورود به حساب دیوار موفقیت‌آمیز بود." };
+      for (const cand of candidates) {
+        if (isJwtToken(cand)) {
+          return { ok: true, token: cand, message: "ورود به حساب دیوار با موفقیت انجام شد." };
+        }
       }
     }
 
-    // فال‌بک به v5
-    const fallbackRes = await fetch("https://api.divar.ir/v5/auth/confirm", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": USER_AGENT,
-        Referer: "https://divar.ir/",
-        Origin: "https://divar.ir",
-      },
-      body: JSON.stringify({ phone: cleanPhone, code: cleanCode }),
-      signal: AbortSignal.timeout(10000),
-    });
-
-    const data = await fallbackRes.json().catch(() => ({}));
-    const token = data.token || data.access_token || data.data?.token || data.user_token;
-    if (fallbackRes.ok && token) {
-      return { ok: true, token, message: "ورود به حساب دیوار موفقیت‌آمیز بود." };
-    }
-
-    return { ok: false, message: data.message || "کد وارد شده صحیح نیست یا منقضی شده است." };
+    return { ok: false, message: "کد وارد شده نامعتبر است یا توکن معتبر دریافت نشد." };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { ok: false, message: `خطا در تایید کد: ${errorMsg}` };
@@ -168,6 +184,14 @@ export async function sendDivarChatMessage(
 ): Promise<DivarSendResult> {
   if (!token) {
     return { ok: false, error: "توکن حساب دیوار تعریف نشده است." };
+  }
+
+  if (!isJwtToken(token)) {
+    return {
+      ok: false,
+      error:
+        "توکن دیوار نامعتبر است (فرمت رسمی JWT ندارد). لطفاً در تب تنظیمات مجدداً با شماره وارد شوید یا توکن معتبر را دستی ثبت فرمایید.",
+    };
   }
 
   const cleanPostToken = postToken.trim();

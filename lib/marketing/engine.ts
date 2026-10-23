@@ -35,7 +35,7 @@ export function parseSpintax(text: string): string {
  */
 export function buildPersonalizedMessage(
   template: string,
-  listing: Pick<Listing, "title" | "price_toman" | "city" | "source">,
+  listing: { title: string; price_toman: number; city?: string | null; source?: string },
   adLink: string
 ): string {
   const spintaxed = parseSpintax(template);
@@ -56,11 +56,20 @@ export interface SendResult {
   messageText?: string;
 }
 
+export interface MarketingTargetListing {
+  title: string;
+  price_toman: number;
+  city?: string | null;
+  source: string;
+  source_post_id: string;
+  id?: string;
+}
+
 /**
  * ارسال پیام چت به صاحب آگهی (با رعایت سقف روزانه و ثبت لاگ)
  */
 export async function executeMarketingSend(
-  listing: Listing,
+  listing: MarketingTargetListing,
   customAdLink?: string
 ): Promise<SendResult> {
   const config = await getMarketingConfig();
@@ -131,7 +140,7 @@ export async function executeMarketingSend(
   // ۶. ثبت گزارش در دیتابیس لاگ‌ها
   const logItem: MarketingLogItem = {
     id: `mkt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    listingId: listing.id,
+    listingId: listing.id || listing.source_post_id,
     source,
     postToken,
     carTitle: listing.title,
@@ -160,4 +169,58 @@ export async function executeMarketingSend(
     directUrl,
     messageText,
   };
+}
+
+/**
+ * ارسال خودکار تبلیغات به آگهی‌های تازه شکارشده رادار (در صورت فعال بودن در تنظیمات)
+ */
+export async function processMarketingAutoSend(
+  newlyInsertedListings: MarketingTargetListing[]
+): Promise<void> {
+  try {
+    const config = await getMarketingConfig();
+    if (!config.autoSendEnabled) return;
+    if (!config.divarToken && !config.sheypoorToken) return;
+    if (!newlyInsertedListings.length) return;
+
+    // فیلتر فقط شهرهای هدف (تربت حیدریه و مشهد)
+    const targetKeywords = ["مشهد", "تربت"];
+    const candidates = newlyInsertedListings.filter((l) => {
+      const city = l.city || "";
+      return targetKeywords.some((kw) => city.includes(kw));
+    });
+
+    if (!candidates.length) return;
+
+    console.log(`[marketing/auto] پایش ${candidates.length} آگهی تازه برای ارسال خودکار تبلیغ...`);
+
+    for (const listing of candidates) {
+      const source = listing.source === "sheypoor" ? "sheypoor" : "divar";
+      const token = source === "divar" ? config.divarToken : config.sheypoorToken;
+      if (!token) continue;
+
+      const todayCount = await getTodaySentCount(source);
+      if (todayCount >= config.dailyLimit) {
+        console.log(`[marketing/auto] سقف روزانه ارسال ${source} پر است (${config.dailyLimit}).`);
+        break;
+      }
+
+      const already = await isAlreadyMessaged(listing.source_post_id);
+      if (already) continue;
+
+      console.log(`[marketing/auto] در حال ارسال پیام به آگهی تازه: ${listing.title} (${listing.city})`);
+      const result = await executeMarketingSend(listing);
+      if (result.ok) {
+        console.log(`[marketing/auto] پیام با موفقیت ارسال شد به: ${listing.source_post_id}`);
+      } else {
+        console.log(`[marketing/auto] عدم ارسال: ${result.message}`);
+      }
+
+      // ایجاد تاخیر امن بین ارسال‌ها
+      const delay = Math.max(10, config.delaySeconds || 60) * 1000;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  } catch (err) {
+    console.warn("[marketing/auto] خطای مهارشده در ارسال خودکار:", err);
+  }
 }

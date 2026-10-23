@@ -20,6 +20,10 @@ export async function saveMarketingConfigAction(formData: FormData) {
   const dailyLimit = Number(formData.get("dailyLimit") || 25);
   const delaySeconds = Number(formData.get("delaySeconds") || 60);
   const targetCity = String(formData.get("targetCity") || "مشهد").trim();
+  const autoSendEnabled =
+    formData.get("autoSendEnabled") === "true" ||
+    formData.get("autoSendEnabled") === "on" ||
+    formData.get("autoSendEnabled") === "1";
 
   await updateMarketingConfig({
     adLink,
@@ -28,10 +32,18 @@ export async function saveMarketingConfigAction(formData: FormData) {
     dailyLimit,
     delaySeconds,
     targetCity,
+    autoSendEnabled,
   });
 
   revalidatePath("/admin/marketing");
   return { ok: true, message: "تنظیمات کمپین تبلیغاتی ذخیره شد." };
+}
+
+export async function toggleAutoSendAction(enabled: boolean) {
+  await requireContext({ admin: true });
+  await updateMarketingConfig({ autoSendEnabled: enabled });
+  revalidatePath("/admin/marketing");
+  return { ok: true, autoSendEnabled: enabled };
 }
 
 export async function requestDivarOtpAction(formData: FormData) {
@@ -136,6 +148,31 @@ export async function markMarketingSentAction(listingId: string, messageText: st
 
   revalidatePath("/admin/marketing");
   return { ok: true };
+}
+
+export async function markMultipleMarketingSentAction(listingIds: string[]) {
+  const ctx = await requireContext({ admin: true });
+  const { recordMarketingLog } = await import("@/lib/marketing/store");
+
+  for (const id of listingIds) {
+    const listing = await ctx.store.getListing(id);
+    if (!listing) continue;
+    await recordMarketingLog({
+      id: `mkt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      listingId: listing.id,
+      source: listing.source === "sheypoor" ? "sheypoor" : "divar",
+      postToken: listing.source_post_id,
+      carTitle: listing.title,
+      priceToman: listing.price_toman,
+      city: listing.city || "مشهد",
+      messageText: "علامت‌گذاری به عنوان ارسال‌شده توسط مدیر",
+      status: "sent",
+      sentAt: new Date().toISOString(),
+    });
+  }
+
+  revalidatePath("/admin/marketing");
+  return { ok: true, count: listingIds.length };
 }
 
 export async function getMarketingStatsAction() {

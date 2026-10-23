@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   Sparkles,
   StopCircle,
+  Zap,
 } from "lucide-react";
 import { Badge, Button, Card, PageHeader } from "@/components/ui";
 import { formatTomanReadable } from "@/lib/money";
@@ -28,6 +29,7 @@ import type { Listing } from "@/lib/types";
 import type { MarketingConfig, MarketingLogItem } from "@/lib/marketing/types";
 import {
   saveMarketingConfigAction,
+  toggleAutoSendAction,
   requestDivarOtpAction,
   verifyDivarOtpAction,
   saveManualDivarTokenAction,
@@ -80,6 +82,7 @@ export function MarketingClient({
   const [sourceFilter, setSourceFilter] = useState<"all" | "divar" | "sheypoor">("all");
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [visibleListingsCount, setVisibleListingsCount] = useState(50);
+  const [hideSent, setHideSent] = useState(true);
 
   // Notifications / feedback
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -116,6 +119,7 @@ export function MarketingClient({
   const filteredListings = listings.filter((l) => {
     if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
     if (!isCityMatch(l.city, cityFilter)) return false;
+    if (hideSent && alreadyMessagedSet.has(l.source_post_id)) return false;
     return true;
   });
 
@@ -401,6 +405,59 @@ export function MarketingClient({
         </Card>
       </div>
 
+      {/* بنر هوشمند فعال‌سازی ارسال خودکار به آگهی‌های جدید */}
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-brand-50 via-indigo-50/60 to-surface-card border border-brand-200/80 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div
+            className={`p-2.5 rounded-xl transition-all ${
+              config.autoSendEnabled ? "bg-emerald-600 text-white shadow-sm" : "bg-neutral-200 text-neutral-600"
+            }`}
+          >
+            <Zap className={`size-5 ${config.autoSendEnabled ? "animate-pulse" : ""}`} />
+          </div>
+          <div>
+            <div className="text-sm font-black text-ink flex items-center gap-2">
+              <span>ارسال خودکار پیام به خودروهای جدید شکارشده رادار</span>
+              {config.autoSendEnabled ? (
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-300">
+                  فعال (پایش و ارسال لحظه‌ای)
+                </span>
+              ) : (
+                <span className="text-[10px] bg-neutral-200 text-neutral-700 font-bold px-2 py-0.5 rounded-full">
+                  غیرفعال
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted mt-0.5">
+              با روشن بودن این گزینه، به محض اینکه آگهی خودرو جدیدی در تربت حیدریه و مشهد توسط پایپ‌لاین رادار کشف شود، پیام معرفی به صاحب آگهی فرستاده می‌شود (تا سقف روزانه {config.dailyLimit} پیام).
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            const next = !config.autoSendEnabled;
+            startTransition(async () => {
+              const res = await toggleAutoSendAction(next);
+              if (res.ok) {
+                setConfig((prev) => ({ ...prev, autoSendEnabled: next }));
+                showNotice("success", next ? "ارسال خودکار به آگهی‌های جدید فعال شد." : "ارسال خودکار غیرفعال شد.");
+              }
+            });
+          }}
+          disabled={isPending}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 ${
+            config.autoSendEnabled
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-300/50"
+              : "bg-surface border border-line text-ink hover:bg-brand-50 hover:border-brand-300"
+          }`}
+        >
+          <Zap className="size-3.5" />
+          <span>{config.autoSendEnabled ? "ارسال خودکار فعال است (خاموش کردن)" : "روشن کردن ارسال خودکار"}</span>
+        </button>
+      </div>
+
       {/* تب‌های مدیریت */}
       <div className="flex border-b border-line gap-2 text-xs font-bold">
         <button
@@ -510,41 +567,54 @@ export function MarketingClient({
             </div>
           )}
 
-          {/* دکمه‌های انتخاب سریع شهر */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <button
-              type="button"
-              onClick={() => setCityFilter("all")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                cityFilter === "all"
-                  ? "bg-brand-600 text-white shadow-2xs"
-                  : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
-              }`}
-            >
-              همه آگهی‌های رادار ({listings.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setCityFilter("تربت")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                cityFilter === "تربت"
-                  ? "bg-brand-600 text-white shadow-2xs"
-                  : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
-              }`}
-            >
-              📍 فقط تربت حیدریه ({torbatCount} آگهی)
-            </button>
-            <button
-              type="button"
-              onClick={() => setCityFilter("مشهد")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                cityFilter === "مشهد"
-                  ? "bg-brand-600 text-white shadow-2xs"
-                  : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
-              }`}
-            >
-              📍 فقط مشهد ({mashhadCount} آگهی)
-            </button>
+          {/* دکمه‌های انتخاب سریع شهر و سوئیچ فیلتر ارسال‌شده‌ها */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCityFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  cityFilter === "all"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
+                }`}
+              >
+                همه آگهی‌های رادار ({listings.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCityFilter("تربت")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  cityFilter === "تربت"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
+                }`}
+              >
+                📍 فقط تربت حیدریه ({torbatCount} آگهی)
+              </button>
+              <button
+                type="button"
+                onClick={() => setCityFilter("مشهد")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  cityFilter === "مشهد"
+                    ? "bg-brand-600 text-white shadow-2xs"
+                    : "bg-surface border border-line text-muted hover:text-ink hover:bg-surface-hover"
+                }`}
+              >
+                📍 فقط مشهد ({mashhadCount} آگهی)
+              </button>
+            </div>
+
+            {/* سوئیچ مخفی‌سازی آگهی‌های ارسال‌شده */}
+            <label className="flex items-center gap-2 cursor-pointer bg-surface px-3 py-1.5 rounded-lg border border-line text-xs font-bold text-ink select-none hover:bg-surface-hover transition-colors shadow-2xs">
+              <input
+                type="checkbox"
+                checked={hideSent}
+                onChange={(e) => setHideSent(e.target.checked)}
+                className="size-3.5 rounded border-line text-brand-600 focus:ring-0"
+              />
+              <span>فقط آگهی‌های ارسال‌نشده ({listings.length - alreadyMessagedSet.size})</span>
+            </label>
           </div>
 
           {/* جدول یا لیست آگهی‌ها */}
@@ -620,6 +690,35 @@ export function MarketingClient({
                           <Copy className="size-3.5 text-muted" />
                           <span>چت مستقیم</span>
                           <ExternalLink className="size-3 text-muted" />
+                        </button>
+
+                        {/* علامت‌گذاری دستی به عنوان ارسال‌شده */}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const text = `ارسال دستی در دیوار برای: ${listing.title}`;
+                            await markMarketingSentAction(listing.id, text);
+                            setLogs((prev) => [
+                              {
+                                id: `mkt_${Date.now()}`,
+                                listingId: listing.id,
+                                source: listing.source === "sheypoor" ? "sheypoor" : "divar",
+                                postToken: listing.source_post_id,
+                                carTitle: listing.title,
+                                priceToman: listing.price_toman,
+                                city: listing.city || "مشهد",
+                                messageText: text,
+                                status: "sent",
+                                sentAt: new Date().toISOString(),
+                              },
+                              ...prev,
+                            ]);
+                            showNotice("success", `آگهی «${listing.title}» به عنوان ارسال‌شده ثبت شد.`);
+                          }}
+                          title="علامت‌گذاری این آگهی به عنوان ارسال‌شده (بدون ارسال پیام جدید)"
+                          className="p-1.5 rounded-lg border border-line bg-surface hover:bg-emerald-50 hover:text-emerald-700 text-muted transition-all"
+                        >
+                          <CheckCircle2 className="size-4" />
                         </button>
                       </>
                     )}

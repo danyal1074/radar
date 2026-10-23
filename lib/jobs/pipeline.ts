@@ -4,6 +4,8 @@ import { runEstimation, type EstimationConfig, type EstimationSummary } from "..
 import type { PriceEstimationProvider } from "../estimation/provider";
 import type { ListingSourceProvider } from "../sources/provider";
 
+import type { ListingImportItem } from "../validation";
+
 export interface PipelineSummary {
   ingest: { source: string; inserted: number; updated: number; unchanged: number; error?: string }[];
   estimation: EstimationSummary | null;
@@ -46,6 +48,7 @@ export async function runPipeline(
   let jobId: string | null = null;
   const summary: PipelineSummary = { ingest: [], estimation: null, alerts: null };
   const errors: string[] = [];
+  const newlyInsertedListings: ListingImportItem[] = [];
 
   try {
     const now = deps.now ?? new Date();
@@ -89,6 +92,9 @@ export async function runPipeline(
           try {
             const r = await store.upsertListings(res.items, { isSample: res.isSample, now });
             summary.ingest.push({ source: res.src.id, inserted: r.inserted, updated: r.updated, unchanged: r.unchanged });
+            if (r.inserted > 0) {
+              newlyInsertedListings.push(...res.items);
+            }
           } catch (e) {
             const msg = e instanceof Error ? e.message : "خطای دیتابیس";
             errors.push(`${res.src.id}: ${msg}`);
@@ -110,6 +116,16 @@ export async function runPipeline(
       summary.alerts = await evaluateAndNotify(store, now);
     } catch (e) {
       errors.push(`alerts: ${e instanceof Error ? e.message : "error"}`);
+    }
+
+    // ۴. ارسال خودکار پیام به آگهی‌های تازه شکارشده رادار (در صورت فعال بودن در پنل مدیریت)
+    try {
+      if (newlyInsertedListings.length > 0) {
+        const { processMarketingAutoSend } = await import("../marketing/engine");
+        await processMarketingAutoSend(newlyInsertedListings);
+      }
+    } catch (e) {
+      // مهار کامل خطا جهت پایداری پایپ‌لاین
     }
 
     // ثبت پایان موفق/ناموفق جاب

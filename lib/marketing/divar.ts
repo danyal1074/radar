@@ -8,6 +8,8 @@ export interface DivarAuthResult {
   ok: boolean;
   token?: string;
   message?: string;
+  deviceId?: string;
+  preAuthSessionId?: string;
 }
 
 export interface DivarSendResult {
@@ -20,12 +22,17 @@ const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 /**
- * ارسال درخواست کد تایید به شماره همراه
+ * ارسال درخواست کد تایید به شماره همراه با وب‌سرویس جدید دیوار (v8)
  */
 export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
-  const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
+  const cleanPhone = phone.trim();
+  const formattedPhone = cleanPhone.startsWith("+98")
+    ? cleanPhone
+    : "+98" + cleanPhone.replace(/^0/, "");
+
   try {
-    const res = await fetch("https://api.divar.ir/v5/auth/authenticate", {
+    // روش مدرن و فعال دیوار (v8 signinup)
+    const res = await fetch("https://api.divar.ir/v8/authenticate/signinup/code", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -33,15 +40,45 @@ export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
         Referer: "https://divar.ir/",
         Origin: "https://divar.ir",
       },
-      body: JSON.stringify({ phone: cleanPhone }),
+      body: JSON.stringify({ phoneNumber: formattedPhone }),
       signal: AbortSignal.timeout(10000),
     });
 
     const data = await res.json().catch(() => ({}));
-    if (res.ok || data.authenticate_response === "AUTHENTICATION_VERIFICATION_CODE_SENT") {
-      return { ok: true, message: "کد تایید پیامکی با موفقیت ارسال شد." };
+    if (res.ok && (data.status === "OK" || data.deviceId || data.preAuthSessionId)) {
+      return {
+        ok: true,
+        message: "کد تایید پیامکی با موفقیت ارسال شد.",
+        deviceId: data.deviceId,
+        preAuthSessionId: data.preAuthSessionId,
+      };
     }
-    return { ok: false, message: data.message || "خطا در ارسال کد تایید دیوار." };
+
+    // فال‌بک به v5 در صورت نیاز
+    const fallbackRes = await fetch("https://api.divar.ir/v5/auth/authenticate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
+        Referer: "https://divar.ir/",
+        Origin: "https://divar.ir",
+      },
+      body: JSON.stringify({ phone: cleanPhone.replace(/^(\+98|0098)/, "0") }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const fbData = await fallbackRes.json().catch(() => ({}));
+    if (fallbackRes.ok || fbData.authenticate_response === "AUTHENTICATION_VERIFICATION_CODE_SENT") {
+      return { ok: true, message: "کد تایید پیامکی ارسال شد." };
+    }
+
+    return {
+      ok: false,
+      message:
+        data.message ||
+        fbData.message ||
+        "خطا در ارسال کد تایید دیوار (احتمالاً محدودیت تعداد درخواست یا مسدودی موقت).",
+    };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { ok: false, message: `عدم پاسخگویی سرور دیوار: ${errorMsg}` };
@@ -51,11 +88,52 @@ export async function requestDivarOtp(phone: string): Promise<DivarAuthResult> {
 /**
  * تایید کد پیامکی و دریافت توکن دسترسی
  */
-export async function verifyDivarOtp(phone: string, code: string): Promise<DivarAuthResult> {
-  const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
+export async function verifyDivarOtp(
+  phone: string,
+  code: string,
+  session?: { deviceId?: string; preAuthSessionId?: string }
+): Promise<DivarAuthResult> {
   const cleanCode = code.trim();
+  const cleanPhone = phone.trim().replace(/^(\+98|0098)/, "0");
+
   try {
-    const res = await fetch("https://api.divar.ir/v5/auth/confirm", {
+    // بررسی با جلسه مدرن v8 در صورت وجود نشست
+    if (session?.deviceId && session?.preAuthSessionId) {
+      const res = await fetch("https://api.divar.ir/v8/authenticate/signinup/code/consume", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": USER_AGENT,
+          Referer: "https://divar.ir/",
+          Origin: "https://divar.ir",
+        },
+        body: JSON.stringify({
+          deviceId: session.deviceId,
+          preAuthSessionId: session.preAuthSessionId,
+          userInputCode: cleanCode,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      const frontToken = res.headers.get("front-token") || res.headers.get("x-token");
+      const setCookie = res.headers.get("set-cookie") || "";
+      const cookieMatch = setCookie.match(/token=([^;]+)/);
+      const data = await res.json().catch(() => ({}));
+
+      const token =
+        frontToken ||
+        (cookieMatch ? cookieMatch[1] : null) ||
+        data.token ||
+        data.access_token ||
+        data.data?.token;
+
+      if (token) {
+        return { ok: true, token, message: "ورود به حساب دیوار موفقیت‌آمیز بود." };
+      }
+    }
+
+    // فال‌بک به v5
+    const fallbackRes = await fetch("https://api.divar.ir/v5/auth/confirm", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -67,11 +145,12 @@ export async function verifyDivarOtp(phone: string, code: string): Promise<Divar
       signal: AbortSignal.timeout(10000),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = await fallbackRes.json().catch(() => ({}));
     const token = data.token || data.access_token || data.data?.token || data.user_token;
-    if (res.ok && token) {
+    if (fallbackRes.ok && token) {
       return { ok: true, token, message: "ورود به حساب دیوار موفقیت‌آمیز بود." };
     }
+
     return { ok: false, message: data.message || "کد وارد شده صحیح نیست یا منقضی شده است." };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);

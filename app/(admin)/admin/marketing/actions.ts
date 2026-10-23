@@ -41,7 +41,13 @@ export async function requestDivarOtpAction(formData: FormData) {
 
   const res = await requestDivarOtp(phone);
   if (res.ok) {
-    await updateMarketingConfig({ divarPhone: phone });
+    await updateMarketingConfig({
+      divarPhone: phone,
+      divarSession:
+        res.deviceId && res.preAuthSessionId
+          ? { deviceId: res.deviceId, preAuthSessionId: res.preAuthSessionId }
+          : undefined,
+    });
   }
   return res;
 }
@@ -51,9 +57,14 @@ export async function verifyDivarOtpAction(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim();
   const code = String(formData.get("code") || "").trim();
 
-  const res = await verifyDivarOtp(phone, code);
+  const config = await getMarketingConfig();
+  const res = await verifyDivarOtp(phone, code, config.divarSession);
   if (res.ok && res.token) {
-    await updateMarketingConfig({ divarPhone: phone, divarToken: res.token });
+    await updateMarketingConfig({
+      divarPhone: phone,
+      divarToken: res.token,
+      divarSession: undefined,
+    });
     revalidatePath("/admin/marketing");
   }
   return res;

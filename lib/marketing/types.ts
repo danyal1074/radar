@@ -1,6 +1,10 @@
 export interface MarketingConfig {
   divarPhone: string;
   divarToken: string;
+  divarSession?: {
+    deviceId: string;
+    preAuthSessionId: string;
+  };
   sheypoorPhone: string;
   sheypoorToken: string;
   adLink: string; // لینک آگهی معرفی شما در دیوار

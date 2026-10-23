@@ -62,7 +62,8 @@ export function quotePostgrestValue(value: string): string {
 
 /**
  * `.or()` filter for a username. Email local-parts keep their dots inside quotes.
- * A name keeps the spaces the user typed as `%`, so "دانیال حقدادی" matches a stored full name.
+ * A multi-word name may have spaces or ZWNJ between the words (`دانیال%حقدادی`).
+ * A single word is exact, not a substring, so common fragments cannot crowd out the real row.
  */
 export function usernameProfileOrFilter(raw: string): string | null {
   const clean = normalizeLoginIdentifier(raw);
@@ -77,13 +78,16 @@ export function usernameProfileOrFilter(raw: string): string | null {
     .replace(/\s+/g, " ")
     .toLowerCase();
   const words = spaced.split(" ").map((word) => word.replace(/[%_,()"]/g, "")).filter(Boolean);
-  const namePattern = `%${(words.length ? words : [localKey]).join("%")}%`;
+  const namePatterns = new Set<string>();
+  if (words.length > 1) namePatterns.add(words.join("%"));
+  namePatterns.add(localKey);
 
-  return [
-    `email.ilike.${quotePostgrestValue(`${localKey}@%`)}`,
-    `full_name.ilike.${quotePostgrestValue(namePattern)}`,
-    `business_name.ilike.${quotePostgrestValue(namePattern)}`,
-  ].join(",");
+  const clauses = [`email.ilike.${quotePostgrestValue(`${localKey}@%`)}`];
+  for (const pattern of namePatterns) {
+    clauses.push(`full_name.ilike.${quotePostgrestValue(pattern)}`);
+    clauses.push(`business_name.ilike.${quotePostgrestValue(pattern)}`);
+  }
+  return clauses.join(",");
 }
 
 function pushEmail(out: string[], value: string | null | undefined) {
@@ -97,7 +101,7 @@ function compact(value: string | null | undefined): string {
   return normalizeLoginIdentifier(value ?? "").replace(/[.\-_]/g, "");
 }
 
-function hintMatchesUsername(hint: LoginProfileHint, username: string): boolean {
+export function usernameMatchesProfile(username: string, hint: LoginProfileHint): boolean {
   const key = compact(username);
   if (!key) return false;
   const emails = [hint.email, hint.authEmail ?? ""];
@@ -140,7 +144,7 @@ export function loginAuthEmails(identifier: string, profiles: LoginProfileHint[]
   }
 
   for (const hint of profiles) {
-    if (!hintMatchesUsername(hint, clean)) continue;
+    if (!usernameMatchesProfile(clean, hint)) continue;
     pushEmail(out, hint.authEmail);
     if (!hint.authEmail && /@radar\.(digiral\.ir|local)$/i.test(hint.email)) pushEmail(out, hint.email);
   }

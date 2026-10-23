@@ -19,6 +19,7 @@ import {
   canonicalPhone,
   loginAuthEmails,
   normalizeLoginIdentifier,
+  usernameMatchesProfile,
   usernameProfileOrFilter,
   type LoginProfileHint,
 } from "./login-identifier";
@@ -178,7 +179,7 @@ async function lookupLoginProfiles(identifier: string): Promise<LoginProfileHint
       .from("profiles")
       .select("id, email, full_name, business_name, updated_at")
       .order("updated_at", { ascending: false })
-      .limit(5);
+      .limit(20);
     if (clean.includes("@")) {
       query = query.ilike("email", clean);
     } else {
@@ -191,6 +192,13 @@ async function lookupLoginProfiles(identifier: string): Promise<LoginProfileHint
 
     const hints: LoginProfileHint[] = [];
     for (const row of data) {
+      const preliminary: LoginProfileHint = {
+        id: row.id,
+        email: row.email ?? "",
+        fullName: row.full_name,
+        businessName: row.business_name,
+      };
+      if (!clean.includes("@") && !usernameMatchesProfile(identifier, preliminary)) continue;
       let authEmail: string | null = null;
       const { data: authUser, error: authError } = await sb.auth.admin.getUserById(row.id);
       if (!authError && authUser.user?.email) authEmail = authUser.user.email;

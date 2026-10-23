@@ -42,13 +42,17 @@ describe("login identifier resolution", () => {
     ])).toEqual(["09999212209@radar.digiral.ir", OLD_GMAIL]);
   });
 
-  it("quotes dotted usernames in the profile filter and keeps spaces as wildcards", () => {
+  it("quotes dotted usernames and does not substring-match a single name", () => {
     const dotted = usernameProfileOrFilter("danyal.haghdady");
     expect(dotted).toBe(
-      'email.ilike."danyal.haghdady@%",full_name.ilike."%danyal.haghdady%",business_name.ilike."%danyal.haghdady%"',
+      'email.ilike."danyal.haghdady@%",full_name.ilike."danyal.haghdady",business_name.ilike."danyal.haghdady"',
     );
     expect(dotted).not.toContain("email.ilike.danyal.haghdady@%");
-    expect(usernameProfileOrFilter("دانیال حقدادی")).toContain('full_name.ilike."%دانیال%حقدادی%"');
+    const spaced = usernameProfileOrFilter("دانیال حقدادی");
+    expect(spaced).toContain('full_name.ilike."دانیال%حقدادی"');
+    expect(spaced).toContain('full_name.ilike."دانیالحقدادی"');
+    expect(spaced).not.toContain("%دانیال%حقدادی%");
+    expect(usernameProfileOrFilter("علی")).not.toContain("%علی%");
     expect(usernameProfileOrFilter("09120000991")).toBeNull();
   });
 

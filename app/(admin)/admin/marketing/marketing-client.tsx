@@ -34,6 +34,7 @@ import {
   requestSheypoorOtpAction,
   verifySheypoorOtpAction,
   sendSingleChatMessageAction,
+  markMarketingSentAction,
 } from "./actions";
 
 interface MarketingClientProps {
@@ -187,7 +188,7 @@ export function MarketingClient({
     });
   };
 
-  const handleSendSingle = async (listing: Listing) => {
+  const handleSendSingle = async (listing: Listing): Promise<boolean> => {
     setSendingId(listing.id);
     try {
       const res = await sendSingleChatMessageAction(listing.id);
@@ -212,18 +213,20 @@ export function MarketingClient({
           },
           ...prev,
         ]);
+        return true;
       } else {
         showNotice("error", res.message || "ارسال پیام با خطا مواجه شد.");
+        return false;
       }
     } finally {
       setSendingId(null);
     }
   };
 
-  const handleCopyAndOpenChat = (listing: Listing) => {
+  const handleCopyAndOpenChat = async (listing: Listing) => {
     const directUrl =
       listing.source === "divar"
-        ? `https://divar.ir/v/-/${listing.source_post_id}?openChat=true`
+        ? `https://divar.ir/v/-/${listing.source_post_id}`
         : `https://www.sheypoor.com/${listing.source_post_id}`;
 
     // Personalize text
@@ -237,8 +240,29 @@ export function MarketingClient({
       .replace(/\{ad_link\}/g, adLinkInput.trim());
 
     navigator.clipboard.writeText(text);
-    showNotice("success", "متن پیام در کلیپ‌بورد کپی شد! در حال باز کردن صفحه چت...");
+    showNotice("success", "متن پیام در کلیپ‌بورد کپی شد! در حال باز کردن صفحه چت آگهی...");
     window.open(directUrl, "_blank", "noopener,noreferrer");
+
+    // ثبت فوری در لاگ سیستم به عنوان ارسال‌شده
+    await markMarketingSentAction(listing.id, text);
+    if (listing.source === "divar") setDivarSent((p) => p + 1);
+    else setSheypoorSent((p) => p + 1);
+
+    setLogs((prev) => [
+      {
+        id: `mkt_${Date.now()}`,
+        listingId: listing.id,
+        source: listing.source === "sheypoor" ? "sheypoor" : "divar",
+        postToken: listing.source_post_id,
+        carTitle: listing.title,
+        priceToman: listing.price_toman,
+        city: listing.city || "مشهد",
+        messageText: text,
+        status: "sent",
+        sentAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
   };
 
   // Automated Batch Campaign
@@ -256,6 +280,7 @@ export function MarketingClient({
     setIsCampaignRunning(true);
     showNotice("success", `کمپین ارسال آغاز شد. ارسال به ${maxToSend} خودرو با فاصله زمانی...`);
 
+    let sentSuccess = 0;
     for (let i = 0; i < maxToSend; i++) {
       const item = unmessaged[i];
       setCampaignProgress({
@@ -264,7 +289,15 @@ export function MarketingClient({
         message: `در حال ارسال پیام به: ${item.title}...`,
       });
 
-      await handleSendSingle(item);
+      const ok = await handleSendSingle(item);
+      if (ok) {
+        sentSuccess++;
+      } else {
+        setIsCampaignRunning(false);
+        setCampaignProgress(null);
+        showNotice("error", `ارسال وب‌سرویس برای «${item.title}» نیازمند تایید است. کمپین متوقف شد؛ لطفاً از دکمه «چت مستقیم» استفاده فرمایید.`);
+        return;
+      }
 
       // Delay between sends (e.g. 45s) unless last item
       if (i < maxToSend - 1) {
@@ -275,7 +308,7 @@ export function MarketingClient({
 
     setIsCampaignRunning(false);
     setCampaignProgress(null);
-    showNotice("success", "کمپین خودکار با موفقیت پایان یافت.");
+    showNotice("success", `کمپین با موفقیت به پایان رسید (${sentSuccess} پیام ارسال شد).`);
   };
 
   return (

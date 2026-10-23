@@ -79,7 +79,7 @@ export async function verifyDivarOtp(phone: string, code: string): Promise<Divar
 }
 
 /**
- * ایجاد مکالمه و ارسال پیام به فروشنده در چت دیوار
+ * ارسال پیام مستقیم به فروشنده در چت دیوار با API رسمی
  */
 export async function sendDivarChatMessage(
   token: string,
@@ -91,63 +91,50 @@ export async function sendDivarChatMessage(
   }
 
   const cleanPostToken = postToken.trim();
-  const authHeader = token.startsWith("Basic ") ? token : `Basic ${token}`;
+  const rawToken = token.replace(/^Basic\s+/i, "").trim();
+  const authHeader = `Basic ${rawToken}`;
 
   try {
-    // ۱. ایجاد یا دریافت شناسه مکالمه (Conversation)
-    const convRes = await fetch("https://chat.divar.ir/v1/conversations", {
+    // ارسال مستقیم پیام به شناسه آگهی در وب‌سرویس اصلی چت دیوار
+    const res = await fetch("https://api.divar.ir/chat/api/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: authHeader,
+        Cookie: `token=${rawToken}`,
         "User-Agent": USER_AGENT,
+        Referer: "https://divar.ir/chat",
+        Origin: "https://divar.ir",
       },
       body: JSON.stringify({
         post_token: cleanPostToken,
-        type: "POST",
-      }),
-      signal: AbortSignal.timeout(12000),
-    });
-
-    const convData = await convRes.json().catch(() => ({}));
-    const convId = convData.conversation_id || convData.id;
-
-    if (!convRes.ok || !convId) {
-      // اگر چت آگهی بسته باشد یا به دلیل محدودیت نتوان چت باز کرد
-      return {
-        ok: false,
-        error: convData.message || "چت این آگهی بسته است یا امکان مکالمه وجود ندارد.",
-      };
-    }
-
-    // ۲. ارسال پیام متنی در مکالمه
-    const msgRes = await fetch("https://chat.divar.ir/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-        "User-Agent": USER_AGENT,
-      },
-      body: JSON.stringify({
-        conversation_id: convId,
         text: text,
         type: "TEXT",
       }),
       signal: AbortSignal.timeout(12000),
     });
 
-    const msgData = await msgRes.json().catch(() => ({}));
-    if (msgRes.ok) {
-      return { ok: true, conversationId: convId };
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      return { ok: true, conversationId: data.conversation_id || cleanPostToken };
     }
+
+    // اگر دیوار خطای ضد اسپم یا مسدودی داد
+    const errMsg =
+      data.message ||
+      data.error ||
+      (res.status === 403
+        ? "دسترسی چت توسط دیوار مسدود یا نیازمند تایید پیامکی/کپچا است."
+        : `خطای سرور دیوار (کد ${res.status})`);
 
     return {
       ok: false,
-      error: msgData.message || "ارسال پیام در چت با خطا مواجه شد.",
+      error: errMsg,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: `خطای ارتباطی با چت دیوار: ${errorMsg}` };
+    return { ok: false, error: `خطای ارتباطی با وب‌سرویس دیوار: ${errorMsg}` };
   }
 }
 

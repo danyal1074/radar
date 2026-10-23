@@ -104,6 +104,29 @@ export async function sendSingleChatMessageAction(listingId: string) {
   return result;
 }
 
+export async function markMarketingSentAction(listingId: string, messageText: string) {
+  const ctx = await requireContext({ admin: true });
+  const listing = await ctx.store.getListing(listingId);
+  if (!listing) return { ok: false };
+
+  const { recordMarketingLog } = await import("@/lib/marketing/store");
+  await recordMarketingLog({
+    id: `mkt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    listingId: listing.id,
+    source: listing.source === "sheypoor" ? "sheypoor" : "divar",
+    postToken: listing.source_post_id,
+    carTitle: listing.title,
+    priceToman: listing.price_toman,
+    city: listing.city || "مشهد",
+    messageText,
+    status: "sent",
+    sentAt: new Date().toISOString(),
+  });
+
+  revalidatePath("/admin/marketing");
+  return { ok: true };
+}
+
 export async function getMarketingStatsAction() {
   await requireContext({ admin: true });
   const config = await getMarketingConfig();

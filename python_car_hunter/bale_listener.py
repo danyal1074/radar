@@ -24,6 +24,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
+# httpx INFO logs the full request URL, which embeds the bot token.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 API_BASE = "http://127.0.0.1:3000/api/bot"
@@ -103,23 +106,24 @@ MODE_GRID = [
     [{"text": "❌ انصراف", "callback_data": "cancel_wizard"}],
 ]
 
+# make is the value listings store (model family), not the manufacturer label.
 CAR_NAMES = {
-    "pride": ("سایپا", "پراید", "پراید"),
-    "206": ("ایران خودرو", "206", "پژو ۲۰۶"),
-    "pars": ("ایران خودرو", "پارس", "پژو پارس"),
-    "207": ("ایران خودرو", "207", "پژو ۲۰۷"),
-    "405": ("ایران خودرو", "405", "پژو ۴۰۵"),
-    "dena": ("ایران خودرو", "دنا", "دنا"),
-    "tara": ("ایران خودرو", "تارا", "تارا"),
-    "quick": ("سایپا", "کوییک", "کوییک"),
-    "saina": ("سایپا", "ساینا", "ساینا"),
-    "samand": ("ایران خودرو", "سمند", "سمند و سورن"),
-    "shahin": ("سایپا", "شاهین", "شاهین"),
-    "tiba": ("سایپا", "تیبا", "تیبا"),
-    "ranah": ("ایران خودرو", "رانا", "رانا"),
-    "haima": ("ایران خودرو", "هایما", "هایما"),
-    "jac": ("کرمان موتور", "جک", "جک (JAC)"),
-    "mvm": ("مدیران خودرو", "ام وی ام", "ام‌وی‌ام / فونیکس"),
+    "pride": ("پراید", "پراید", "پراید"),
+    "206": ("پژو", "206", "پژو ۲۰۶"),
+    "pars": ("پژو", "پارس", "پژو پارس"),
+    "207": ("پژو", "207", "پژو ۲۰۷"),
+    "405": ("پژو", "405", "پژو ۴۰۵"),
+    "dena": ("دنا", "دنا", "دنا"),
+    "tara": ("تارا", "تارا", "تارا"),
+    "quick": ("کوییک", "کوییک", "کوییک"),
+    "saina": ("ساینا", "ساینا", "ساینا"),
+    "samand": ("سمند", "سمند", "سمند و سورن"),
+    "shahin": ("شاهین", "شاهین", "شاهین"),
+    "tiba": ("تیبا", "تیبا", "تیبا"),
+    "ranah": ("رانا", "رانا", "رانا"),
+    "haima": ("هایما", "هایما", "هایما"),
+    "jac": ("جک", "جک", "جک (JAC)"),
+    "mvm": ("ام‌وی‌ام", "ام وی ام", "ام‌وی‌ام / فونیکس"),
     "all": ("", "", "تمام خودروها"),
 }
 
@@ -222,7 +226,8 @@ async def send_bale_reply(
         return False
 
 
-ADMIN_BALE_CHATS = ("772511114", "2079437548", "1271663233")
+# 2079437548 was a one-digit typo of a real chat and is not listed. Do not guess the missing digit.
+ADMIN_BALE_CHATS = ("772511114", "1271663233")
 ADMIN_USER_ID = "97375339-be50-403e-be7b-0aee1b7c2d99"
 
 

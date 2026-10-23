@@ -1,3 +1,4 @@
+import { makeMatchesListing } from "../brands";
 import { computeDiff, detectPriceTypo, isEstimateFresh } from "../pricing";
 import { fuzzyIncludes } from "../text";
 import type { Listing, PriceEstimate, WatchRule } from "../types";
@@ -20,7 +21,7 @@ function effectiveYear(l: Listing): number | null {
 }
 
 export function ruleMatchesListing(rule: WatchRule, l: Listing): boolean {
-  if (rule.make && !fuzzyIncludes(`${l.make} ${l.title}`, rule.make)) return false;
+  if (rule.make && !makeMatchesListing(rule.make, l)) return false;
   if (rule.model && !fuzzyIncludes(`${l.model} ${l.trim ?? ""} ${l.title}`, rule.model)) return false;
   if (rule.source && l.source !== rule.source) return false;
   if (rule.city && !fuzzyIncludes(l.city, rule.city)) return false;

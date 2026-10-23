@@ -17,10 +17,24 @@ interface StorageData {
 }
 
 const DATA_DIR = path.join(process.cwd(), ".data");
-const FILE_PATH = path.join(DATA_DIR, "bot_subscribers.json");
+const DEFAULT_FILE_PATH = path.join(DATA_DIR, "bot_subscribers.json");
+let filePathOverride: string | null = null;
 
-// Default Danial's Bale, Telegram & Rubika chat IDs for admin notifications
-export const DEFAULT_ADMIN_BALE_CHATS = ["772511114", "2079437548", "1271663233"];
+/** Tests point the subscriber file at a temp path so they never touch the live JSON. */
+export function setBotSubscriberStorageForTests(file: string | null): void {
+  filePathOverride = file;
+}
+
+function storageFile(): string {
+  return filePathOverride ?? DEFAULT_FILE_PATH;
+}
+
+/**
+ * Known manager chats used only when no subscriber row owns that chat.
+ * 2079437548 was a one-digit typo of a real admin chat and is intentionally absent:
+ * the correct id is not hard-coded. An explicit link always wins over this list.
+ */
+export const DEFAULT_ADMIN_BALE_CHATS = ["772511114", "1271663233"];
 const DEFAULT_ADMIN_BALE_CHAT = "772511114";
 const DEFAULT_ADMIN_TELEGRAM_CHAT = "772511114";
 const DEFAULT_ADMIN_RUBIKA_CHAT = "b0BRnXf0BMoZ02419247225b30f018fe";
@@ -28,8 +42,9 @@ export const DANIAL_ADMIN_UUID = "97375339-be50-403e-be7b-0aee1b7c2d99";
 
 async function readStorage(): Promise<StorageData> {
   try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const content = await fs.readFile(FILE_PATH, "utf-8");
+    const file = storageFile();
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    const content = await fs.readFile(file, "utf-8");
     return JSON.parse(content) as StorageData;
   } catch {
     return {
@@ -49,8 +64,9 @@ async function readStorage(): Promise<StorageData> {
 
 async function writeStorage(data: StorageData): Promise<void> {
   try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    const file = storageFile();
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     console.error("خطا در ذخیره داده‌های اتصال ربات:", err);
   }
@@ -61,6 +77,67 @@ function normalizeDigits(text: string): string {
   return text
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+}
+
+export type BotMessenger = "bale" | "telegram" | "rubika" | "eitaa";
+
+function chatField(messenger: BotMessenger): "baleChatId" | "telegramChatId" | "rubikaChatId" | "eitaaChatId" {
+  if (messenger === "bale") return "baleChatId";
+  if (messenger === "telegram") return "telegramChatId";
+  if (messenger === "rubika") return "rubikaChatId";
+  return "eitaaChatId";
+}
+
+/** Drop this chat id from every subscriber except `keepUserId`. */
+export function detachChatId(
+  subscribers: Record<string, BotSubscriber>,
+  chatId: string,
+  messenger: BotMessenger,
+  keepUserId?: string,
+): void {
+  const field = chatField(messenger);
+  const cid = String(chatId);
+  for (const [uid, sub] of Object.entries(subscribers)) {
+    if (uid === keepUserId) continue;
+    if (sub[field] === cid) delete sub[field];
+  }
+}
+
+/** When several accounts still share a chat id, the newest linkedAt wins. */
+export function findSubscriberByChatId(
+  subscribers: Record<string, BotSubscriber>,
+  chatId: string,
+  messenger: BotMessenger,
+): string | null {
+  const field = chatField(messenger);
+  const cid = String(chatId);
+  let best: { uid: string; at: string } | null = null;
+  for (const [uid, sub] of Object.entries(subscribers)) {
+    if (sub[field] !== cid) continue;
+    const at = sub.linkedAt || "";
+    if (!best || at >= best.at) best = { uid, at };
+  }
+  return best?.uid ?? null;
+}
+
+function assignChat(
+  store: StorageData,
+  userId: string,
+  chatId: string,
+  messenger: BotMessenger,
+  userName?: string,
+): BotSubscriber {
+  detachChatId(store.subscribers, chatId, messenger, userId);
+  const existing = store.subscribers[userId] || {
+    userId,
+    userName: userName || "کاربر رادار",
+    linkedAt: new Date().toISOString(),
+  };
+  existing[chatField(messenger)] = String(chatId);
+  if (userName) existing.userName = userName;
+  existing.linkedAt = new Date().toISOString();
+  store.subscribers[userId] = existing;
+  return existing;
 }
 
 /** دریافت یا تولید کد اتصال عددی برای کاربر */
@@ -87,16 +164,6 @@ export async function linkChatWithCode(
   const store = await readStorage();
   const normalized = normalizeDigits(inputCode).trim();
 
-  // اتصال مستقیم چت‌آیدی‌های پیش‌فرض مدیر به حساب مدیریت
-  if (messenger === "bale" && DEFAULT_ADMIN_BALE_CHATS.includes(String(chatId))) {
-    const reg = await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
-    return {
-      success: true,
-      message: "حساب کاربری مدیریت سامانه با موفقیت به ربات متصل شد.",
-      userId: DANIAL_ADMIN_UUID,
-    };
-  }
-
   // ۱. بررسی امکان اتصال مستقیم با شماره موبایل یا ایمیل حساب کاربری در سایت
   const isPhoneOrEmail =
     normalized.includes("@") ||
@@ -119,8 +186,12 @@ export async function linkChatWithCode(
 
         if (matchedProfile?.id) {
           const colName =
-            messenger === "rubika" ? "rubika_chat_id" : (messenger === "telegram" ? "telegram_chat_id" : "bale_chat_id");
-          await sb.from("profiles").update({ [colName]: String(chatId) }).eq("id", matchedProfile.id);
+            messenger === "rubika" ? "rubika_chat_id" : (messenger === "telegram" ? "telegram_chat_id" : messenger === "eitaa" ? "eitaa_chat_id" : "bale_chat_id");
+          // profiles may not have *_chat_id yet. The subscriber file is the source of truth.
+          const mirrored = await sb.from("profiles").update({ [colName]: String(chatId) }).eq("id", matchedProfile.id);
+          if (mirrored.error && !/schema cache|could not find/i.test(mirrored.error.message)) {
+            console.error("خطا در ذخیره شناسه چت روی پروفایل");
+          }
           await registerDirectChat(
             matchedProfile.id,
             chatId,
@@ -163,24 +234,7 @@ export async function linkChatWithCode(
     };
   }
 
-  const existing = store.subscribers[userId] || {
-    userId,
-    userName: userName || "کاربر رادار",
-    linkedAt: new Date().toISOString(),
-  };
-
-  if (messenger === "bale") {
-    existing.baleChatId = String(chatId);
-  } else if (messenger === "telegram") {
-    existing.telegramChatId = String(chatId);
-  } else if (messenger === "rubika") {
-    existing.rubikaChatId = String(chatId);
-  } else if (messenger === "eitaa") {
-    existing.eitaaChatId = String(chatId);
-  }
-  if (userName) existing.userName = userName;
-
-  store.subscribers[userId] = existing;
+  const existing = assignChat(store, userId, chatId, messenger, userName);
   await writeStorage(store);
 
   return {
@@ -271,15 +325,11 @@ export async function getUserIdByChatId(
   messenger: "bale" | "telegram" | "rubika" | "eitaa",
 ): Promise<string | null> {
   const cid = String(chatId);
+  const store = await readStorage();
+  const linked = findSubscriberByChatId(store.subscribers, cid, messenger);
+  if (linked) return linked === "admin" ? DANIAL_ADMIN_UUID : linked;
   if (messenger === "bale" && DEFAULT_ADMIN_BALE_CHATS.includes(cid)) {
     return DANIAL_ADMIN_UUID;
-  }
-  const store = await readStorage();
-  for (const [uid, sub] of Object.entries(store.subscribers)) {
-    if (messenger === "bale" && sub.baleChatId === cid) return uid;
-    if (messenger === "telegram" && sub.telegramChatId === cid) return uid;
-    if (messenger === "rubika" && sub.rubikaChatId === cid) return uid;
-    if (messenger === "eitaa" && sub.eitaaChatId === cid) return uid;
   }
   return null;
 }
@@ -292,19 +342,7 @@ export async function registerDirectChat(
   userName?: string,
 ): Promise<BotSubscriber> {
   const store = await readStorage();
-  const existing = store.subscribers[userId] || {
-    userId,
-    userName: userName || "کاربر رادار",
-    linkedAt: new Date().toISOString(),
-  };
-
-  if (messenger === "bale") existing.baleChatId = String(chatId);
-  else if (messenger === "telegram") existing.telegramChatId = String(chatId);
-  else if (messenger === "rubika") existing.rubikaChatId = String(chatId);
-  else if (messenger === "eitaa") existing.eitaaChatId = String(chatId);
-  if (userName) existing.userName = userName;
-
-  store.subscribers[userId] = existing;
+  const existing = assignChat(store, userId, chatId, messenger, userName);
   await writeStorage(store);
   return existing;
 }

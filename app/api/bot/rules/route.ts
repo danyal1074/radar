@@ -23,14 +23,14 @@ async function findExistingUserId(
   messenger: "bale" | "telegram" | "rubika" | "eitaa",
   userName?: string,
 ): Promise<string | null> {
-  // مدیر کل سامانه (دانیال)
-  const ADMIN_BALE_CHATS = ["772511114", "2079437548", "1271663233"];
-  if (ADMIN_BALE_CHATS.includes(String(chatId)) || String(chatId) === DANIAL_RUBIKA_CHAT) {
+  // Rubika manager chat is a stable id. Bale admin chats are resolved in getUserIdByChatId
+  // and never override a newer explicit link. Do not keep a one-digit typo of a real chat here.
+  if (messenger === "rubika" && String(chatId) === DANIAL_RUBIKA_CHAT) {
     await registerDirectChat(DANIAL_ADMIN_UUID, chatId, messenger, "دانیال حقدادی (مدیر)");
     return DANIAL_ADMIN_UUID;
   }
 
-  // ۱. بررسی چت‌آیدی‌های متصل
+  // ۱. بررسی چت‌آیدی‌های متصل (جدیدترین اتصال برنده است)
   const existingUserId = await getUserIdByChatId(chatId, messenger);
   if (existingUserId && existingUserId !== "admin") {
     return existingUserId;
@@ -38,21 +38,23 @@ async function findExistingUserId(
 
   const sb = getServiceClient();
   if (sb) {
-    // ۲. بررسی در پروفایل‌های دیتابیس
+    // ۲. پروفایل فقط اگر ستون چت وجود داشته باشد. طرح زنده این ستون‌ها را ندارد.
     const colName =
       messenger === "rubika"
         ? "rubika_chat_id"
         : messenger === "telegram"
         ? "telegram_chat_id"
+        : messenger === "eitaa"
+        ? "eitaa_chat_id"
         : "bale_chat_id";
 
-    const { data: profile } = await sb
+    const { data: profile, error } = await sb
       .from("profiles")
       .select("id")
       .eq(colName, String(chatId))
       .maybeSingle();
 
-    if (profile?.id) {
+    if (!error && profile?.id) {
       await registerDirectChat(profile.id, chatId, messenger, userName);
       return profile.id;
     }

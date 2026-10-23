@@ -21,6 +21,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
+# httpx INFO logs the full request URL, which embeds the bot token.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 RUBIKA_TOKEN = "CHEGEH0TZCBGQPEUYBYTMXRUTGTADRUVGKPXXNUBFHXIUOYELMOJCOHLHOZOMZJJ"
@@ -80,18 +83,19 @@ CITY_KEYBOARD = {
 
 USER_SESSIONS: dict[str, dict] = {}
 
+# make matches listing.make (model family). Older rules that stored the manufacturer still match via aliases.
 CAR_MAP = {
-    "پراید": ("سایپا", "پراید", "پراید"),
-    "پژو ۲۰۶": ("ایران خودرو", "206", "پژو ۲۰۶"),
-    "پژو پارس": ("ایران خودرو", "پارس", "پژو پارس"),
-    "پژو ۲۰۷": ("ایران خودرو", "207", "پژو ۲۰۷"),
-    "دنا": ("ایران خودرو", "دنا", "دنا"),
-    "تارا": ("ایران خودرو", "تارا", "تارا"),
-    "کوییک": ("سایپا", "کوییک", "کوییک"),
-    "ساینا": ("سایپا", "ساینا", "ساینا"),
-    "سمند / سورن": ("ایران خودرو", "سمند", "سمند و سورن"),
-    "شاهین": ("سایپا", "شاهین", "شاهین"),
-    "تیبا": ("سایپا", "تیبا", "تیبا"),
+    "پراید": ("پراید", "پراید", "پراید"),
+    "پژو ۲۰۶": ("پژو", "206", "پژو ۲۰۶"),
+    "پژو پارس": ("پژو", "پارس", "پژو پارس"),
+    "پژو ۲۰۷": ("پژو", "207", "پژو ۲۰۷"),
+    "دنا": ("دنا", "دنا", "دنا"),
+    "تارا": ("تارا", "تارا", "تارا"),
+    "کوییک": ("کوییک", "کوییک", "کوییک"),
+    "ساینا": ("ساینا", "ساینا", "ساینا"),
+    "سمند / سورن": ("سمند", "سمند", "سمند و سورن"),
+    "شاهین": ("شاهین", "شاهین", "شاهین"),
+    "تیبا": ("تیبا", "تیبا", "تیبا"),
     "تمام خودروها": ("", "", "تمام خودروها"),
 }
 

@@ -172,7 +172,6 @@ export function FilterBar({
             <select
               name="damage"
               defaultValue={filters.damageFilter || "all"}
-              onChange={(e) => e.target.form?.requestSubmit()}
               aria-label="فیلتر وضعیت بدنه و تصادف"
               className="bg-transparent text-xs font-semibold text-ink cursor-pointer focus:outline-hidden"
             >

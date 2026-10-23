@@ -98,6 +98,13 @@ class BaleAdminBotTest(unittest.TestCase):
         os.environ["BALE_ADMIN_CHAT_ID"] = "424242"
         importlib.reload(config_module)
 
+    def test_http_client_logs_stay_quiet_and_rules_use_listing_makes(self) -> None:
+        self.assertGreaterEqual(logging.getLogger("httpx").level, logging.WARNING)
+        self.assertGreaterEqual(logging.getLogger("httpcore").level, logging.WARNING)
+        self.assertNotIn("2079437548", bale_listener.ADMIN_BALE_CHATS)
+        self.assertEqual(bale_listener.CAR_NAMES["pride"][0], "پراید")
+        self.assertEqual(bale_listener.CAR_NAMES["206"][0], "پژو")
+
     def test_config_loads_bale_settings(self) -> None:
         self.assertEqual(config_module.config.BALE_BOT_TOKEN, "test-token")
         self.assertEqual(config_module.config.BALE_ADMIN_CHAT_ID, "424242")
